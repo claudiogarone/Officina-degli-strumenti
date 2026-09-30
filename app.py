@@ -756,12 +756,27 @@ def load_from_uploads(payload):
 
 st.sidebar.markdown("### 📘 Registri Lezioni")
 
+SECRETS_ERRORE = ""   # errore di lettura/sintassi dei Secrets, se c'è
+
+
 def secret(key, default=None):
-    """Accesso ai secrets a prova di file mancante (app non ancora configurata)."""
+    """Accesso ai secrets a prova di file mancante o malformato."""
+    global SECRETS_ERRORE
     try:
         return st.secrets[key]
-    except Exception:
+    except KeyError:
+        return default          # i Secrets ci sono, manca questa chiave
+    except Exception as e:      # file assente oppure TOML non valido
+        SECRETS_ERRORE = str(e)
         return default
+
+
+def chiavi_secrets():
+    """Elenco delle chiavi di primo livello presenti nei Secrets (per diagnosi)."""
+    try:
+        return list(st.secrets.keys())
+    except Exception:
+        return []
 
 
 has_secrets = secret("gcp_service_account") is not None
@@ -794,9 +809,22 @@ if modo.startswith("Google"):
         st.session_state.cache_key = dt.datetime.now().timestamp()
         st.cache_data.clear()
     if not has_secrets:
-        st.warning("⚠️ Credenziali Google non configurate. Aggiungi il blocco "
-                   "`[gcp_service_account]` nei **Secrets** dell'app (vedi la guida), "
-                   "oppure usa il caricamento manuale dalla barra laterale.")
+        trovate = chiavi_secrets()
+        if SECRETS_ERRORE:
+            st.error("⚠️ I Secrets non sono leggibili: probabilmente c'è un errore "
+                     "di sintassi TOML (spesso la `private_key` andata a capo, "
+                     "oppure il JSON incollato con le graffe invece del formato TOML).")
+            st.code(SECRETS_ERRORE, language="text")
+        elif not trovate:
+            st.warning("⚠️ I Secrets di questa app sono **vuoti**. Se hai ricreato "
+                       "l'app, i Secrets non vengono trasferiti: vanno reinseriti "
+                       "in Settings → Secrets.")
+        else:
+            st.warning("⚠️ Nei Secrets manca il blocco `[gcp_service_account]`. "
+                       "Le voci trovate sono elencate qui sotto.")
+            st.code("chiavi presenti: " + ", ".join(map(str, trovate)), language="text")
+        st.caption("In alternativa puoi usare **Carica file manualmente** "
+                   "dalla barra laterale.")
         st.stop()
     if not folder_id:
         st.info("Inserisci l'ID della cartella Drive nella barra laterale.")
