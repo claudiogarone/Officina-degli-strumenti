@@ -25,7 +25,8 @@ st.set_page_config(
     page_title="Registri Lezioni - Dashboard",
     page_icon="📘",
     layout="wide",
-    initial_sidebar_state="expanded",
+    # "auto": aperta su PC, chiusa su smartphone (si apre col pulsante ☰)
+    initial_sidebar_state="auto",
 )
 
 # ---------------------------------------------------------------------------
@@ -73,6 +74,50 @@ st.markdown("""
   }
   h1 {font-size: 1.9rem !important; font-weight: 700 !important;}
   .stTabs [data-baseweb="tab"] {font-size: 0.95rem; font-weight: 550;}
+
+  /* ---------- TABLET (fino a 1024px): due colonne al massimo ---------- */
+  @media (max-width: 1024px) {
+    .block-container {padding-left: 1.1rem; padding-right: 1.1rem; padding-top: 1.4rem;}
+    [data-testid="stMetricValue"] {font-size: 1.4rem;}
+  }
+
+  /* ---------- SMARTPHONE (fino a 820px): tutto impilato ---------- */
+  @media (max-width: 820px) {
+    /* padding alto generoso: sotto la barra con ☰ e il menu di Streamlit */
+    .block-container {padding-left: .7rem; padding-right: .7rem; padding-top: 3.4rem;}
+
+    /* le colonne affiancate diventano una sotto l'altra */
+    [data-testid="stHorizontalBlock"] {flex-wrap: wrap !important; gap: .6rem !important;}
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+        flex: 1 1 100% !important;
+        min-width: 100% !important;
+        width: 100% !important;
+    }
+
+    /* i riquadri KPI restano affiancati a due a due */
+    [data-testid="stHorizontalBlock"]:has(.kpi-mark) > [data-testid="stColumn"] {
+        flex: 1 1 calc(50% - .6rem) !important;
+        min-width: calc(50% - .6rem) !important;
+        width: auto !important;
+    }
+
+    h1 {font-size: 1.35rem !important; line-height: 1.25;}
+    h5, .stMarkdown h5 {font-size: .95rem !important;}
+    [data-testid="stMetricValue"] {font-size: 1.15rem;}
+    [data-testid="stMetricLabel"] {font-size: .7rem;}
+    div[data-testid="stMetric"] {padding: .55rem .6rem; border-radius: 10px;}
+
+    /* le schede scorrono in orizzontale invece di andare a capo */
+    .stTabs [data-baseweb="tab-list"] {
+        overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none;
+    }
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {display: none;}
+    .stTabs [data-baseweb="tab"] {font-size: .82rem; padding: .4rem .55rem; white-space: nowrap;}
+
+    /* tabelle e grafici sempre entro lo schermo */
+    [data-testid="stDataFrame"] {font-size: .78rem;}
+    .js-plotly-plot, .plot-container {max-width: 100% !important;}
+  }
 </style>
 """, unsafe_allow_html=True)
 
@@ -392,6 +437,177 @@ def normalize(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ============================================================================
+# PROGETTI E CONSULENZE  (file "Gestione Progetti" — scheda "Progetti")
+# ============================================================================
+
+PROG_COLS = [
+    "Conteggio",        # A  1 = riga che apre un progetto
+    "Progetto",         # B
+    "Descrizione",      # C
+    "Data Inizio",      # D
+    "Data Consegna",    # E
+    "Stato",            # F
+    "Attività",         # G
+    "Pagamento",        # H  es. "€245 - Acconto", "- €245 - STORNO"
+    "Data Acconto",     # I
+    "Data Saldo",       # J
+    "Nome Cliente",     # K
+    "Cognome Cliente",  # L
+    "Link Cartella",    # M
+    "Costo Progetto",   # N  quanto paga il cliente
+    "Spesa Progetto",   # O  costi vivi sostenuti
+    "Ricavo",           # P
+    "Ore Lavorate",     # Q
+    "Guadagno Orario",  # R
+    "Note",             # S
+]
+
+STATI_ORDINE = ["Da Iniziare", "In Corso", "In lavorazione", "Completato"]
+STATO_COLORE = {
+    "Da Iniziare": PALETTE[3],      # giallo
+    "In Corso": PALETTE[0],         # blu
+    "In lavorazione": PALETTE[6],   # viola
+    "Completato": PALETTE[2],       # verde
+}
+
+
+def p_pagamento(v):
+    """Da '€245 - Acconto' / '- €245 - STORNO' a (importo firmato, tipo)."""
+    s = p_str(v)
+    if not s:
+        return 0.0, ""
+    tipo = "Storno" if "storn" in s.lower() else (
+        "Acconto" if "accont" in s.lower() else (
+            "Saldo" if "saldo" in s.lower() else "Altro"))
+    m = re.search(r"(\d+(?:[.,]\d+)?)", s.replace("€", " "))
+    if not m:
+        return 0.0, tipo
+    val = float(m.group(1).replace(",", "."))
+    # segno negativo esplicito o storno
+    if tipo == "Storno" or re.match(r"^\s*-", s):
+        val = -abs(val)
+    return val, tipo
+
+
+def sheet_is_progetti(name: str) -> bool:
+    n = (name or "").strip().lower()
+    if any(x in n for x in ("pivot", "analisi", "regole", "appoggio")):
+        return False
+    return "progett" in n
+
+
+def read_progetti(content: bytes, source_name: str, diag: list) -> pd.DataFrame:
+    """Legge la scheda 'Progetti': una riga con Conteggio=1 apre un progetto,
+    le righe successive con 0 sono altri movimenti dello stesso progetto."""
+    import openpyxl
+    try:
+        wb = openpyxl.load_workbook(io.BytesIO(content), data_only=True, read_only=True)
+    except Exception as e:
+        diag.append({"file": source_name, "scheda": "-", "esito": f"❌ non leggibile: {e}", "righe": 0})
+        return pd.DataFrame(), pd.DataFrame()
+
+    prog, movimenti = [], []
+    for sname in wb.sheetnames:
+        if not sheet_is_progetti(sname):
+            continue
+        ws = wb[sname]
+        corrente = None
+        n = 0
+        for i, row in enumerate(ws.iter_rows(values_only=True)):
+            if i == 0:
+                continue
+            row = list(row) + [None] * (len(PROG_COLS) - len(row))
+            rec = dict(zip(PROG_COLS, row[:len(PROG_COLS)]))
+            nome = p_str(rec["Progetto"])
+            if not nome:
+                continue
+            flag = p_float(rec["Conteggio"]) or 0
+            importo, tipo = p_pagamento(rec["Pagamento"])
+            if flag >= 1 or corrente is None:
+                corrente = len(prog)
+                n += 1
+                cliente = (p_str(rec["Nome Cliente"]) + " " + p_str(rec["Cognome Cliente"])).strip()
+                prog.append({
+                    "id": corrente,
+                    "Progetto": nome,
+                    "Descrizione": p_str(rec["Descrizione"]),
+                    "Cliente": cliente or "(non indicato)",
+                    "Inizio": p_date(rec["Data Inizio"]),
+                    "Consegna": p_date(rec["Data Consegna"]),
+                    "Stato": p_str(rec["Stato"]) or "(non indicato)",
+                    "Attività": p_str(rec["Attività"]),
+                    "Costo": p_float(rec["Costo Progetto"]) or 0.0,
+                    "Spesa": p_float(rec["Spesa Progetto"]) or 0.0,
+                    "Ore": p_float(rec["Ore Lavorate"]) or 0.0,
+                    "Link": p_str(rec["Link Cartella"]),
+                    "Note": p_str(rec["Note"]),
+                    "File": source_name,
+                })
+            movimenti.append({
+                "id": corrente,
+                "Progetto": nome,
+                "Importo": importo,
+                "Tipo": tipo,
+                "Data": p_date(rec["Data Saldo"]) or p_date(rec["Data Acconto"]),
+                "Testo": p_str(rec["Pagamento"]),
+            })
+        diag.append({"file": source_name, "scheda": sname, "esito": "✅ letta", "righe": n})
+    try:
+        wb.close()
+    except Exception:
+        pass
+    if not prog:
+        return pd.DataFrame(), pd.DataFrame()
+
+    dfp = pd.DataFrame(prog)
+    dfm = pd.DataFrame(movimenti)
+    inc = dfm.groupby("id")["Importo"].sum().rename("Incassato")
+    dfp = dfp.merge(inc, left_on="id", right_index=True, how="left")
+    dfp["Incassato"] = dfp["Incassato"].fillna(0.0)
+    dfp["Margine"] = dfp["Costo"] - dfp["Spesa"]
+    dfp["Residuo"] = (dfp["Costo"] - dfp["Incassato"]).clip(lower=0)
+    dfp["GuadagnoOrario"] = np.where(dfp["Ore"] > 0, dfp["Margine"] / dfp["Ore"], np.nan)
+    dfp["Durata"] = (dfp["Consegna"] - dfp["Inizio"]).dt.days
+    dfp["Etichetta"] = dfp["Progetto"] + np.where(
+        dfp.duplicated("Progetto", keep=False),
+        " · " + dfp["Cliente"].str.split().str[0], "")
+    return dfp, dfm
+
+
+def read_contatti(content: bytes, source_name: str) -> pd.DataFrame:
+    """Legge 'Piano contatti' e 'Registro esiti' (intestazioni alla riga 4)."""
+    import openpyxl
+    try:
+        wb = openpyxl.load_workbook(io.BytesIO(content), data_only=True, read_only=True)
+    except Exception:
+        return pd.DataFrame()
+    out = {}
+    for sname in wb.sheetnames:
+        n = sname.strip().lower()
+        if "piano" not in n and "esiti" not in n:
+            continue
+        ws = wb[sname]
+        rows = list(ws.iter_rows(values_only=True))
+        # trova la riga di intestazione: la prima con almeno 4 celle piene
+        hi = next((i for i, r in enumerate(rows)
+                   if sum(1 for v in r if p_str(v)) >= 4), None)
+        if hi is None:
+            continue
+        hdr = [p_str(v) for v in rows[hi]]
+        data = [r for r in rows[hi + 1:] if any(p_str(v) for v in r)]
+        if not data:
+            continue
+        d = pd.DataFrame(data, columns=hdr if len(set(hdr)) == len(hdr) else None)
+        d = d.loc[:, [c for c in d.columns if p_str(c)]]
+        out["piano" if "piano" in n else "esiti"] = d.map(p_str)
+    try:
+        wb.close()
+    except Exception:
+        pass
+    return out.get("piano", pd.DataFrame()), out.get("esiti", pd.DataFrame())
+
+
+# ============================================================================
 # SORGENTE DATI: GOOGLE DRIVE
 # ============================================================================
 
@@ -462,6 +678,50 @@ def load_from_drive(folder_id: str, _cache_key: float):
             diag.append({"file": f["name"], "scheda": "-", "esito": f"❌ errore: {e}", "righe": 0})
     raw = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
     return normalize(raw), pd.DataFrame(diag), len(files)
+
+
+@st.cache_data(show_spinner="Lettura progetti…")
+def load_progetti(payload):
+    """payload = tupla di (nome_file, bytes). Restituisce progetti, movimenti,
+    piano contatti e diagnostica."""
+    diag, lp, lm = [], [], []
+    contatti, esiti = pd.DataFrame(), pd.DataFrame()
+    base = 0
+    for name, content in payload:
+        dp, dm = read_progetti(content, name, diag)
+        if not dp.empty:
+            dp = dp.copy(); dm = dm.copy()
+            dp["id"] += base; dm["id"] += base
+            base = int(dp["id"].max()) + 1
+            lp.append(dp); lm.append(dm)
+        if contatti.empty:
+            c, e = read_contatti(content, name)
+            if not c.empty:
+                contatti, esiti = c, e
+    dfp = pd.concat(lp, ignore_index=True) if lp else pd.DataFrame()
+    dfm = pd.concat(lm, ignore_index=True) if lm else pd.DataFrame()
+    return dfp, dfm, contatti, esiti, pd.DataFrame(diag)
+
+
+@st.cache_data(ttl=300, show_spinner="Lettura progetti da Google Drive…")
+def progetti_payload_drive(folder_id: str, _cache_key: float):
+    out = []
+    for f in drive_list(folder_id):
+        try:
+            out.append((f["name"], drive_download(f)))
+        except Exception:
+            pass
+    return tuple(out)
+
+
+@st.cache_data(show_spinner="Lettura progetti dalla cartella locale…")
+def progetti_payload_local(path: str):
+    import glob, os
+    out = []
+    for p in sorted(glob.glob(os.path.join(path, "*.xlsx"))):
+        with open(p, "rb") as fh:
+            out.append((os.path.basename(p), fh.read()))
+    return tuple(out)
 
 
 @st.cache_data(show_spinner="Lettura cartella locale…")
@@ -640,6 +900,7 @@ da_incassare = df["DaIncassare"].sum()
 tariffa = incassato / ore_lez if ore_lez else 0
 
 k = st.columns(6)
+k[0].markdown('<span class="kpi-mark"></span>', unsafe_allow_html=True)
 k[0].metric("Lezioni", f"{tot_lez:,}".replace(",", "."))
 k[1].metric("Ore totali", f"{tot_ore:,.1f}".replace(",", "."))
 k[2].metric("Allievi", n_all)
@@ -650,7 +911,48 @@ k[5].metric("Tariffa oraria media", f"€ {tariffa:,.1f}".replace(",", "."))
 
 st.divider()
 
-TAB = st.tabs(["📊 Panoramica", "👥 Allievi", "💶 Economia", "🎓 Didattica", "📋 Dettaglio"])
+# ============================================================================
+# CARICAMENTO PROGETTI E CONSULENZE (seconda cartella Drive, facoltativa)
+# ============================================================================
+
+PROG_LOCAL = os.environ.get("PROGETTI_LOCAL_DIR", "")
+prog_payload = ()
+prog_msg = ""
+
+if PROG_LOCAL:
+    prog_payload = progetti_payload_local(PROG_LOCAL)
+elif modo.startswith("Google"):
+    st.sidebar.divider()
+    st.sidebar.markdown("#### Progetti e consulenze")
+    pid = st.sidebar.text_input("ID cartella Drive progetti",
+                                value=secret("drive_folder_id_progetti", "") or "",
+                                help="Cartella che contiene 'Gestione Progetti'")
+    if pid.strip():
+        try:
+            prog_payload = progetti_payload_drive(pid.strip(), st.session_state.cache_key)
+        except Exception as e:
+            prog_msg = f"Non riesco a leggere la cartella progetti: {e}"
+    else:
+        prog_msg = ("Inserisci l'ID della cartella Drive che contiene il file "
+                    "**Gestione Progetti** nella barra laterale, oppure aggiungi "
+                    "`drive_folder_id_progetti` nei Secrets.")
+else:
+    st.sidebar.divider()
+    upp = st.sidebar.file_uploader("File progetti (.xlsx)", type=["xlsx"],
+                                   accept_multiple_files=True, key="up_prog")
+    if upp:
+        prog_payload = tuple((f.name, f.getvalue()) for f in upp)
+    else:
+        prog_msg = "Carica il file **Gestione Progetti** dalla barra laterale."
+
+if prog_payload:
+    dfp, dfm, contatti, esiti, diag_p = load_progetti(prog_payload)
+else:
+    dfp, dfm, contatti, esiti, diag_p = (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(),
+                                         pd.DataFrame(), pd.DataFrame())
+
+TAB = st.tabs(["📊 Panoramica", "👥 Allievi", "💶 Economia", "🎓 Didattica",
+               "📋 Dettaglio", "🗂️ Progetti"])
 
 
 # ============================================================================
@@ -1043,3 +1345,244 @@ with TAB[4]:
                        f"registro_lezioni_{dt.date.today():%Y%m%d}.xlsx",
                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                        width='stretch')
+
+
+# ============================================================================
+# TAB 6 - PROGETTI E CONSULENZE
+# ============================================================================
+with TAB[5]:
+    if dfp.empty:
+        st.info(prog_msg or "Nessun progetto trovato nei file indicati.")
+        if not diag_p.empty:
+            with st.expander("Diagnostica lettura progetti"):
+                st.dataframe(diag_p, width='stretch', hide_index=True)
+    else:
+        # ---------------- filtri ----------------
+        f1, f2 = st.columns([1, 1])
+        stati = [s for s in STATI_ORDINE if s in set(dfp["Stato"])]
+        stati += [s for s in sorted(dfp["Stato"].unique()) if s not in stati]
+        sel_s = f1.multiselect("Stato", stati, default=[], placeholder="Tutti gli stati")
+        clienti = sorted(dfp["Cliente"].unique())
+        sel_c = f2.multiselect("Cliente", clienti, default=[], placeholder="Tutti i clienti")
+
+        p = dfp.copy()
+        if sel_s:
+            p = p[p["Stato"].isin(sel_s)]
+        if sel_c:
+            p = p[p["Cliente"].isin(sel_c)]
+        if p.empty:
+            st.warning("Nessun progetto corrisponde ai filtri.")
+            st.stop()
+        m = dfm[dfm["id"].isin(p["id"])] if not dfm.empty else pd.DataFrame()
+
+        # ---------------- KPI ----------------
+        val = p["Costo"].sum()
+        inc = p["Incassato"].sum()
+        res = p["Residuo"].sum()
+        marg = p["Margine"].sum()
+        ore = p["Ore"].sum()
+        go_medio = marg / ore if ore else 0
+        n_corso = int((~p["Stato"].str.lower().str.contains("complet")).sum())
+
+        kp = st.columns(6)
+        kp[0].markdown('<span class="kpi-mark"></span>', unsafe_allow_html=True)
+        kp[0].metric("Progetti", len(p))
+        kp[1].metric("Ancora aperti", n_corso)
+        kp[2].metric("Valore concordato", f"€ {val:,.0f}".replace(",", "."))
+        kp[3].metric("Incassato", f"€ {inc:,.0f}".replace(",", "."))
+        kp[4].metric("Margine", f"€ {marg:,.0f}".replace(",", "."))
+        kp[5].metric("Guadagno orario", f"€ {go_medio:,.1f}".replace(",", "."))
+
+        if res > 0:
+            st.caption(f"💶 Residuo da incassare su questi progetti: "
+                       f"**€ {res:,.0f}**".replace(",", "."))
+
+        st.divider()
+
+        # ---------------- timeline (Gantt) ----------------
+        g = p.dropna(subset=["Inizio", "Consegna"]).copy()
+        g = g[g["Consegna"] >= g["Inizio"]]
+        if not g.empty:
+            g = g.sort_values("Inizio")
+            # i progetti di un solo giorno sarebbero invisibili: larghezza minima
+            uguali = g["Consegna"] == g["Inizio"]
+            g.loc[uguali, "Consegna"] = g.loc[uguali, "Inizio"] + pd.Timedelta(days=1)
+            g["Etichetta"] = g["Etichetta"].str.slice(0, 38)
+            fig = px.timeline(g, x_start="Inizio", x_end="Consegna", y="Etichetta",
+                              color="Stato", color_discrete_map=STATO_COLORE,
+                              custom_data=["Cliente", "Costo", "Ore", "Stato"])
+            fig.update_traces(
+                marker_line=dict(width=2, color="rgba(255,255,255,.9)"),
+                hovertemplate="<b>%{y}</b><br>%{customdata[3]} · %{customdata[0]}"
+                              "<br>%{x|%d/%m/%Y}<br>€ %{customdata[1]:,.0f} · "
+                              "%{customdata[2]:.0f} ore<extra></extra>")
+            fig.update_yaxes(autorange="reversed", showgrid=False, title=None)
+            style(fig, max(380, 30 * len(g) + 90), "Durata dei progetti")
+            # la linea "oggi" solo se cade dentro il periodo mostrato
+            oggi = pd.Timestamp(dt.date.today())
+            if g["Inizio"].min() <= oggi <= g["Consegna"].max():
+                # su un asse temporale plotly vuole i millisecondi, non una data
+                fig.add_vline(x=oggi.timestamp() * 1000,
+                              line=dict(color=INK2, width=2, dash="dot"),
+                              annotation_text="oggi", annotation_position="top")
+            st.plotly_chart(fig, width='stretch')
+        else:
+            st.info("Nessun progetto ha sia data di inizio sia data di consegna valide.")
+
+        c1, c2 = st.columns([3, 2])
+
+        # ---------------- economia per progetto ----------------
+        with c1:
+            e = p.sort_values("Costo").copy()
+            fig = go.Figure()
+            fig.add_bar(y=e["Etichetta"], x=e["Spesa"], orientation="h", name="Spese vive",
+                        marker=dict(color=PALETTE[1],
+                                    line=dict(width=2, color="rgba(255,255,255,.9)")),
+                        marker_cornerradius=4,
+                        hovertemplate="<b>%{y}</b><br>€ %{x:,.0f} di spese<extra></extra>")
+            fig.add_bar(y=e["Etichetta"], x=e["Margine"], orientation="h", name="Margine",
+                        marker=dict(color=PALETTE[2],
+                                    line=dict(width=2, color="rgba(255,255,255,.9)")),
+                        marker_cornerradius=4,
+                        hovertemplate="<b>%{y}</b><br>€ %{x:,.0f} di margine<extra></extra>")
+            style(fig, max(400, 34 * len(e)), "Come si compone il valore di ogni progetto")
+            fig.update_layout(barmode="stack")
+            fig.update_xaxes(title="€")
+            fig.update_yaxes(showgrid=False)
+            st.plotly_chart(fig, width='stretch')
+
+        # ---------------- guadagno orario ----------------
+        with c2:
+            q = p.dropna(subset=["GuadagnoOrario"]).sort_values("GuadagnoOrario")
+            if not q.empty:
+                col = [C_BAD if v < 5 else (C_WARN if v < 10 else C_OK)
+                       for v in q["GuadagnoOrario"]]
+                fig = go.Figure(go.Bar(
+                    x=q["GuadagnoOrario"], y=q["Etichetta"], orientation="h",
+                    marker=dict(color=col, line=dict(width=0)), marker_cornerradius=4,
+                    text=q["GuadagnoOrario"].map(lambda v: f"€ {v:.1f}"),
+                    textposition="outside", textfont=dict(color=INK2, size=11),
+                    customdata=np.stack([q["Margine"], q["Ore"]], axis=-1),
+                    hovertemplate="<b>%{y}</b><br>€ %{x:.2f} l'ora<br>"
+                                  "€ %{customdata[0]:,.0f} su %{customdata[1]:.0f} ore"
+                                  "<extra></extra>"))
+                style(fig, max(400, 34 * len(q)), "Quanto rende un'ora di lavoro",
+                      showlegend=False)
+                fig.update_xaxes(title="€ / ora",
+                                 range=[min(0, float(q["GuadagnoOrario"].min()) * 1.2),
+                                        float(q["GuadagnoOrario"].max()) * 1.25])
+                fig.update_yaxes(showgrid=False)
+                st.plotly_chart(fig, width='stretch')
+                st.caption("🔴 sotto 5 €/ora · 🟡 fra 5 e 10 · 🟢 sopra 10")
+
+        c3, c4 = st.columns(2)
+
+        # ---------------- incassi nel tempo ----------------
+        with c3:
+            mm = m.dropna(subset=["Data"]).copy() if not m.empty else pd.DataFrame()
+            if not mm.empty:
+                mm["AnnoMese"] = mm["Data"].dt.to_period("M").astype(str)
+                s = mm.groupby("AnnoMese")["Importo"].sum().reset_index().sort_values("AnnoMese")
+                s["Cumulato"] = s["Importo"].cumsum()
+                fig = go.Figure()
+                fig.add_bar(x=s["AnnoMese"], y=s["Importo"], name="movimenti del mese",
+                            marker=dict(color=np.where(s["Importo"] >= 0, PALETTE[2], PALETTE[7]),
+                                        line=dict(width=0)),
+                            marker_cornerradius=4,
+                            hovertemplate="<b>%{x}</b><br>€ %{y:,.0f}<extra></extra>")
+                fig.add_scatter(x=s["AnnoMese"], y=s["Cumulato"], mode="lines+markers",
+                                name="cumulato",
+                                line=dict(color=PALETTE[0], width=2),
+                                marker=dict(size=8, line=dict(width=2,
+                                            color="rgba(255,255,255,.9)")),
+                                hovertemplate="cumulato: € %{y:,.0f}<extra></extra>")
+                style(fig, 400, "Incassi dei progetti nel tempo")
+                fig.update_layout(hovermode="x unified")
+                fig.update_yaxes(title="€")
+                st.plotly_chart(fig, width='stretch')
+            else:
+                st.info("I movimenti di pagamento non hanno date utilizzabili.")
+
+        # ---------------- clienti ----------------
+        with c4:
+            cl = (p.groupby("Cliente")
+                    .agg(Valore=("Costo", "sum"), Progetti=("id", "size"),
+                         Ore=("Ore", "sum"))
+                    .reset_index().sort_values("Valore"))
+            fig = go.Figure(go.Bar(
+                x=cl["Valore"], y=cl["Cliente"], orientation="h",
+                marker=dict(color=PALETTE[0], line=dict(width=0)), marker_cornerradius=4,
+                text=cl["Valore"].map(lambda v: f"€ {v:,.0f}".replace(",", ".")),
+                textposition="outside", textfont=dict(color=INK2, size=11),
+                customdata=np.stack([cl["Progetti"], cl["Ore"]], axis=-1),
+                hovertemplate="<b>%{y}</b><br>€ %{x:,.0f}<br>"
+                              "%{customdata[0]} progetti · %{customdata[1]:.0f} ore"
+                              "<extra></extra>"))
+            style(fig, max(400, 34 * len(cl)), "Valore per cliente", showlegend=False)
+            fig.update_xaxes(title="€", range=[0, float(cl["Valore"].max()) * 1.25])
+            fig.update_yaxes(showgrid=False)
+            st.plotly_chart(fig, width='stretch')
+
+        # ---------------- stato di avanzamento ----------------
+        st.markdown("##### Stato dei progetti")
+        sc = p["Stato"].value_counts().reindex(
+            [s for s in stati if s in set(p["Stato"])]).dropna().reset_index()
+        sc.columns = ["Stato", "Progetti"]
+        fig = go.Figure(go.Bar(
+            x=sc["Stato"], y=sc["Progetti"],
+            marker=dict(color=[STATO_COLORE.get(s, PALETTE[0]) for s in sc["Stato"]],
+                        line=dict(width=0)),
+            marker_cornerradius=4,
+            text=sc["Progetti"], textposition="outside", textfont=dict(color=INK2),
+            hovertemplate="<b>%{x}</b><br>%{y} progetti<extra></extra>"))
+        style(fig, 300, showlegend=False)
+        fig.update_yaxes(title="progetti")
+        st.plotly_chart(fig, width='stretch')
+
+        # ---------------- tabella ----------------
+        st.markdown("##### Elenco progetti")
+        t = p[["Progetto", "Cliente", "Stato", "Attività", "Inizio", "Consegna",
+               "Costo", "Spesa", "Margine", "Incassato", "Residuo", "Ore",
+               "GuadagnoOrario", "Descrizione", "Note", "Link"]].copy()
+        t["Inizio"] = t["Inizio"].dt.strftime("%d/%m/%Y")
+        t["Consegna"] = t["Consegna"].dt.strftime("%d/%m/%Y")
+        st.dataframe(
+            t.sort_values("Consegna", ascending=False), width='stretch',
+            hide_index=True, height=420,
+            column_config={
+                "Costo": st.column_config.NumberColumn("Valore", format="€ %.0f"),
+                "Spesa": st.column_config.NumberColumn("Spese", format="€ %.0f"),
+                "Margine": st.column_config.NumberColumn("Margine", format="€ %.0f"),
+                "Incassato": st.column_config.NumberColumn("Incassato", format="€ %.0f"),
+                "Residuo": st.column_config.NumberColumn("Residuo", format="€ %.0f"),
+                "Ore": st.column_config.NumberColumn("Ore", format="%.0f"),
+                "GuadagnoOrario": st.column_config.NumberColumn("€/ora", format="€ %.2f"),
+                "Link": st.column_config.LinkColumn("Cartella", display_text="apri"),
+            })
+        st.download_button("⬇️ Scarica progetti in CSV",
+                           t.to_csv(index=False).encode("utf-8-sig"),
+                           f"progetti_{dt.date.today():%Y%m%d}.csv", "text/csv")
+
+        # ---------------- movimenti ----------------
+        if not m.empty:
+            with st.expander("Movimenti di pagamento (acconti, saldi, storni)"):
+                mv = m.merge(p[["id", "Etichetta"]], on="id", how="left")
+                mv = mv[["Data", "Etichetta", "Tipo", "Importo", "Testo"]].copy()
+                mv["Data"] = mv["Data"].dt.strftime("%d/%m/%Y")
+                st.dataframe(mv.rename(columns={"Etichetta": "Progetto",
+                                                "Testo": "Come da registro"}),
+                             width='stretch', hide_index=True,
+                             column_config={"Importo": st.column_config.NumberColumn(
+                                 "Importo", format="€ %.2f")})
+
+        # ---------------- piano contatti ----------------
+        if not contatti.empty:
+            with st.expander("📇 Piano contatti dei progetti"):
+                st.dataframe(contatti, width='stretch', hide_index=True, height=340)
+                if not esiti.empty:
+                    st.markdown("**Registro esiti dei contatti**")
+                    st.dataframe(esiti, width='stretch', hide_index=True)
+
+        if not diag_p.empty:
+            with st.expander("🔍 Diagnostica lettura progetti"):
+                st.dataframe(diag_p, width='stretch', hide_index=True)
