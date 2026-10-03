@@ -1,0 +1,21 @@
+{
+  "_nota": "Collegamenti rapidi mostrati nel tab Scrivania. Modificabile su GitHub: aggiungi, togli o riordina le voci. 'gruppo' raggruppa i pulsanti, 'icona' è una emoji qualsiasi. Le cartelle Drive vengono aggiunte in automatico dall'app leggendo i Secrets, non serve metterle qui.",
+
+  "collegamenti": [
+    {"gruppo": "I miei siti", "icona": "🌐", "nome": "Portfolio one-page", "url": "https://enchanting-empanada-8c55cc.netlify.app/", "nota": "La vetrina pubblica dei progetti"},
+    {"gruppo": "I miei siti", "icona": "✉️", "nome": "Modulo contatti", "url": "https://enchanting-empanada-8c55cc.netlify.app/#contatto", "nota": "Dove arrivano le richieste"},
+    {"gruppo": "I miei siti", "icona": "🛠️", "nome": "MakerHub Italia", "url": "", "nota": "Metti qui l'indirizzo quando è online"},
+    {"gruppo": "I miei siti", "icona": "🍝", "nome": "Orosa", "url": "", "nota": "Pastificio artigianale"},
+
+    {"gruppo": "Lavoro", "icona": "📂", "nome": "Netlify", "url": "https://app.netlify.com/", "nota": "Dove è pubblicata la one-page"},
+    {"gruppo": "Lavoro", "icona": "🐙", "nome": "Repository GitHub", "url": "https://github.com/claudiogarone/dashboard-registri-lezioni", "nota": "Il codice di questa dashboard"},
+    {"gruppo": "Lavoro", "icona": "☁️", "nome": "Streamlit Cloud", "url": "https://share.streamlit.io/", "nota": "Impostazioni e Secrets dell'app"},
+    {"gruppo": "Lavoro", "icona": "🔑", "nome": "Google Cloud", "url": "https://console.cloud.google.com/", "nota": "Service account e chiavi"},
+
+    {"gruppo": "Insegnamento", "icona": "🎓", "nome": "Superprof", "url": "https://www.superprof.it/", "nota": "Richieste di lezioni"},
+    {"gruppo": "Insegnamento", "icona": "📹", "nome": "Google Meet", "url": "https://meet.google.com/", "nota": "Aula virtuale"},
+
+    {"gruppo": "Proprietà intellettuale", "icona": "⚖️", "nome": "UIBM — Ufficio Brevetti", "url": "https://www.uibm.gov.it/", "nota": "Depositi e pratiche"},
+    {"gruppo": "Proprietà intellettuale", "icona": "🔎", "nome": "Espacenet", "url": "https://worldwide.espacenet.com/", "nota": "Ricerche di anteriorità"}
+  ]
+}

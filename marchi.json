@@ -1,0 +1,61 @@
+{
+  "_nota": "Anagrafica dei marchi della cancelleria. Modificabile su GitHub: cambia una voce e l'app la mostra al riavvio. 'colore' esadecimale; 'logo' è il nome del file dentro la cartella loghi/ della repo (oppure nella cartella Drive dei loghi); 'link' è l'indirizzo stampato sui documenti e codificato nel QR; 'descrizione' compare sulla scheda progetto e sul volantino.",
+
+  "mittente_predefinito": {
+    "ragione_sociale": "Garone Claudio Vincenzo",
+    "indirizzo": "Montesano sulla Marcellana (SA)",
+    "cap_citta": "84033 Montesano sulla Marcellana (SA) — Italia",
+    "email": "claudiogarone@gmail.com",
+    "telefono": "",
+    "piva_cf": "",
+    "sito": "https://enchanting-empanada-8c55cc.netlify.app/",
+    "link": "https://enchanting-empanada-8c55cc.netlify.app/#contatto",
+    "pec": ""
+  },
+
+  "marchi": [
+    {
+      "nome": "Claudio Vincenzo Garone",
+      "sottotitolo": "Ingegnere industriale · inventore · formatore tecnico",
+      "colore": "#1a1a19",
+      "logo": "enestar.jpg",
+      "link": "https://enchanting-empanada-8c55cc.netlify.app/#contatto",
+      "descrizione": "Progetto e realizzo soluzioni dall'elettronica all'intelligenza artificiale, al confine tra tecnologia, natura e persone."
+    },
+    {
+      "nome": "ENESTAR Maker Lab",
+      "sottotitolo": "Innovazione, Tecnologia e Ingegno",
+      "colore": "#1baf7a",
+      "logo": "enestar.jpg",
+      "link": "https://enchanting-empanada-8c55cc.netlify.app/#contatto",
+      "descrizione": "Il laboratorio dove nascono i progetti: elettronica, stampa 3D, automazione, sensoristica e intelligenza artificiale applicata."
+    },
+    {
+      "nome": "Orosa",
+      "sottotitolo": "Pastificio artigianale",
+      "colore": "#eda100",
+      "logo": "orosa.png",
+      "link": "",
+      "descrizione": "Pasta artigianale prodotta in piccoli lotti, con materie prime selezionate e lavorazione lenta."
+    },
+
+    {"nome": "AURA", "sottotitolo": "Stazione ambientale autonoma modulare", "colore": "#1baf7a", "logo": "aura.png", "link": "", "descrizione": "Stazione di monitoraggio ambientale autonoma e modulare, alimentata a energia solare e configurabile in base ai parametri da misurare."},
+    {"nome": "SENTINEL ELF", "sottotitolo": "Monitoraggio elettromagnetico a bassissima frequenza", "colore": "#4a3aa7", "logo": "sentinel.png", "link": "", "descrizione": "Stazione di misura dei campi elettromagnetici a bassissima frequenza, con acquisizione continua e pubblicazione dei dati."},
+    {"nome": "GABY", "sottotitolo": "Tecnologia indossabile assistiva", "colore": "#2a78d6", "logo": "gaby.png", "link": "", "descrizione": "Sistema indossabile di assistenza alla persona, con sensoristica integrata e intelligenza a bordo. Domanda di brevetto depositata."},
+    {"nome": "GAIA", "sottotitolo": "La sinfonia dell'Universo", "colore": "#4a3aa7", "logo": "gaia.png", "link": "", "descrizione": "Opera sonora generata dalla sonificazione di dati reali provenienti dall'Universo."},
+    {"nome": "HORTA", "sottotitolo": "Coltivazione verticale domestica", "colore": "#008300", "logo": "horta.png", "link": "", "descrizione": "Linea di moduli per la coltivazione verticale in casa, con gestione automatica di luce, acqua e nutrienti."},
+    {"nome": "VERTIGrain", "sottotitolo": "Vertical farming", "colore": "#008300", "logo": "vertigrain.png", "link": "", "descrizione": "Sistema di coltivazione verticale per la produzione intensiva in spazi ridotti."},
+    {"nome": "PreVedo", "sottotitolo": "Manutenzione predittiva per elettrodomestici", "colore": "#eb6834", "logo": "prevedo.png", "link": "", "descrizione": "Modulo da applicare agli elettrodomestici esistenti che riconosce in anticipo i segnali di guasto. Concept in fase di protezione."},
+    {"nome": "Scorta", "sottotitolo": "La dispensa che si ricorda di te", "colore": "#eda100", "logo": "scorta.png", "link": "", "descrizione": "Base intelligente per la dispensa che tiene il conto delle scorte e ricompone da sola la lista della spesa. Concept in fase di protezione."},
+    {"nome": "PosturA", "sottotitolo": "Postura corretta sul lavoro", "colore": "#e87ba4", "logo": "postura.png", "link": "", "descrizione": "Clip indossabile che segnala le posture scorrette durante il lavoro. Concept in fase di protezione."},
+    {"nome": "ReCover", "sottotitolo": "Diagnosi energetica automatica", "colore": "#1baf7a", "logo": "recover.png", "link": "", "descrizione": "Software che esegue la diagnosi energetica di un'impresa e individua gli interventi di recupero con il ritorno più rapido."},
+    {"nome": "WeAvvo", "sottotitolo": "Assistente AI per studi legali", "colore": "#2a78d6", "logo": "weavvo.png", "link": "", "descrizione": "Assistente conversazionale per studi legali: smista le richieste, raccoglie i dati e prepara il fascicolo."},
+    {"nome": "Toga", "sottotitolo": "Strumenti per lo studio legale", "colore": "#4a3aa7", "logo": "toga.png", "link": "", "descrizione": "Strumento di lavoro per lo studio legale, che raccoglie in un'unica pagina scadenze, pratiche e modelli."},
+    {"nome": "Unika", "sottotitolo": "Gestionale all-in-one per imprese", "colore": "#2a78d6", "logo": "unika.png", "link": "", "descrizione": "Piattaforma gestionale che tiene insieme clienti, attività, documenti e andamenti in un unico posto."},
+    {"nome": "MakerHub Italia", "sottotitolo": "La comunità dei maker italiani", "colore": "#eb6834", "logo": "makerhub.png", "link": "", "descrizione": "Piattaforma di formazione e supporto per la comunità maker italiana: guide, progetti e assistenza."},
+    {"nome": "Inchiostro", "sottotitolo": "Le tue note scritte a mano, ritrovabili", "colore": "#1a1a19", "logo": "inchiostro.png", "link": "", "descrizione": "Applicazione che trascrive le note scritte a mano e le rende cercabili parola per parola."},
+    {"nome": "OmniVita", "sottotitolo": "Scadenze, appuntamenti e manutenzioni", "colore": "#1baf7a", "logo": "omnivita.png", "link": "", "descrizione": "Gestione in un unico posto di scadenze, appuntamenti e manutenzioni della vita quotidiana."},
+    {"nome": "MindPeace", "sottotitolo": "Benessere digitale", "colore": "#e87ba4", "logo": "mindpeace.png", "link": "", "descrizione": "Percorso di benessere digitale per ritrovare un rapporto sano con gli schermi."},
+    {"nome": "ProTech", "sottotitolo": "Gestione delle lezioni private", "colore": "#2a78d6", "logo": "protech.png", "link": "", "descrizione": "Gestionale per chi insegna: registri, materiali, compiti e pagamenti delle lezioni private."}
+  ]
+}
