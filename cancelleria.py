@@ -142,46 +142,170 @@ def _tronca(c, testo, font, size, larghezza):
     return testo + "…"
 
 
+
+# ---------------------------------------------------------------------------
+# TEMI GRAFICI — lo stile dei documenti, configurabile dal tab Cancelleria
+# ---------------------------------------------------------------------------
+
+STILI_PREDEFINITI = {
+    "Elegante": {
+        "font_titoli": "Times-Bold",
+        "font_corpo": "Helvetica",
+        "logo_posizione": "sinistra",
+        "filetto": "doppio",
+        "maiuscoletto": True,
+        "spaziatura": "ampia",
+        "piede": "completo",
+        "banda_laterale": False,
+        "corpo_pt": 9.5,
+    },
+    "Minimale": {
+        "font_titoli": "Helvetica-Bold",
+        "font_corpo": "Helvetica",
+        "logo_posizione": "sinistra",
+        "filetto": "sottile",
+        "maiuscoletto": False,
+        "spaziatura": "ampia",
+        "piede": "minimo",
+        "banda_laterale": False,
+        "corpo_pt": 9.5,
+    },
+    "Tecnico": {
+        "font_titoli": "Helvetica-Bold",
+        "font_corpo": "Helvetica",
+        "logo_posizione": "sinistra",
+        "filetto": "pieno",
+        "maiuscoletto": False,
+        "spaziatura": "compatta",
+        "piede": "completo",
+        "banda_laterale": True,
+        "corpo_pt": 9,
+    },
+    "Classico": {
+        "font_titoli": "Times-Bold",
+        "font_corpo": "Times-Roman",
+        "logo_posizione": "centro",
+        "filetto": "sottile",
+        "maiuscoletto": True,
+        "spaziatura": "ampia",
+        "piede": "completo",
+        "banda_laterale": False,
+        "corpo_pt": 10,
+    },
+}
+
+
+def stile_di(cfg):
+    """Unisce il tema scelto con le eventuali modifiche puntuali."""
+    base = dict(STILI_PREDEFINITI.get(cfg.get("tema", "Elegante"),
+                                      STILI_PREDEFINITI["Elegante"]))
+    base.update({k: v for k, v in (cfg.get("stile") or {}).items() if v is not None})
+    return base
+
+
+def _spazia(st_, base_mm):
+    """Scala una distanza secondo la spaziatura del tema."""
+    k = 1.25 if st_.get("spaziatura") == "ampia" else (
+        0.8 if st_.get("spaziatura") == "compatta" else 1.0)
+    return base_mm * k
+
+
+def _maiuscoletto(testo, attivo):
+    """Un maiuscoletto povero ma efficace: tutto maiuscolo e spaziato."""
+    if not attivo or not testo:
+        return testo
+    return " ".join(testo.upper())
+
+
 # ---------------------------------------------------------------------------
 # TESTATA E PIEDE DI PAGINA (comuni a tutti i documenti)
 # ---------------------------------------------------------------------------
 
 def disegna_testata(c, cfg, larghezza_pag, altezza_pag):
+    st_ = stile_di(cfg)
     col = colore(cfg.get("colore"))
-    x = MARGINE
     y_top = altezza_pag - MARGINE
     logo = cfg.get("_logo")
-
-    occupato = _disegna_logo(c, logo, x, y_top, 16 * mm)
-    tx = x + (occupato + 6 * mm if occupato else 0)
-
-    c.setFillColor(INCHIOSTRO)
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(tx, y_top - 7 * mm, cfg.get("nome", ""))
-    sotto = cfg.get("sottotitolo", "")
-    if sotto:
-        c.setFillColor(GRIGIO)
-        c.setFont("Helvetica", 8.5)
-        c.drawString(tx, y_top - 11.5 * mm, sotto)
-
-    # blocco contatti a destra
     m = cfg.get("mittente", {})
-    sito = (m.get("sito", "") or "").replace("https://", "").replace("http://", "").rstrip("/")
-    righe = [m.get("ragione_sociale", ""), m.get("cap_citta", "") or m.get("indirizzo", ""),
-             m.get("email", ""), m.get("telefono", ""), sito]
-    righe = [r for r in righe if r]
-    c.setFont("Helvetica", 7.6)
-    c.setFillColor(GRIGIO)
-    yy = y_top - 4 * mm
-    for r in righe[:5]:
-        c.drawRightString(larghezza_pag - MARGINE, yy,
-                          _tronca(c, r, "Helvetica", 7.6, 70 * mm))
-        yy -= 3.6 * mm
+    centrata = st_.get("logo_posizione") == "centro"
 
+    if st_.get("banda_laterale"):
+        c.setFillColor(col)
+        c.rect(0, 0, 4 * mm, altezza_pag, fill=1, stroke=0)
+
+    if centrata:
+        # logo, nome e sottotitolo centrati; contatti su una riga sotto
+        larg_logo = 0
+        if logo:
+            larg_logo = _disegna_logo(c, logo, larghezza_pag / 2 - 9 * mm,
+                                      y_top, 17 * mm)
+        c.setFillColor(INCHIOSTRO)
+        c.setFont(st_["font_titoli"], 15 if st_.get("maiuscoletto") else 16)
+        c.drawCentredString(larghezza_pag / 2, y_top - (22 * mm if logo else 7 * mm),
+                            _maiuscoletto(cfg.get("nome", ""),
+                                          st_.get("maiuscoletto")))
+        if cfg.get("sottotitolo"):
+            c.setFillColor(GRIGIO)
+            c.setFont(st_["font_corpo"], 8.5)
+            c.drawCentredString(larghezza_pag / 2,
+                                y_top - (27 * mm if logo else 12 * mm),
+                                cfg["sottotitolo"])
+        sito = (m.get("sito", "") or "").replace("https://", "").replace("http://", "").rstrip("/")
+        pezzi = [p for p in [m.get("cap_citta", ""), m.get("email", ""),
+                             m.get("telefono", ""), sito] if p]
+        c.setFont(st_["font_corpo"], 7.4)
+        c.drawCentredString(larghezza_pag / 2, y_top - (32 * mm if logo else 17 * mm),
+                            _tronca(c, "  ·  ".join(pezzi), st_["font_corpo"], 7.4,
+                                    larghezza_pag - 2 * MARGINE))
+    else:
+        x = MARGINE + (4 * mm if st_.get("banda_laterale") else 0)
+        occupato = _disegna_logo(c, logo, x, y_top, 16 * mm)
+        tx = x + (occupato + 6 * mm if occupato else 0)
+
+        c.setFillColor(INCHIOSTRO)
+        c.setFont(st_["font_titoli"], 13 if st_.get("maiuscoletto") else 14)
+        c.drawString(tx, y_top - 7 * mm,
+                     _maiuscoletto(cfg.get("nome", ""), st_.get("maiuscoletto")))
+        if cfg.get("sottotitolo"):
+            c.setFillColor(GRIGIO)
+            c.setFont(st_["font_corpo"], 8.5)
+            c.drawString(tx, y_top - 11.5 * mm, cfg["sottotitolo"])
+
+        sito = (m.get("sito", "") or "").replace("https://", "").replace("http://", "").rstrip("/")
+        righe = [r for r in [m.get("ragione_sociale", ""),
+                             m.get("cap_citta", "") or m.get("indirizzo", ""),
+                             m.get("email", ""), m.get("telefono", ""), sito] if r]
+        c.setFont(st_["font_corpo"], 7.6)
+        c.setFillColor(GRIGIO)
+        yy = y_top - 4 * mm
+        for r in righe[:5]:
+            c.drawRightString(larghezza_pag - MARGINE, yy,
+                              _tronca(c, r, st_["font_corpo"], 7.6, 70 * mm))
+            yy -= 3.6 * mm
+
+    # il filetto sotto la testata
     y_riga = altezza_pag - ALTEZZA_TESTATA
-    c.setStrokeColor(col)
-    c.setLineWidth(1.4)
-    c.line(MARGINE, y_riga, larghezza_pag - MARGINE, y_riga)
+    tipo = st_.get("filetto", "sottile")
+    sx = MARGINE + (4 * mm if st_.get("banda_laterale") else 0)
+    if tipo == "pieno":
+        c.setStrokeColor(col)
+        c.setLineWidth(1.6)
+        c.line(sx, y_riga, larghezza_pag - MARGINE, y_riga)
+    elif tipo == "doppio":
+        c.setStrokeColor(col)
+        c.setLineWidth(1.1)
+        c.line(sx, y_riga + 0.8 * mm, larghezza_pag - MARGINE, y_riga + 0.8 * mm)
+        c.setStrokeColor(RIGA)
+        c.setLineWidth(0.5)
+        c.line(sx, y_riga, larghezza_pag - MARGINE, y_riga)
+    elif tipo == "sottile":
+        c.setStrokeColor(col)
+        c.setLineWidth(0.7)
+        c.line(sx, y_riga, larghezza_pag - MARGINE, y_riga)
+    elif tipo == "corto":
+        c.setStrokeColor(col)
+        c.setLineWidth(2.2)
+        c.line(sx, y_riga, sx + 24 * mm, y_riga)
 
 
 def disegna_qr(c, testo, x, y, lato):
@@ -204,18 +328,26 @@ def disegna_qr(c, testo, x, y, lato):
 
 
 def disegna_piede(c, cfg, larghezza_pag, numero=True, pagina=1):
+    st_ = stile_di(cfg)
     m = cfg.get("mittente", {})
     link = (cfg.get("link") or m.get("link") or "").replace("https://", "").replace("http://", "")
-    pezzi = [p for p in [m.get("ragione_sociale", ""),
-                         m.get("piva_cf", "") and f"P.IVA/C.F. {m['piva_cf']}",
-                         m.get("email", ""), m.get("telefono", ""), link] if p]
+    sx = MARGINE + (4 * mm if st_.get("banda_laterale") else 0)
+
+    if st_.get("piede") == "minimo":
+        pezzi = [p for p in [m.get("email", ""), link] if p]
+    else:
+        pezzi = [p for p in [m.get("ragione_sociale", ""),
+                             m.get("piva_cf", "") and f"P.IVA/C.F. {m['piva_cf']}",
+                             m.get("email", ""), m.get("telefono", ""), link] if p]
+
     c.setStrokeColor(RIGA)
     c.setLineWidth(0.6)
-    c.line(MARGINE, ALTEZZA_PIEDE + 4 * mm, larghezza_pag - MARGINE, ALTEZZA_PIEDE + 4 * mm)
-    c.setFont("Helvetica", 7)
+    c.line(sx, ALTEZZA_PIEDE + 4 * mm, larghezza_pag - MARGINE, ALTEZZA_PIEDE + 4 * mm)
+    c.setFont(st_["font_corpo"], 7)
     c.setFillColor(GRIGIO)
-    c.drawString(MARGINE, ALTEZZA_PIEDE, _tronca(c, " · ".join(pezzi), "Helvetica", 7,
-                                                 larghezza_pag - 2 * MARGINE - 20 * mm))
+    c.drawString(sx, ALTEZZA_PIEDE,
+                 _tronca(c, " · ".join(pezzi), st_["font_corpo"], 7,
+                         larghezza_pag - sx - MARGINE - 20 * mm))
     if numero:
         c.drawRightString(larghezza_pag - MARGINE, ALTEZZA_PIEDE, f"pag. {pagina}")
 
@@ -225,24 +357,34 @@ def disegna_piede(c, cfg, larghezza_pag, numero=True, pagina=1):
 # ---------------------------------------------------------------------------
 
 def stili(cfg):
+    st_ = stile_di(cfg)
     col = colore(cfg.get("colore"))
+    ft, fc = st_["font_titoli"], st_["font_corpo"]
+    fcb = "Times-Bold" if fc.startswith("Times") else "Helvetica-Bold"
+    pt = float(st_.get("corpo_pt", 9.5))
+    interlinea = pt * (1.6 if st_.get("spaziatura") == "ampia" else 1.4)
+    dopo = _spazia(st_, 2.5 * mm)
+
     return {
-        "titolo": ParagraphStyle("t", fontName="Helvetica-Bold", fontSize=15,
-                                 leading=19, textColor=col, spaceAfter=2 * mm),
-        "sottotitolo": ParagraphStyle("st", fontName="Helvetica", fontSize=9.5,
-                                      leading=13, textColor=GRIGIO, spaceAfter=5 * mm),
-        "h2": ParagraphStyle("h2", fontName="Helvetica-Bold", fontSize=10.5,
-                             leading=14, textColor=INCHIOSTRO,
-                             spaceBefore=4 * mm, spaceAfter=1.5 * mm),
-        "corpo": ParagraphStyle("c", fontName="Helvetica", fontSize=9.5, leading=14,
+        "titolo": ParagraphStyle("t", fontName=ft, fontSize=pt + 5.5,
+                                 leading=pt + 9, textColor=col,
+                                 spaceAfter=_spazia(st_, 2 * mm)),
+        "sottotitolo": ParagraphStyle("st", fontName=fc, fontSize=pt,
+                                      leading=pt + 3.5, textColor=GRIGIO,
+                                      spaceAfter=_spazia(st_, 5 * mm)),
+        "h2": ParagraphStyle("h2", fontName=fcb, fontSize=pt + 1,
+                             leading=pt + 4.5, textColor=INCHIOSTRO,
+                             spaceBefore=_spazia(st_, 4 * mm),
+                             spaceAfter=_spazia(st_, 1.5 * mm)),
+        "corpo": ParagraphStyle("c", fontName=fc, fontSize=pt, leading=interlinea,
                                 alignment=TA_JUSTIFY, textColor=INCHIOSTRO,
-                                spaceAfter=2.5 * mm),
-        "piccolo": ParagraphStyle("p", fontName="Helvetica", fontSize=8,
-                                  leading=11, textColor=GRIGIO),
-        "destra": ParagraphStyle("d", fontName="Helvetica", fontSize=9.5,
-                                 leading=13, alignment=TA_RIGHT),
-        "centro": ParagraphStyle("ce", fontName="Helvetica", fontSize=10,
-                                 leading=15, alignment=TA_CENTER),
+                                spaceAfter=dopo),
+        "piccolo": ParagraphStyle("p", fontName=fc, fontSize=pt - 1.5,
+                                  leading=pt + 1.5, textColor=GRIGIO),
+        "destra": ParagraphStyle("d", fontName=fc, fontSize=pt,
+                                 leading=pt + 3.5, alignment=TA_RIGHT),
+        "centro": ParagraphStyle("ce", fontName=fc, fontSize=pt + 0.5,
+                                 leading=pt + 5.5, alignment=TA_CENTER),
     }
 
 
@@ -259,8 +401,10 @@ def _documento(cfg, elementi, orizzontale=False):
                           title=cfg.get("_titolo_pdf", "Documento"),
                           author=cfg.get("mittente", {}).get("ragione_sociale", ""))
 
-    frame = Frame(MARGINE, ALTEZZA_PIEDE + 10 * mm,
-                  L - 2 * MARGINE, H - ALTEZZA_TESTATA - ALTEZZA_PIEDE - 18 * mm,
+    _st = stile_di(cfg)
+    sx = MARGINE + (4 * mm if _st.get("banda_laterale") else 0)
+    frame = Frame(sx, ALTEZZA_PIEDE + 10 * mm,
+                  L - sx - MARGINE, H - ALTEZZA_TESTATA - ALTEZZA_PIEDE - 18 * mm,
                   id="corpo", leftPadding=0, rightPadding=0,
                   topPadding=0, bottomPadding=0)
 
