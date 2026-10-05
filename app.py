@@ -517,10 +517,35 @@ def read_progetti(content: bytes, source_name: str, diag: list) -> pd.DataFrame:
         diag.append({"file": source_name, "scheda": "-", "esito": f"❌ non leggibile: {e}", "righe": 0})
         return pd.DataFrame(), pd.DataFrame()
 
+    # quali schede leggere: per nome, oppure — se nessuna corrisponde — cercando
+    # l'intestazione giusta, così funziona anche se la scheda si chiama "Foglio1"
+    da_leggere = [sn for sn in wb.sheetnames if sheet_is_progetti(sn)]
+    if not da_leggere:
+        for sn in wb.sheetnames:
+            try:
+                prima = next(wb[sn].iter_rows(values_only=True), None)
+            except Exception:
+                prima = None
+            if not prima:
+                continue
+            celle = [p_str(c).lower() for c in prima[:19]]
+            piene = sum(1 for c in celle if c)
+            inizio_ok = any("progetto" in c for c in celle[:3])
+            colonne_chiave = sum(1 for parola in ("stato", "cliente", "costo",
+                                                  "consegna", "pagamento")
+                                 if any(parola in c for c in celle))
+            if piene >= 8 and inizio_ok and colonne_chiave >= 3:
+                da_leggere.append(sn)
+                diag.append({"file": source_name, "scheda": sn,
+                             "esito": "✅ riconosciuta dall'intestazione", "righe": 0})
+    for sn in wb.sheetnames:
+        if sn not in da_leggere:
+            diag.append({"file": source_name, "scheda": sn,
+                         "esito": "⏭️ saltata: il nome non contiene «progetti» e "
+                                  "l'intestazione non corrisponde", "righe": 0})
+
     prog, movimenti = [], []
-    for sname in wb.sheetnames:
-        if not sheet_is_progetti(sname):
-            continue
+    for sname in da_leggere:
         ws = wb[sname]
         corrente = None
         n = 0
@@ -578,6 +603,9 @@ def read_progetti(content: bytes, source_name: str, diag: list) -> pd.DataFrame:
     dfp["Margine"] = dfp["Costo"] - dfp["Spesa"]
     dfp["Residuo"] = (dfp["Costo"] - dfp["Incassato"]).clip(lower=0)
     dfp["GuadagnoOrario"] = np.where(dfp["Ore"] > 0, dfp["Margine"] / dfp["Ore"], np.nan)
+    # se nessuna data è valida le colonne restano di tipo generico: forzale
+    dfp["Inizio"] = pd.to_datetime(dfp["Inizio"], errors="coerce")
+    dfp["Consegna"] = pd.to_datetime(dfp["Consegna"], errors="coerce")
     dfp["Durata"] = (dfp["Consegna"] - dfp["Inizio"]).dt.days
     dfp["Etichetta"] = dfp["Progetto"] + np.where(
         dfp.duplicated("Progetto", keep=False),
@@ -732,6 +760,8 @@ def load_progetti(payload):
     contatti, esiti = pd.DataFrame(), pd.DataFrame()
     base = 0
     for name, content in payload:
+        diag.append({"file": name, "scheda": "(il file)", "esito": "📂 esaminato",
+                     "righe": 0})
         dp, dm = read_progetti(content, name, diag)
         if not dp.empty:
             dp = dp.copy(); dm = dm.copy()
@@ -1595,10 +1625,31 @@ with TAB[5]:
 # ============================================================================
 with TAB[6]:
     if dfp.empty:
-        st.info(prog_msg or "Nessun progetto trovato nei file indicati.")
+        st.warning(prog_msg or "Nessun progetto trovato nei file indicati.")
+        st.markdown("##### Cosa ha visto l'app")
+        if not prog_payload:
+            st.error("Nella cartella indicata non è stato trovato nessun file "
+                     "leggibile (Google Sheets o .xlsx).")
+            st.markdown(
+                "Controlla tre cose, in quest'ordine:\n\n"
+                "1. che `drive_folder_id_progetti` nei Secrets sia l'ID della "
+                "cartella **che contiene** il file *Gestione Progetti*, non del file;\n"
+                "2. che quella cartella sia condivisa come **Visualizzatore** con "
+                "`dashboard-registri@registri-lezioni.iam.gserviceaccount.com`;\n"
+                "3. che il file non stia dentro una sottocartella: l'app legge solo "
+                "il primo livello.")
+        else:
+            st.caption(f"{len(prog_payload)} file letti dalla cartella:")
+            st.code("\n".join(n for n, _ in prog_payload), language="text")
+            st.markdown(
+                "I file ci sono ma nessuna riga di progetto è stata riconosciuta. "
+                "L'app cerca una scheda chiamata **Progetti** (o che contenga quella "
+                "parola); se non la trova prova a riconoscerla dall'intestazione, "
+                "che deve avere *Nome Progetto* nella colonna B. "
+                "Nella tabella qui sotto vedi scheda per scheda cosa è successo.")
         if not diag_p.empty:
-            with st.expander("Diagnostica lettura progetti"):
-                st.dataframe(diag_p, width='stretch', hide_index=True)
+            st.markdown("##### Diagnostica, scheda per scheda")
+            st.dataframe(diag_p, width='stretch', hide_index=True)
     else:
         # ---------------- filtri ----------------
         f1, f2 = st.columns([1, 1])
@@ -1929,13 +1980,64 @@ with TAB[7]:
             help="Finisce nel piè di pagina e dentro il codice QR di biglietti, "
                  "volantini, etichette e tessera.")
 
+    # ---- stile del documento ---------------------------------------------
+    with st.expander("3 · Stile dei documenti", expanded=False):
+        temi = list(CANC.STILI_PREDEFINITI.keys())
+        s1, s2 = st.columns([1, 2])
+        tema = s1.selectbox("Tema", temi, index=0)
+        pre = CANC.STILI_PREDEFINITI[tema]
+        s2.caption({
+            "Elegante": "Titoli con grazie, maiuscoletto spaziato, filetto doppio, "
+                        "molto respiro. Il più adatto a preventivi e accordi.",
+            "Minimale": "Tutto lineare, un filetto sottile, piè di pagina ridotto "
+                        "all'essenziale.",
+            "Tecnico": "Banda di colore sul lato, testo compatto, più informazioni "
+                       "nella stessa pagina. Per schede e documentazione.",
+            "Classico": "Logo e intestazione centrati, carattere con grazie anche "
+                        "nel testo. Formale, da lettera istituzionale.",
+        }.get(tema, ""))
+
+        st.markdown("**Vuoi cambiare qualcosa del tema?**")
+        o1, o2, o3 = st.columns(3)
+        v_logo = o1.selectbox("Posizione del logo", ["(come il tema)", "sinistra",
+                                                     "centro"])
+        v_filetto = o2.selectbox("Filetto sotto l'intestazione",
+                                 ["(come il tema)", "sottile", "pieno", "doppio",
+                                  "corto", "nessuno"])
+        v_piede = o3.selectbox("Piè di pagina", ["(come il tema)", "completo",
+                                                 "minimo"])
+        p1, p2, p3 = st.columns(3)
+        v_titoli = p1.selectbox("Carattere dei titoli",
+                                ["(come il tema)", "Helvetica-Bold", "Times-Bold"])
+        v_corpo = p2.selectbox("Carattere del testo",
+                               ["(come il tema)", "Helvetica", "Times-Roman"])
+        v_sp = p3.selectbox("Spaziatura", ["(come il tema)", "ampia", "normale",
+                                           "compatta"])
+        q1, q2, q3 = st.columns(3)
+        v_maiusc = q1.checkbox("Nome in maiuscoletto spaziato",
+                               value=pre.get("maiuscoletto", False))
+        v_banda = q2.checkbox("Banda di colore sul lato",
+                              value=pre.get("banda_laterale", False))
+        v_pt = q3.slider("Dimensione del testo", 8.0, 12.0,
+                         float(pre.get("corpo_pt", 9.5)), 0.5)
+
+        def _o(valore):
+            return None if valore == "(come il tema)" else valore
+
+        stile = {"logo_posizione": _o(v_logo), "filetto": _o(v_filetto),
+                 "piede": _o(v_piede), "font_titoli": _o(v_titoli),
+                 "font_corpo": _o(v_corpo), "spaziatura": _o(v_sp),
+                 "maiuscoletto": v_maiusc, "banda_laterale": v_banda,
+                 "corpo_pt": v_pt}
+
     cfg = {"nome": scelto, "sottotitolo": sottotitolo, "colore": col_marchio,
            "mittente": mittente, "link": mittente.get("link", ""),
            "descrizione": base.get("descrizione", ""),
+           "tema": tema, "stile": stile,
            "_logo": CANC._logo_oggetto(logo_bytes)}
 
     st.divider()
-    st.markdown("##### 3 · Documento")
+    st.markdown("##### 4 · Documento")
 
     TIPI = ["Carta intestata", "Biglietti da visita", "Tessera con QR",
             "Scheda progetto", "Volantino A5", "Etichette adesive",
@@ -2268,25 +2370,31 @@ with TAB[8]:
         if p.get("prossimo_passo"):
             st.info(f"**Prossimo passo** — {p['prossimo_passo']}")
 
-        c1, c2 = st.columns(2)
-        with c1:
-            if p.get("tappe"):
-                st.markdown("##### Le tappe, in ordine")
-                for i, t in enumerate(p["tappe"], 1):
-                    st.markdown(f"**{i}.** {t}")
-        with c2:
-            if p.get("esercizi"):
-                st.markdown("##### Esercizi concreti")
-                for e in p["esercizi"]:
-                    st.markdown(f"- {e}")
-            if p.get("errori_tipici"):
-                st.markdown("##### Errori che fanno tutti")
-                for e in p["errori_tipici"]:
-                    st.markdown(f"- {e}")
+        livelli = p.get("livelli", [])
+        if livelli:
+            st.markdown("")
+            LT = st.tabs([f"{i+1} · {l['nome']}" for i, l in enumerate(livelli)])
+            for scheda, l in zip(LT, livelli):
+                with scheda:
+                    if l.get("traguardo"):
+                        st.markdown(f"**Dove arrivi** — {l['traguardo']}")
+                    c1, c2 = st.columns([3, 2])
+                    with c1:
+                        st.markdown("###### Le tappe, in ordine")
+                        for i, t in enumerate(l.get("tappe", []), 1):
+                            st.markdown(f"**{i}.** {t}")
+                    with c2:
+                        st.markdown("###### Esercizi")
+                        for e in l.get("esercizi", []):
+                            st.markdown(f"- {e}")
 
+        if p.get("errori_tipici"):
+            st.markdown("##### Errori che fanno tutti, a ogni livello")
+            for e in p["errori_tipici"]:
+                st.markdown(f"- {e}")
         if p.get("come_so_di_aver_capito"):
-            st.markdown("##### Come capisci di averlo imparato")
-            st.markdown(f"> {p['come_so_di_aver_capito']}")
+            st.markdown(f"> **Come capisci di averlo imparato** — "
+                        f"{p['come_so_di_aver_capito']}")
 
     # ================= PRONTUARI =========================================
     with SEZ[2]:
@@ -2312,14 +2420,40 @@ with TAB[8]:
                     st.caption(v.get("cosa_fa", ""))
         if cerca and trovati == 0:
             st.warning("Nessun comando corrisponde. Prova con una parola più corta.")
-        elif not cerca:
-            totale = sum(len(pr.get("voci", [])) for pr in prontuari)
-            st.caption(f"{totale} comandi in {len(prontuari)} prontuari. "
-                       "Per aggiungerne, modifica `studio.json`.")
+
+        st.divider()
+        righe_tutte = []
+        for pr in prontuari:
+            for v in pr.get("voci", []):
+                righe_tutte.append({"Prontuario": pr["titolo"],
+                                    "Comando": v.get("comando", ""),
+                                    "Cosa fa": v.get("cosa_fa", "")})
+        tab_pront = pd.DataFrame(righe_tutte)
+        d1, d2 = st.columns(2)
+
+        buf_x = io.BytesIO()
+        with pd.ExcelWriter(buf_x, engine="openpyxl") as w:
+            tab_pront.to_excel(w, index=False, sheet_name="Tutti i comandi")
+            for pr in prontuari:
+                nome_sc = re.sub(r"[\\/*?:\[\]]", "", pr["titolo"].split("—")[0].strip())[:30]
+                pd.DataFrame(pr.get("voci", [])).rename(
+                    columns={"comando": "Comando", "cosa_fa": "Cosa fa"}
+                ).to_excel(w, index=False, sheet_name=nome_sc or "Foglio")
+        d1.download_button("⬇️ Scarica tutti i prontuari in Excel", buf_x.getvalue(),
+                           f"prontuari_{dt.date.today():%Y%m%d}.xlsx",
+                           "application/vnd.openxmlformats-officedocument."
+                           "spreadsheetml.sheet", width='stretch')
+        d2.download_button("⬇️ Scarica in CSV",
+                           tab_pront.to_csv(index=False).encode("utf-8-sig"),
+                           f"prontuari_{dt.date.today():%Y%m%d}.csv", "text/csv",
+                           width='stretch')
+        st.caption(f"{len(tab_pront)} comandi in {len(prontuari)} prontuari. "
+                   "Nel file Excel trovi un foglio per prontuario più uno con tutto "
+                   "insieme. Per aggiungerne, modifica `studio.json`.")
 
     # ================= ASSISTENTE IA =====================================
     with SEZ[3]:
-        MODELLO_DEF = S.get("ai", {}).get("modello", "gemini-2.0-flash")
+        MODELLO_DEF = S.get("ai", {}).get("modello", "gemini-3.8-flash")
 
         chiave = (secret("google_api_key", "") or "").strip()
         da_secrets = bool(chiave)
