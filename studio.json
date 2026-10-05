@@ -1,75 +1,174 @@
 {
   "_nota": "Contenuti del tab Studio. Tutto modificabile senza toccare il codice. Regola del JSON: ogni elemento finisce con una virgola tranne l'ultimo del gruppo. Prima di salvare, incolla il file su jsonlint.com per controllare che sia valido.",
-
   "ai": {
-    "modello": "gemini-2.0-flash",
+    "modello": "gemini-3.8-flash",
     "nota": "Il nome del modello cambia nel tempo. Se l'assistente dà errore 404, usa il pulsante «Quali modelli posso usare» nel tab Studio e scrivi qui uno di quelli elencati."
   },
-
   "link_rapidi": [
-    {"icona": "✍️", "nome": "Inchiostro", "url": "", "nota": "Le tue note scritte a mano, trascritte e ricercabili — metti qui l'indirizzo quando è online"},
-    {"icona": "🛠️", "nome": "MakerHub Italia", "url": "https://app.maker-hub.it", "nota": "La tua piattaforma: simulatori, officine, laboratori"},
-    {"icona": "📚", "nome": "Materiale di studio su Drive", "url": "", "nota": "Metti qui il link alla tua cartella Drive degli appunti"},
-    {"icona": "🌐", "nome": "Portfolio one-page", "url": "https://enchanting-empanada-8c55cc.netlify.app/", "nota": "La vetrina dei progetti"}
+    {
+      "icona": "✍️",
+      "nome": "Inchiostro",
+      "url": "",
+      "nota": "Le tue note scritte a mano, trascritte e ricercabili — metti qui l'indirizzo quando è online"
+    },
+    {
+      "icona": "🛠️",
+      "nome": "MakerHub Italia",
+      "url": "https://app.maker-hub.it",
+      "nota": "La tua piattaforma: simulatori, officine, laboratori"
+    },
+    {
+      "icona": "📚",
+      "nome": "Materiale di studio su Drive",
+      "url": "",
+      "nota": "Metti qui il link alla tua cartella Drive degli appunti"
+    },
+    {
+      "icona": "🌐",
+      "nome": "Portfolio one-page",
+      "url": "https://enchanting-empanada-8c55cc.netlify.app/",
+      "nota": "La vetrina dei progetti"
+    }
   ],
-
   "strumenti_studio": [
     {
       "categoria": "Prendere appunti",
       "icona": "📝",
       "voci": [
-        {"nome": "Obsidian", "url": "https://obsidian.md", "nota": "Note collegate fra loro, salvate come file sul tuo disco: non dipendi da nessun servizio. Se tieni la cartella su Drive le ritrovi su ogni dispositivo. È quello che consiglio come base."},
-        {"nome": "Google Keep", "url": "https://keep.google.com", "nota": "Per l'appunto al volo, la foto di una lavagna, la lista. Non per lo studio organizzato."},
-        {"nome": "Notion", "url": "https://notion.so", "nota": "Più strutturato e bello, ma le note vivono sui loro server. Comodo per condividere con altri."}
+        {
+          "nome": "Obsidian",
+          "url": "https://obsidian.md",
+          "nota": "Note collegate fra loro, salvate come file sul tuo disco: non dipendi da nessun servizio. Se tieni la cartella su Drive le ritrovi su ogni dispositivo. È quello che consiglio come base."
+        },
+        {
+          "nome": "Google Keep",
+          "url": "https://keep.google.com",
+          "nota": "Per l'appunto al volo, la foto di una lavagna, la lista. Non per lo studio organizzato."
+        },
+        {
+          "nome": "Notion",
+          "url": "https://notion.so",
+          "nota": "Più strutturato e bello, ma le note vivono sui loro server. Comodo per condividere con altri."
+        }
       ]
     },
     {
       "categoria": "Mappe concettuali e schemi",
       "icona": "🗺️",
       "voci": [
-        {"nome": "Excalidraw", "url": "https://excalidraw.com", "nota": "Disegno a mano libera che sembra fatto su un foglio. Perfetto per schemi veloci da mostrare a un allievo."},
-        {"nome": "draw.io", "url": "https://app.diagrams.net", "nota": "Diagrammi precisi: schemi a blocchi, flussi, architetture. Salva direttamente su Drive."},
-        {"nome": "Mermaid Live", "url": "https://mermaid.live", "nota": "Scrivi lo schema come testo e lui lo disegna. È quello che usa l'assistente qui dentro per le mappe concettuali."},
-        {"nome": "XMind", "url": "https://xmind.app", "nota": "Mappe mentali classiche, a raggiera. Comodo da tablet."}
+        {
+          "nome": "Excalidraw",
+          "url": "https://excalidraw.com",
+          "nota": "Disegno a mano libera che sembra fatto su un foglio. Perfetto per schemi veloci da mostrare a un allievo."
+        },
+        {
+          "nome": "draw.io",
+          "url": "https://app.diagrams.net",
+          "nota": "Diagrammi precisi: schemi a blocchi, flussi, architetture. Salva direttamente su Drive."
+        },
+        {
+          "nome": "Mermaid Live",
+          "url": "https://mermaid.live",
+          "nota": "Scrivi lo schema come testo e lui lo disegna. È quello che usa l'assistente qui dentro per le mappe concettuali."
+        },
+        {
+          "nome": "XMind",
+          "url": "https://xmind.app",
+          "nota": "Mappe mentali classiche, a raggiera. Comodo da tablet."
+        }
       ]
     },
     {
       "categoria": "Memorizzare sul serio",
       "icona": "🧠",
       "voci": [
-        {"nome": "Anki", "url": "https://apps.ankiweb.net", "nota": "Ripetizione dilazionata: ti ripropone una scheda poco prima che tu la dimentichi. È il metodo con le prove scientifiche più solide. Noioso ma funziona, e si usa dal telefono nei ritagli."},
-        {"nome": "AnkiWeb", "url": "https://ankiweb.net", "nota": "Sincronizza le schede fra PC, telefono e tablet, gratis."}
+        {
+          "nome": "Anki",
+          "url": "https://apps.ankiweb.net",
+          "nota": "Ripetizione dilazionata: ti ripropone una scheda poco prima che tu la dimentichi. È il metodo con le prove scientifiche più solide. Noioso ma funziona, e si usa dal telefono nei ritagli."
+        },
+        {
+          "nome": "AnkiWeb",
+          "url": "https://ankiweb.net",
+          "nota": "Sincronizza le schede fra PC, telefono e tablet, gratis."
+        }
       ]
     },
     {
       "categoria": "Leggere e annotare",
       "icona": "📄",
       "voci": [
-        {"nome": "Zotero", "url": "https://www.zotero.org", "nota": "Raccoglie PDF, articoli e manuali, li annota e tiene in ordine le fonti. Utile per i tuoi libri e per la ricerca sui brevetti."},
-        {"nome": "Xodo", "url": "https://xodo.com", "nota": "Annotare PDF da tablet con la penna, poi ritrovare le evidenziazioni."}
+        {
+          "nome": "Zotero",
+          "url": "https://www.zotero.org",
+          "nota": "Raccoglie PDF, articoli e manuali, li annota e tiene in ordine le fonti. Utile per i tuoi libri e per la ricerca sui brevetti."
+        },
+        {
+          "nome": "Xodo",
+          "url": "https://xodo.com",
+          "nota": "Annotare PDF da tablet con la penna, poi ritrovare le evidenziazioni."
+        }
       ]
     },
     {
       "categoria": "Provare senza hardware",
       "icona": "🔌",
       "voci": [
-        {"nome": "Wokwi", "url": "https://wokwi.com", "nota": "Simula Arduino ed ESP32 con sensori e moduli, nel browser e anche dal telefono. Puoi fare le prime venti lezioni di elettronica senza comprare niente."},
-        {"nome": "Tinkercad Circuits", "url": "https://www.tinkercad.com/circuits", "nota": "Breadboard disegnata, componenti da trascinare: il modo più chiaro per far vedere un circuito a un principiante."},
-        {"nome": "SQLite online", "url": "https://sqliteonline.com", "nota": "Scrivi ed esegui query SQL senza installare niente."},
-        {"nome": "Google Colab", "url": "https://colab.research.google.com", "nota": "Python nel browser, da qualsiasi dispositivo. Per i primi esercizi è più comodo che installare."}
+        {
+          "nome": "Wokwi",
+          "url": "https://wokwi.com",
+          "nota": "Simula Arduino ed ESP32 con sensori e moduli, nel browser e anche dal telefono. Puoi fare le prime venti lezioni di elettronica senza comprare niente."
+        },
+        {
+          "nome": "Tinkercad Circuits",
+          "url": "https://www.tinkercad.com/circuits",
+          "nota": "Breadboard disegnata, componenti da trascinare: il modo più chiaro per far vedere un circuito a un principiante."
+        },
+        {
+          "nome": "SQLite online",
+          "url": "https://sqliteonline.com",
+          "nota": "Scrivi ed esegui query SQL senza installare niente."
+        },
+        {
+          "nome": "Google Colab",
+          "url": "https://colab.research.google.com",
+          "nota": "Python nel browser, da qualsiasi dispositivo. Per i primi esercizi è più comodo che installare."
+        }
       ]
     }
   ],
-
   "strumenti_ai": [
-    {"nome": "Claude", "url": "https://claude.ai", "a_cosa_serve": "Spiegazioni lunghe, lettura di codice, revisione di testi e schemi. Il posto dove chiedere «spiegami questo pezzo»."},
-    {"nome": "Google AI Studio", "url": "https://aistudio.google.com/apikey", "a_cosa_serve": "Da qui prendi la chiave API gratuita che fa funzionare l'assistente qui dentro."},
-    {"nome": "NotebookLM", "url": "https://notebooklm.google.com", "a_cosa_serve": "Carichi i tuoi PDF e manuali e gli fai domande solo su quelli: risponde citando le pagine. Ottimo per studiare sui tuoi stessi libri."},
-    {"nome": "Wokwi", "url": "https://wokwi.com", "a_cosa_serve": "Simulatore di Arduino ed ESP32 con componenti e moduli, usabile anche dal telefono."},
-    {"nome": "Regex101", "url": "https://regex101.com", "a_cosa_serve": "Costruisce e spiega le espressioni regolari passo passo: servono in Python, PowerShell e nelle query."},
-    {"nome": "CodePen", "url": "https://codepen.io", "a_cosa_serve": "HTML, CSS e JavaScript nel browser con anteprima immediata, anche da tablet."}
+    {
+      "nome": "Claude",
+      "url": "https://claude.ai",
+      "a_cosa_serve": "Spiegazioni lunghe, lettura di codice, revisione di testi e schemi. Il posto dove chiedere «spiegami questo pezzo»."
+    },
+    {
+      "nome": "Google AI Studio",
+      "url": "https://aistudio.google.com/apikey",
+      "a_cosa_serve": "Da qui prendi la chiave API gratuita che fa funzionare l'assistente qui dentro."
+    },
+    {
+      "nome": "NotebookLM",
+      "url": "https://notebooklm.google.com",
+      "a_cosa_serve": "Carichi i tuoi PDF e manuali e gli fai domande solo su quelli: risponde citando le pagine. Ottimo per studiare sui tuoi stessi libri."
+    },
+    {
+      "nome": "Wokwi",
+      "url": "https://wokwi.com",
+      "a_cosa_serve": "Simulatore di Arduino ed ESP32 con componenti e moduli, usabile anche dal telefono."
+    },
+    {
+      "nome": "Regex101",
+      "url": "https://regex101.com",
+      "a_cosa_serve": "Costruisce e spiega le espressioni regolari passo passo: servono in Python, PowerShell e nelle query."
+    },
+    {
+      "nome": "CodePen",
+      "url": "https://codepen.io",
+      "a_cosa_serve": "HTML, CSS e JavaScript nel browser con anteprima immediata, anche da tablet."
+    }
   ],
-
   "prompt_pronti": [
     {
       "titolo": "Spiegami questo pezzo (non risolverlo)",
@@ -110,9 +209,48 @@
       "titolo": "Piano di studio della settimana",
       "quando": "La domenica sera, per decidere su cosa lavorare",
       "testo": "Ho circa [NUMERO] ore disponibili questa settimana. Voglio fare progressi su [ARGOMENTO], partendo da zero. Propongimi un piano realistico per quelle ore, diviso in sessioni da 45 minuti, dove ogni sessione produce qualcosa di concreto e verificabile. Niente teoria senza pratica. Se le ore non bastano per l'obiettivo, dimmelo e ridimensiona."
+    },
+    {
+      "titolo": "Progetta il circuito con me",
+      "quando": "Prima di cominciare un progetto hardware",
+      "testo": "Voglio realizzare: [COSA DEVE FARE]. Non darmi lo schema finito. Fammi invece le domande che faresti tu come progettista, una alla volta, per capire i vincoli: alimentazione, correnti, ambiente, costi, precisione richiesta. Quando hai abbastanza informazioni, propormi due alternative con pro e contro, e lasciami scegliere."
+    },
+    {
+      "titolo": "Confronta due soluzioni",
+      "quando": "Quando non sai quale strada prendere",
+      "testo": "Devo scegliere fra [OPZIONE A] e [OPZIONE B] per [CONTESTO]. Fammi una tabella di confronto su: difficoltà, costo, tempo di realizzazione, affidabilità nel tempo, cosa rischio se sbaglio. Poi dimmi quale sceglieresti tu e perché, e in quale caso cambieresti idea."
+    },
+    {
+      "titolo": "Trova l'errore nel mio ragionamento",
+      "quando": "Quando qualcosa non torna e sospetti di aver capito male",
+      "testo": "Ti spiego come penso che funzioni [ARGOMENTO]. Dimmi dove sbaglio, partendo dall'errore più grave. Non correggere il mio modo di dirlo: correggi il concetto. Se ho ragione, dimmi anche questo invece di inventarti un errore.\n\nIl mio ragionamento:\n[SCRIVI QUI]"
+    },
+    {
+      "titolo": "Prepara la verifica per un allievo",
+      "quando": "Quando devi valutare dove sta un allievo",
+      "testo": "Prepara una verifica su [ARGOMENTO] per un allievo di [LIVELLO], da svolgere in [MINUTI] minuti. Struttura: due domande di comprensione, due esercizi di applicazione, un problema che richiede di collegare due concetti. Per ogni item indica cosa stai misurando e il punteggio. Alla fine, la griglia di correzione."
+    },
+    {
+      "titolo": "Ripasso dei venti minuti",
+      "quando": "Quando hai poco tempo e vuoi ripassare qualcosa di studiato",
+      "testo": "Ho studiato [ARGOMENTO] qualche settimana fa e temo di averlo dimenticato. Fammi un ripasso lampo: le cinque cose che contano davvero, poi tre domande che mi facciano accorgere di cosa ho perso. Niente ripetizione di tutta la teoria."
+    },
+    {
+      "titolo": "Cosa studio dopo",
+      "quando": "Quando hai finito un argomento e non sai dove andare",
+      "testo": "Ho appena imparato [COSA HO IMPARATO] e so già [COSA SO GIÀ]. Il mio obiettivo è [OBIETTIVO]. Dimmi quali sono i tre argomenti che mi conviene affrontare adesso, in che ordine e perché quell'ordine. Per ciascuno dimmi come capisco di averlo imparato abbastanza da passare al successivo."
+    },
+    {
+      "titolo": "Leggi questo errore con me",
+      "quando": "Davanti a un messaggio d'errore incomprensibile",
+      "testo": "Ti incollo un messaggio d'errore. Spiegami prima come si legge un errore di questo tipo in generale — quale parte dice cosa — poi applicalo a questo caso. Voglio imparare a leggerli da solo, non solo risolvere questo.\n\n[INCOLLA QUI L'ERRORE]"
+    },
+    {
+      "titolo": "Rendi questo codice più leggibile",
+      "quando": "Quando il tuo codice funziona ma non si capisce più",
+      "testo": "Ti incollo del codice che funziona ma è confuso. Riscrivilo più leggibile SENZA cambiarne il comportamento, e accanto a ogni modifica scrivi in una riga perché l'hai fatta. Non introdurre librerie nuove.\n\n[INCOLLA QUI IL CODICE]"
     }
   ],
-
   "percorsi": [
     {
       "argomento": "Python",
@@ -121,29 +259,69 @@
       "dove_sono": "Python è il linguaggio con cui è scritta questa dashboard. Si impara prima di tutti gli altri perché è il più indulgente: scrivi tre righe e vedi un risultato.",
       "serve_prima": "Un computer e il browser. Per i primi esercizi non devi installare niente: usi Google Colab.",
       "primo_risultato": "In mezz'ora: apri Colab, scrivi `print(\"ciao\")`, lo esegui e vedi la scritta. Sembra poco, ma hai appena eseguito un programma.",
-      "tappe": [
-        "Variabili: dare un nome a un valore e riusarlo",
-        "Tipi: numeri, testo, vero/falso — e perché \"5\" non è 5",
-        "Liste: tenere insieme più valori",
-        "if: far scegliere al programma",
-        "for: ripetere un'operazione su tanti elementi",
-        "Funzioni: dare un nome a un blocco di istruzioni e richiamarlo",
-        "Leggere un file e scorrerne le righe",
-        "Pandas: lavorare su tabelle invece che su righe singole"
-      ],
-      "esercizi": [
-        "Calcola il totale delle ore da una lista di numeri",
-        "Dato un elenco di nomi, stampa solo quelli che iniziano per A",
-        "Leggi un file CSV e conta quante righe ha",
-        "Apri uno dei tuoi registri con pandas e stampa le prime cinque righe"
-      ],
       "errori_tipici": [
         "Dimenticare i due punti alla fine di `if`, `for` e `def`",
         "Sbagliare l'indentazione: in Python gli spazi a inizio riga sono grammatica, non estetica",
         "Confrontare con un solo `=` invece di `==`",
         "Contare partendo da 1: in Python il primo elemento è quello numero 0"
       ],
-      "come_so_di_aver_capito": "Riesci a leggere una funzione della dashboard e a dire cosa fa, anche senza saperla riscrivere."
+      "come_so_di_aver_capito": "Riesci a leggere una funzione della dashboard e a dire cosa fa, anche senza saperla riscrivere.",
+      "livelli": [
+        {
+          "nome": "Base",
+          "traguardo": "Scrivi un programma di venti righe che legge dei dati e stampa un risultato.",
+          "tappe": [
+            "Variabili e tipi: numeri, testo, vero/falso",
+            "Liste e dizionari: tenere insieme più valori",
+            "if: far scegliere al programma",
+            "for: ripetere su tanti elementi",
+            "Funzioni: dare un nome a un blocco e richiamarlo",
+            "Leggere e scrivere un file di testo"
+          ],
+          "esercizi": [
+            "Calcola il totale delle ore da una lista",
+            "Stampa solo i nomi che iniziano per A",
+            "Conta le righe di un file CSV"
+          ]
+        },
+        {
+          "nome": "Intermedio",
+          "traguardo": "Prendi un tuo registro, lo elabori con pandas e produci un grafico.",
+          "tappe": [
+            "Pandas: DataFrame, filtri, groupby, merge",
+            "Gestire date e orari senza impazzire",
+            "try/except: non far morire il programma al primo imprevisto",
+            "Moduli: dividere il codice in più file",
+            "Ambienti virtuali: ogni progetto con le sue librerie",
+            "Leggere Excel e JSON",
+            "Grafici con Plotly"
+          ],
+          "esercizi": [
+            "Unisci due registri e trova i duplicati",
+            "Grafico delle ore per giorno della settimana",
+            "Esporta un riepilogo mensile in Excel"
+          ]
+        },
+        {
+          "nome": "Avanzato",
+          "traguardo": "Scrivi un'applicazione che altri usano, con i test che ti dicono se l'hai rotta.",
+          "tappe": [
+            "Classi e oggetti: quando servono davvero e quando no",
+            "List comprehension e generatori: codice più breve e più veloce",
+            "Decoratori: la @ che vedi sopra le funzioni di Streamlit",
+            "Test automatici con pytest",
+            "Chiamare API esterne e gestire gli errori di rete",
+            "Programmazione asincrona: fare più cose insieme",
+            "Profilare il codice e capire dov'è lento",
+            "Pubblicare un pacchetto riutilizzabile"
+          ],
+          "esercizi": [
+            "Riscrivi i parser della dashboard come una classe con i suoi test",
+            "Scrivi un test che fallisce se un registro ha date impossibili",
+            "Rendi la lettura dei 17 file parallela e misura quanto guadagni"
+          ]
+        }
+      ]
     },
     {
       "argomento": "Elettronica di base",
@@ -152,28 +330,68 @@
       "dove_sono": "Prima dei microcontrollori serve capire cosa succede in un filo. Senza questo, Arduino diventa copiare schemi senza sapere perché.",
       "serve_prima": "Un multimetro da pochi euro, una breadboard, qualche LED e resistenza. Oppure niente: Tinkercad simula tutto nel browser.",
       "primo_risultato": "In un'ora: accendi un LED con una pila e una resistenza, e calcoli tu quale resistenza serve. È il «ciao mondo» dell'elettronica.",
-      "tappe": [
-        "Tensione, corrente, resistenza: cosa sono davvero, con l'analogia dell'acqua",
-        "La legge di Ohm e il calcolo della resistenza per un LED",
-        "Serie e parallelo: come cambiano tensione e corrente",
-        "Leggere uno schema: simboli, massa, alimentazione",
-        "Usare il multimetro: misurare tensione, continuità, resistenza",
-        "Il condensatore: a cosa serve quello da 100 nF accanto a ogni integrato",
-        "Il partitore di tensione: ridurre un segnale per poterlo leggere",
-        "Transistor come interruttore: comandare un carico grande con un segnale piccolo"
-      ],
-      "esercizi": [
-        "Calcola la resistenza per un LED rosso alimentato a 5 V",
-        "Misura col multimetro la tensione di una pila e la resistenza di un resistore",
-        "Monta su Tinkercad un circuito con due LED in parallelo e verifica le correnti"
-      ],
       "errori_tipici": [
         "Collegare un LED senza resistenza: si brucia in pochi secondi",
         "Misurare la resistenza con il circuito alimentato: va fatto da spento e componente isolato",
         "Dimenticare che le alimentazioni diverse devono condividere la massa",
         "Confondere la portata del multimetro e leggere numeri senza senso"
       ],
-      "come_so_di_aver_capito": "Davanti a uno schema nuovo sai dire dove scorre la corrente e perché c'è ogni componente."
+      "come_so_di_aver_capito": "Davanti a uno schema nuovo sai dire dove scorre la corrente e perché c'è ogni componente.",
+      "livelli": [
+        {
+          "nome": "Base",
+          "traguardo": "Accendi un LED calcolando tu la resistenza, e lo misuri col multimetro.",
+          "tappe": [
+            "Tensione, corrente, resistenza con l'analogia dell'acqua",
+            "Legge di Ohm e calcolo della resistenza di un LED",
+            "Serie e parallelo",
+            "Leggere uno schema: simboli, massa, alimentazione",
+            "Usare il multimetro: tensione, continuità, resistenza"
+          ],
+          "esercizi": [
+            "Resistenza per un LED rosso a 5 V",
+            "Misura tensione di una pila e valore di un resistore",
+            "Due LED in parallelo su Tinkercad"
+          ]
+        },
+        {
+          "nome": "Intermedio",
+          "traguardo": "Progetti un circuito che comanda un carico vero senza bruciare niente.",
+          "tappe": [
+            "Condensatori: disaccoppiamento, filtro, costante di tempo",
+            "Partitore di tensione e adattamento dei livelli",
+            "Diodi: raddrizzamento, protezione, diodo di libera circolazione",
+            "Transistor come interruttore: BJT e MOSFET",
+            "Relè e carichi induttivi",
+            "Alimentatori: lineari contro switching, calcolo della dissipazione",
+            "Massa, anelli di massa e disturbi"
+          ],
+          "esercizi": [
+            "Comanda un motore 12 V da un pin a 3,3 V",
+            "Misura il ripple su un alimentatore",
+            "Proteggi un ingresso da sovratensioni"
+          ]
+        },
+        {
+          "nome": "Avanzato",
+          "traguardo": "Disegni un PCB, lo fai fare e funziona al primo colpo.",
+          "tappe": [
+            "Amplificatori operazionali: comparatore, inseguitore, amplificazione",
+            "Filtri attivi e passivi: quando e perché",
+            "Condizionamento del segnale di un sensore",
+            "Conversione analogico-digitale: risoluzione, rumore, campionamento",
+            "Progettazione PCB: larghezza piste, piani di massa, instradamento",
+            "Compatibilità elettromagnetica: disturbi emessi e subiti",
+            "Alimentazione a batteria: calcolo dell'autonomia",
+            "Collaudo e misura con l'oscilloscopio"
+          ],
+          "esercizi": [
+            "Condiziona il segnale di una termocoppia per leggerlo a 12 bit",
+            "Disegna in Fusion il PCB di una scheda ESP32 con tre sensori",
+            "Misura il consumo medio di un nodo che dorme fra una lettura e l'altra"
+          ]
+        }
+      ]
     },
     {
       "argomento": "Arduino",
@@ -182,29 +400,68 @@
       "dove_sono": "Arduino è una scheda che esegue il programma che le scrivi tu. Si parte da qui e non dall'ESP32 perché ha meno cose che possono andare storte.",
       "serve_prima": "Una scheda Arduino UNO e un cavo USB, oppure il simulatore Wokwi se vuoi cominciare stasera senza comprare niente.",
       "primo_risultato": "In mezz'ora: il LED sulla scheda lampeggia perché gliel'hai detto tu. Poi cambi il ritardo e lampeggia più veloce: hai chiuso il cerchio fra codice e mondo fisico.",
-      "tappe": [
-        "Installare l'ambiente di sviluppo e caricare il primo programma",
-        "setup() e loop(): cosa succede all'accensione e cosa si ripete per sempre",
-        "digitalWrite: accendere e spegnere",
-        "digitalRead e i pulsanti, con la resistenza di pull-up",
-        "analogRead: leggere un valore che varia, come un potenziometro",
-        "Serial.print: far parlare la scheda per capire cosa sta facendo",
-        "Il primo sensore vero: temperatura o distanza",
-        "Comandare qualcosa di potente: relè, motore, striscia LED"
-      ],
-      "esercizi": [
-        "LED che lampeggia con un ritmo che decidi tu",
-        "Pulsante che accende il LED finché resta premuto",
-        "Potenziometro che cambia la velocità del lampeggio",
-        "Sensore di temperatura che scrive il valore sulla seriale ogni 5 secondi"
-      ],
       "errori_tipici": [
         "Dimenticare il punto e virgola a fine riga",
         "Monitor seriale impostato a una velocità diversa da quella del programma: si vedono caratteri strani",
         "Usare delay() dappertutto: blocca tutto il resto, e prima o poi dà fastidio",
         "Alimentare un motore dai pin della scheda: serve un'alimentazione separata"
       ],
-      "come_so_di_aver_capito": "Sai far fare alla scheda una cosa che non hai copiato da nessuno schema."
+      "come_so_di_aver_capito": "Sai far fare alla scheda una cosa che non hai copiato da nessuno schema.",
+      "livelli": [
+        {
+          "nome": "Base",
+          "traguardo": "La scheda fa quello che le dici: accende, legge, risponde a un pulsante.",
+          "tappe": [
+            "Installare l'ambiente e caricare il primo programma",
+            "setup() e loop()",
+            "digitalWrite: accendere e spegnere",
+            "digitalRead e pulsanti con pull-up",
+            "analogRead: leggere un valore che varia",
+            "Serial.print per capire cosa succede"
+          ],
+          "esercizi": [
+            "LED che lampeggia con il tuo ritmo",
+            "Pulsante che accende il LED",
+            "Potenziometro che cambia la velocità"
+          ]
+        },
+        {
+          "nome": "Intermedio",
+          "traguardo": "Leggi più sensori insieme senza che uno blocchi gli altri.",
+          "tappe": [
+            "Niente delay(): temporizzare con millis()",
+            "Antirimbalzo dei pulsanti fatto bene",
+            "Librerie: installarle, leggerne gli esempi, capirne il codice",
+            "I2C e SPI: far parlare più dispositivi sugli stessi fili",
+            "PWM: regolare luminosità e velocità",
+            "Interrupt: reagire subito a un evento",
+            "Salvare dati in EEPROM"
+          ],
+          "esercizi": [
+            "Tre sensori letti a intervalli diversi senza delay",
+            "Display I2C che mostra le misure",
+            "Conta impulsi con interrupt"
+          ]
+        },
+        {
+          "nome": "Avanzato",
+          "traguardo": "Scrivi firmware che regge mesi senza bloccarsi.",
+          "tappe": [
+            "Macchine a stati: il modo giusto di strutturare un firmware",
+            "Memoria: stack, heap, perché il programma si blocca dopo ore",
+            "Watchdog: farsi riavviare quando ci si impianta",
+            "Registri e accesso diretto all'hardware",
+            "Risparmio energetico e modalità di sonno",
+            "Protocolli: Modbus, CAN, uno-filo",
+            "Debug senza seriale: LED, tempi, analizzatore logico"
+          ],
+          "esercizi": [
+            "Riscrivi un tuo progetto come macchina a stati",
+            "Aggiungi il watchdog e provoca un blocco per verificarlo",
+            "Misura la memoria libera nel tempo e trova la perdita"
+          ]
+        }
+      ]
     },
     {
       "argomento": "ESP32 e il WiFi",
@@ -213,28 +470,65 @@
       "dove_sono": "L'ESP32 è un Arduino più potente che sa collegarsi al WiFi. È il passaggio che trasforma un circuito sul banco in qualcosa che guardi dal telefono.",
       "serve_prima": "Aver fatto funzionare qualcosa su Arduino. Poi una scheda ESP32 e la stessa rete WiFi di casa.",
       "primo_risultato": "In un'ora: la scheda si collega al WiFi e scrive il suo indirizzo IP sulla seriale. Da lì in poi è connessa al mondo.",
-      "tappe": [
-        "Cosa cambia rispetto ad Arduino: 3,3 V invece di 5, ADC a 12 bit, pin riservati",
-        "Collegarsi a una rete WiFi e verificare la connessione",
-        "Mandare un dato a un indirizzo su internet",
-        "Ricevere una risposta e capirla",
-        "Scrivere il dato in un foglio Google o in un database",
-        "Far durare la batteria: il sonno profondo fra una misura e l'altra",
-        "Riprendersi da solo quando la rete cade"
-      ],
-      "esercizi": [
-        "Collegamento WiFi con stampa dell'indirizzo IP",
-        "Lettura di temperatura e umidità ogni dieci minuti",
-        "Invio del dato a un foglio Google via Apps Script",
-        "Grafico dell'ultima settimana dentro questa dashboard"
-      ],
       "errori_tipici": [
         "Collegare un modulo a 5 V direttamente ai pin: l'ESP32 lavora a 3,3 V e si danneggia",
         "Usare i GPIO da 6 a 11, riservati alla memoria flash",
         "Aspettarsi 1023 da analogRead: qui il massimo è 4095",
         "Alimentare dalla USB del PC un circuito che assorbe troppo: la scheda si riavvia da sola"
       ],
-      "come_so_di_aver_capito": "Un tuo dato misurato in casa compare su una pagina web che apri dal telefono fuori casa."
+      "come_so_di_aver_capito": "Un tuo dato misurato in casa compare su una pagina web che apri dal telefono fuori casa.",
+      "livelli": [
+        {
+          "nome": "Base",
+          "traguardo": "La scheda si collega al WiFi e te lo dice.",
+          "tappe": [
+            "Cosa cambia rispetto ad Arduino: 3,3 V, ADC 12 bit, pin riservati",
+            "Collegarsi a una rete e verificare lo stato",
+            "Stampare l'indirizzo IP",
+            "Leggere un sensore e mandarlo sulla seriale"
+          ],
+          "esercizi": [
+            "Connessione WiFi con stampa dell'IP",
+            "Temperatura e umidità ogni 10 minuti"
+          ]
+        },
+        {
+          "nome": "Intermedio",
+          "traguardo": "Il tuo dato misurato in casa compare su una pagina che apri dal telefono.",
+          "tappe": [
+            "Richieste HTTP: mandare e ricevere dati",
+            "JSON: costruirlo e leggerlo sul microcontrollore",
+            "Scrivere su un foglio Google via Apps Script",
+            "Server web sulla scheda stessa",
+            "Riconnessione automatica quando la rete cade",
+            "Sonno profondo e durata della batteria",
+            "Aggiornamento del firmware via WiFi"
+          ],
+          "esercizi": [
+            "Invio dei dati a un foglio Google",
+            "Pagina servita dall'ESP32 con le ultime letture",
+            "Nodo a batteria che dura un mese"
+          ]
+        },
+        {
+          "nome": "Avanzato",
+          "traguardo": "Costruisci una rete di nodi che si gestisce da sola, come AURA.",
+          "tappe": [
+            "MQTT: il protocollo giusto per i sensori distribuiti",
+            "Sicurezza: TLS, certificati, credenziali non scritte nel codice",
+            "Doppio core e FreeRTOS: compiti che girano in parallelo",
+            "Memoria non volatile e configurazione senza ricompilare",
+            "Rete a maglia fra più nodi",
+            "Alimentazione solare con gestione della carica",
+            "Collaudo sul campo: cosa si rompe davvero all'aperto"
+          ],
+          "esercizi": [
+            "Tre nodi che pubblicano su un broker MQTT",
+            "Portale di configurazione WiFi al primo avvio",
+            "Nodo solare che sopravvive a una settimana di pioggia"
+          ]
+        }
+      ]
     },
     {
       "argomento": "Raspberry Pi e Linux",
@@ -243,28 +537,66 @@
       "dove_sono": "Il Raspberry è un computer piccolo che sta acceso sempre e costa poco in corrente. Serve quando qualcosa deve girare da solo ventiquattr'ore al giorno.",
       "serve_prima": "Un Raspberry Pi, una microSD e un alimentatore decente. L'alimentatore scadente è la causa di metà dei problemi.",
       "primo_risultato": "In un'ora: il Raspberry è acceso in un angolo senza monitor, e tu ci entri dal portatile scrivendo un comando.",
-      "tappe": [
-        "Preparare la scheda SD e avviare il sistema",
-        "Entrare da remoto con SSH, senza monitor né tastiera",
-        "Muoversi fra le cartelle da riga di comando: cd, ls, pwd",
-        "Installare programmi: apt update, apt install",
-        "Scrivere e far partire uno script Python",
-        "Farlo partire da solo a ogni accensione (systemd)",
-        "Leggere i registri quando qualcosa non va (journalctl)",
-        "Fare un backup della scheda SD prima che si rovini"
-      ],
-      "esercizi": [
-        "Collegarsi via SSH dal telefono",
-        "Script che scrive data e ora in un file ogni minuto",
-        "Farlo partire all'avvio e verificare che riparta dopo un riavvio"
-      ],
       "errori_tipici": [
         "Alimentatore sottodimensionato: riavvii casuali e corruzione della scheda",
         "Togliere la corrente senza spegnere: la SD si danneggia",
         "Lasciare la password predefinita su un dispositivo esposto a internet",
         "Non fare mai un backup della SD: le microSD si guastano, è questione di quando"
       ],
-      "come_so_di_aver_capito": "Stacchi la corrente, riattacchi, e il tuo programma riparte da solo senza che tu faccia niente."
+      "come_so_di_aver_capito": "Stacchi la corrente, riattacchi, e il tuo programma riparte da solo senza che tu faccia niente.",
+      "livelli": [
+        {
+          "nome": "Base",
+          "traguardo": "Il Raspberry è acceso in un angolo e ci entri dal portatile.",
+          "tappe": [
+            "Preparare la scheda SD e avviare",
+            "SSH: entrare senza monitor né tastiera",
+            "Muoversi fra cartelle: cd, ls, pwd",
+            "Installare programmi con apt",
+            "Scrivere ed eseguire uno script Python"
+          ],
+          "esercizi": [
+            "Collegarsi via SSH dal telefono",
+            "Script che scrive data e ora in un file"
+          ]
+        },
+        {
+          "nome": "Intermedio",
+          "traguardo": "Il tuo programma riparte da solo dopo un blackout.",
+          "tappe": [
+            "Permessi, utenti e sudo: chi può fare cosa",
+            "systemd: far partire un servizio all'avvio e riavviarlo se cade",
+            "journalctl: leggere i registri quando qualcosa non va",
+            "cron: lavori programmati",
+            "GPIO del Raspberry da Python",
+            "Backup della scheda SD",
+            "Rete: IP fisso, nomi locali, porte"
+          ],
+          "esercizi": [
+            "Servizio che parte all'avvio e sopravvive al riavvio",
+            "Backup settimanale automatico",
+            "Accendere un relè dal GPIO"
+          ]
+        },
+        {
+          "nome": "Avanzato",
+          "traguardo": "Ci fai girare i tuoi servizi come un piccolo server, in sicurezza.",
+          "tappe": [
+            "Docker: ogni servizio nel suo contenitore",
+            "Reverse proxy e HTTPS con certificati automatici",
+            "Esporre un servizio senza aprire porte sul router",
+            "Database e archiviazione dei dati nel tempo",
+            "Monitoraggio: sapere che è caduto prima che te lo dicano",
+            "Sicurezza: chiavi SSH, firewall, aggiornamenti",
+            "Scrivere su SD il meno possibile per non consumarla"
+          ],
+          "esercizi": [
+            "Streamlit in Docker con HTTPS",
+            "InfluxDB più Grafana per i dati dei sensori",
+            "Avviso su Telegram quando un servizio cade"
+          ]
+        }
+      ]
     },
     {
       "argomento": "Database e SQL",
@@ -273,29 +605,67 @@
       "dove_sono": "Un database è un foglio di calcolo che non si rompe quando i dati diventano tanti e che sa rispondere a domande complicate in un attimo.",
       "serve_prima": "Niente: SQLite online gira nel browser. Più avanti, DB Browser for SQLite sul PC.",
       "primo_risultato": "In mezz'ora: crei una tabella, ci metti tre righe e chiedi al database di ritrovartene una. Hai scritto la tua prima query.",
-      "tappe": [
-        "Tabelle, righe, colonne: il vocabolario minimo",
-        "SELECT e WHERE: chiedere solo quello che serve",
-        "ORDER BY e LIMIT: ordinare e limitare",
-        "GROUP BY con SUM e COUNT: i totali per categoria",
-        "Le chiavi: come si collegano due tabelle",
-        "JOIN: unire i dati di tabelle diverse",
-        "INSERT, UPDATE, DELETE: modificare i dati senza disastri",
-        "Gli indici: perché una query passa da otto secondi a venti millisecondi"
-      ],
-      "esercizi": [
-        "Crea una tabella allievi e inseriscine tre",
-        "Trova tutte le lezioni di un allievo ordinate per data",
-        "Calcola il totale delle ore per ogni allievo",
-        "Collega lezioni e allievi con una JOIN"
-      ],
       "errori_tipici": [
         "UPDATE o DELETE senza WHERE: modifichi tutta la tabella in un colpo",
         "Confondere WHERE (filtra prima del raggruppamento) e HAVING (dopo)",
         "Dimenticare che NULL non è zero e non si confronta con l'uguale",
         "Non provare mai una modifica dentro una transazione annullabile"
       ],
-      "come_so_di_aver_capito": "Davanti a una domanda sui tuoi dati sai scrivere la query invece di scaricare tutto in Excel."
+      "come_so_di_aver_capito": "Davanti a una domanda sui tuoi dati sai scrivere la query invece di scaricare tutto in Excel.",
+      "livelli": [
+        {
+          "nome": "Base",
+          "traguardo": "Crei una tabella, ci metti dei dati e li ritrovi.",
+          "tappe": [
+            "Tabelle, righe, colonne",
+            "SELECT e WHERE",
+            "ORDER BY e LIMIT",
+            "INSERT, UPDATE, DELETE senza disastri",
+            "Tipi di dato e NULL"
+          ],
+          "esercizi": [
+            "Tabella allievi con tre righe",
+            "Lezioni di un allievo ordinate per data"
+          ]
+        },
+        {
+          "nome": "Intermedio",
+          "traguardo": "Rispondi a domande vere sui tuoi dati senza passare da Excel.",
+          "tappe": [
+            "GROUP BY con SUM, COUNT, AVG",
+            "HAVING contro WHERE",
+            "Chiavi primarie ed esterne",
+            "JOIN: interna, sinistra, e quando usarle",
+            "Sottoquery",
+            "Date e raggruppamenti per mese",
+            "Progettare le tabelle: la normalizzazione spiegata con un esempio"
+          ],
+          "esercizi": [
+            "Totale ore per allievo per mese",
+            "Allievi senza nessuna lezione",
+            "Modella il registro lezioni in tre tabelle"
+          ]
+        },
+        {
+          "nome": "Avanzato",
+          "traguardo": "Fai andare una query da otto secondi a venti millisecondi e sai perché.",
+          "tappe": [
+            "Indici: quali creare, quando peggiorano le cose",
+            "Piano di esecuzione: leggere EXPLAIN",
+            "Transazioni, ACID, livelli di isolamento",
+            "Funzioni finestra: classifiche e totali progressivi",
+            "CTE e query ricorsive",
+            "Viste e viste materializzate",
+            "Backup, ripristino e migrazioni dello schema",
+            "Quando SQLite basta e quando serve PostgreSQL"
+          ],
+          "esercizi": [
+            "Trova l'indice che manca su una query lenta",
+            "Classifica degli allievi per ore con una funzione finestra",
+            "Migra i registri da Excel a SQLite senza perdere dati"
+          ]
+        }
+      ]
     },
     {
       "argomento": "HTML e pagine web",
@@ -304,28 +674,64 @@
       "dove_sono": "L'HTML dice cosa c'è in una pagina, il CSS come appare, il JavaScript cosa succede quando qualcuno la usa. Si imparano in quest'ordine.",
       "serve_prima": "Un editor di testo e un browser. Oppure CodePen, che fa tutto nel browser con l'anteprima immediata.",
       "primo_risultato": "In venti minuti: una pagina con il tuo nome, un titolo e un'immagine, aperta nel browser. È già un sito.",
-      "tappe": [
-        "I tag: titoli, paragrafi, immagini, collegamenti",
-        "La struttura di una pagina: head e body",
-        "CSS: colori, caratteri, spazi",
-        "Mettere le cose dove vuoi tu: il layout",
-        "Far funzionare la pagina anche sul telefono",
-        "I moduli: raccogliere dati da chi visita",
-        "JavaScript: reagire a un clic",
-        "Chiedere un dato a un servizio esterno e mostrarlo"
-      ],
-      "esercizi": [
-        "Pagina con la tua presentazione e una foto",
-        "Aggiungi un menu e fai in modo che si legga bene sul telefono",
-        "Bottone che cambia il colore di sfondo quando lo clicchi"
-      ],
       "errori_tipici": [
         "Dimenticare di chiudere un tag: la pagina si deforma da lì in poi",
         "Usare le tabelle per impaginare: funziona, ma poi sul telefono è un disastro",
         "Mettere stili dentro ogni elemento invece che in un foglio a parte",
         "Dimenticare il meta viewport: la pagina esce microscopica sul telefono"
       ],
-      "come_so_di_aver_capito": "Guardi una pagina qualsiasi, apri gli strumenti del browser e capisci com'è fatta."
+      "come_so_di_aver_capito": "Guardi una pagina qualsiasi, apri gli strumenti del browser e capisci com'è fatta.",
+      "livelli": [
+        {
+          "nome": "Base",
+          "traguardo": "Una pagina con il tuo nome, un'immagine e un collegamento.",
+          "tappe": [
+            "I tag: titoli, paragrafi, immagini, collegamenti",
+            "head e body",
+            "CSS: colori, caratteri, spazi",
+            "Liste e tabelle"
+          ],
+          "esercizi": [
+            "Pagina di presentazione con foto",
+            "Aggiungi un menu"
+          ]
+        },
+        {
+          "nome": "Intermedio",
+          "traguardo": "La pagina si legge bene sul telefono e reagisce a un clic.",
+          "tappe": [
+            "Layout con flexbox e griglia",
+            "Media query: adattarsi allo schermo",
+            "Moduli e raccolta dati",
+            "JavaScript: variabili, funzioni, eventi",
+            "Modificare la pagina dal codice",
+            "fetch: chiedere dati a un servizio e mostrarli"
+          ],
+          "esercizi": [
+            "Bottone che cambia il colore di sfondo",
+            "Pagina che mostra l'ultima lettura del tuo sensore",
+            "Modulo contatti che manda una email"
+          ]
+        },
+        {
+          "nome": "Avanzato",
+          "traguardo": "Pubblichi un'applicazione web che funziona anche senza rete.",
+          "tappe": [
+            "Variabili CSS e tema chiaro/scuro",
+            "Accessibilità: contrasto, tastiera, lettori di schermo",
+            "JavaScript asincrono: promesse e async/await",
+            "Grafici nel browser",
+            "App installabile sul telefono (PWA) e funzionamento offline",
+            "Prestazioni: perché una pagina è lenta",
+            "Pubblicazione e dominio"
+          ],
+          "esercizi": [
+            "Tema scuro automatico sulla tua one-page",
+            "Cruscotto dei sensori installabile sul telefono",
+            "Misura e migliora il tempo di caricamento"
+          ]
+        }
+      ]
     },
     {
       "argomento": "PowerShell e prompt di Windows",
@@ -334,135 +740,514 @@
       "dove_sono": "Non è una materia da studiare: sono una ventina di comandi che risolvono cose che a mano richiederebbero ore. Si imparano usandoli.",
       "serve_prima": "Niente, è già dentro Windows. Tasto destro sul menu Start, poi Terminale.",
       "primo_risultato": "In dieci minuti: rinomini cinquanta file in un colpo solo. Da lì capisci a cosa serve.",
-      "tappe": [
-        "Muoversi fra cartelle e vedere cosa c'è dentro",
-        "Cercare file per nome e per contenuto",
-        "La pipe: passare il risultato di un comando a un altro",
-        "Rinominare e spostare in blocco",
-        "Vedere cosa sta girando e chiudere un programma bloccato",
-        "Controllare la rete quando qualcosa non si collega",
-        "Mettere più comandi in un file e lanciarlo quando serve"
-      ],
-      "esercizi": [
-        "Trova i dieci file più grandi del disco",
-        "Rinomina tutte le foto di una cartella con data e numero progressivo",
-        "Scopri chi sta occupando la porta 8501 quando Streamlit si lamenta"
-      ],
       "errori_tipici": [
         "Lanciare un comando distruttivo nella cartella sbagliata: controlla sempre dove sei con pwd",
         "Dimenticare le virgolette nei percorsi che contengono spazi",
         "Cercare di imparare a memoria i comandi invece di tenerli in un prontuario"
       ],
-      "come_so_di_aver_capito": "Quando ti trovi davanti a un lavoro ripetitivo, ti viene in mente che si può automatizzare."
+      "come_so_di_aver_capito": "Quando ti trovi davanti a un lavoro ripetitivo, ti viene in mente che si può automatizzare.",
+      "livelli": [
+        {
+          "nome": "Base",
+          "traguardo": "Trovi un file e rinomini un gruppo di file in un colpo solo.",
+          "tappe": [
+            "Muoversi fra cartelle e vedere cosa c'è",
+            "Cercare file per nome e per contenuto",
+            "Copiare, spostare, rinominare",
+            "Capire dove sei prima di fare danni"
+          ],
+          "esercizi": [
+            "I dieci file più grandi del disco",
+            "Rinomina le foto con data e numero"
+          ]
+        },
+        {
+          "nome": "Intermedio",
+          "traguardo": "Scrivi uno script che ti fa risparmiare mezz'ora ogni settimana.",
+          "tappe": [
+            "La pipe: concatenare comandi",
+            "Variabili, cicli e condizioni",
+            "Filtrare e ordinare oggetti",
+            "Leggere e scrivere CSV e JSON",
+            "Script in file .ps1 e politiche di esecuzione",
+            "Processi, servizi, rete"
+          ],
+          "esercizi": [
+            "Script che ordina i download per tipo",
+            "Esporta in CSV l'elenco dei programmi installati",
+            "Controlla se un sito risponde e avvisa"
+          ]
+        },
+        {
+          "nome": "Avanzato",
+          "traguardo": "Automatizzi un lavoro ripetitivo che gira da solo ogni giorno.",
+          "tappe": [
+            "Funzioni e moduli riutilizzabili",
+            "Gestione degli errori e registro delle esecuzioni",
+            "Operazioni pianificate",
+            "Lavorare su computer remoti",
+            "Chiamare API REST da PowerShell",
+            "Credenziali conservate in modo sicuro",
+            "Firmare gli script"
+          ],
+          "esercizi": [
+            "Backup automatico pianificato con registro",
+            "Script che interroga un'API e salva i dati",
+            "Report settimanale via email"
+          ]
+        }
+      ]
     }
   ],
-
   "prontuari": [
     {
       "titolo": "PowerShell — i comandi che servono davvero",
       "icona": "⌨️",
       "voci": [
-        {"comando": "Get-ChildItem -Recurse -Filter *.xlsx", "cosa_fa": "Cerca tutti i file .xlsx dentro la cartella e le sottocartelle"},
-        {"comando": "Set-Location C:\\dashboard", "cosa_fa": "Entra in una cartella (abbreviato: cd)"},
-        {"comando": "Get-Location", "cosa_fa": "Dove mi trovo adesso (abbreviato: pwd). Controllalo prima di ogni comando pericoloso"},
-        {"comando": "Get-ChildItem | Sort-Object Length -Descending | Select-Object -First 10", "cosa_fa": "I dieci file più grandi della cartella"},
-        {"comando": "Get-ChildItem *.jpg | Rename-Item -NewName {$_.Name -replace 'IMG','Foto'}", "cosa_fa": "Rinomina in blocco sostituendo una parte del nome"},
-        {"comando": "Get-Content registro.txt -Tail 20 -Wait", "cosa_fa": "Mostra le ultime 20 righe di un file e resta in ascolto delle nuove"},
-        {"comando": "Select-String -Path *.py -Pattern 'def normalize'", "cosa_fa": "Cerca un testo dentro i file, come il «trova» ma da riga di comando"},
-        {"comando": "Get-Process | Sort-Object CPU -Descending | Select-Object -First 5", "cosa_fa": "I cinque programmi che stanno consumando più processore"},
-        {"comando": "Stop-Process -Name python -Force", "cosa_fa": "Chiude a forza un programma bloccato"},
-        {"comando": "Test-NetConnection google.com -Port 443", "cosa_fa": "Verifica se riesci a raggiungere un server su una certa porta"},
-        {"comando": "Get-NetIPAddress | Where-Object AddressFamily -eq 'IPv4'", "cosa_fa": "Gli indirizzi IP del tuo computer"},
-        {"comando": "$env:Path -split ';'", "cosa_fa": "Mostra dove Windows cerca i programmi: utile quando «python non è riconosciuto»"},
-        {"comando": "Compress-Archive -Path .\\progetto\\* -DestinationPath backup.zip", "cosa_fa": "Crea uno zip di una cartella"},
-        {"comando": "Get-Volume", "cosa_fa": "Spazio libero sui dischi"},
-        {"comando": "Start-Process notepad.exe -Verb RunAs", "cosa_fa": "Apre un programma come amministratore"},
-        {"comando": "Get-Help Get-ChildItem -Examples", "cosa_fa": "Esempi d'uso di qualunque comando: il modo giusto di non ricordarli a memoria"}
+        {
+          "comando": "Get-ChildItem -Recurse -Filter *.xlsx",
+          "cosa_fa": "Cerca tutti i file .xlsx dentro la cartella e le sottocartelle"
+        },
+        {
+          "comando": "Set-Location C:\\dashboard",
+          "cosa_fa": "Entra in una cartella (abbreviato: cd)"
+        },
+        {
+          "comando": "Get-Location",
+          "cosa_fa": "Dove mi trovo adesso (abbreviato: pwd). Controllalo prima di ogni comando pericoloso"
+        },
+        {
+          "comando": "Get-ChildItem | Sort-Object Length -Descending | Select-Object -First 10",
+          "cosa_fa": "I dieci file più grandi della cartella"
+        },
+        {
+          "comando": "Get-ChildItem *.jpg | Rename-Item -NewName {$_.Name -replace 'IMG','Foto'}",
+          "cosa_fa": "Rinomina in blocco sostituendo una parte del nome"
+        },
+        {
+          "comando": "Get-Content registro.txt -Tail 20 -Wait",
+          "cosa_fa": "Mostra le ultime 20 righe di un file e resta in ascolto delle nuove"
+        },
+        {
+          "comando": "Select-String -Path *.py -Pattern 'def normalize'",
+          "cosa_fa": "Cerca un testo dentro i file, come il «trova» ma da riga di comando"
+        },
+        {
+          "comando": "Get-Process | Sort-Object CPU -Descending | Select-Object -First 5",
+          "cosa_fa": "I cinque programmi che stanno consumando più processore"
+        },
+        {
+          "comando": "Stop-Process -Name python -Force",
+          "cosa_fa": "Chiude a forza un programma bloccato"
+        },
+        {
+          "comando": "Test-NetConnection google.com -Port 443",
+          "cosa_fa": "Verifica se riesci a raggiungere un server su una certa porta"
+        },
+        {
+          "comando": "Get-NetIPAddress | Where-Object AddressFamily -eq 'IPv4'",
+          "cosa_fa": "Gli indirizzi IP del tuo computer"
+        },
+        {
+          "comando": "$env:Path -split ';'",
+          "cosa_fa": "Mostra dove Windows cerca i programmi: utile quando «python non è riconosciuto»"
+        },
+        {
+          "comando": "Compress-Archive -Path .\\progetto\\* -DestinationPath backup.zip",
+          "cosa_fa": "Crea uno zip di una cartella"
+        },
+        {
+          "comando": "Get-Volume",
+          "cosa_fa": "Spazio libero sui dischi"
+        },
+        {
+          "comando": "Start-Process notepad.exe -Verb RunAs",
+          "cosa_fa": "Apre un programma come amministratore"
+        },
+        {
+          "comando": "Get-Help Get-ChildItem -Examples",
+          "cosa_fa": "Esempi d'uso di qualunque comando: il modo giusto di non ricordarli a memoria"
+        },
+        {
+          "comando": "Get-ChildItem -Recurse | Measure-Object -Property Length -Sum",
+          "cosa_fa": "Quanto pesa in tutto una cartella"
+        },
+        {
+          "comando": "Get-ChildItem | Where-Object LastWriteTime -gt (Get-Date).AddDays(-7)",
+          "cosa_fa": "I file modificati nell'ultima settimana"
+        },
+        {
+          "comando": "Import-Csv dati.csv | Where-Object Ore -gt 2 | Export-Csv filtrati.csv -NoTypeInformation",
+          "cosa_fa": "Filtra un CSV senza aprire Excel"
+        },
+        {
+          "comando": "Get-Date -Format 'yyyy-MM-dd'",
+          "cosa_fa": "La data di oggi nel formato che ordina bene nei nomi dei file"
+        }
       ]
     },
     {
       "titolo": "Prompt dei comandi — il minimo indispensabile",
       "icona": "▶️",
       "voci": [
-        {"comando": "cd /d D:\\progetti", "cosa_fa": "Cambia cartella anche di disco"},
-        {"comando": "dir /s /b *.xlsx", "cosa_fa": "Elenca tutti i file .xlsx con il percorso completo"},
-        {"comando": "ipconfig /all", "cosa_fa": "Configurazione di rete completa"},
-        {"comando": "ipconfig /flushdns", "cosa_fa": "Svuota la cache dei nomi: quando un sito non si apre e dovrebbe"},
-        {"comando": "ping 8.8.8.8", "cosa_fa": "Verifica che la connessione funzioni davvero"},
-        {"comando": "tracert maker-hub.it", "cosa_fa": "Mostra il percorso dei pacchetti fino a un sito"},
-        {"comando": "netstat -ano | findstr :8501", "cosa_fa": "Chi sta occupando una porta: utile se Streamlit dice che è già in uso"},
-        {"comando": "tasklist | findstr python", "cosa_fa": "Quali processi Python sono in esecuzione"},
-        {"comando": "taskkill /PID 1234 /F", "cosa_fa": "Chiude il processo con quel numero"},
-        {"comando": "where python", "cosa_fa": "Dove si trova il programma che stai lanciando"}
+        {
+          "comando": "cd /d D:\\progetti",
+          "cosa_fa": "Cambia cartella anche di disco"
+        },
+        {
+          "comando": "dir /s /b *.xlsx",
+          "cosa_fa": "Elenca tutti i file .xlsx con il percorso completo"
+        },
+        {
+          "comando": "ipconfig /all",
+          "cosa_fa": "Configurazione di rete completa"
+        },
+        {
+          "comando": "ipconfig /flushdns",
+          "cosa_fa": "Svuota la cache dei nomi: quando un sito non si apre e dovrebbe"
+        },
+        {
+          "comando": "ping 8.8.8.8",
+          "cosa_fa": "Verifica che la connessione funzioni davvero"
+        },
+        {
+          "comando": "tracert maker-hub.it",
+          "cosa_fa": "Mostra il percorso dei pacchetti fino a un sito"
+        },
+        {
+          "comando": "netstat -ano | findstr :8501",
+          "cosa_fa": "Chi sta occupando una porta: utile se Streamlit dice che è già in uso"
+        },
+        {
+          "comando": "tasklist | findstr python",
+          "cosa_fa": "Quali processi Python sono in esecuzione"
+        },
+        {
+          "comando": "taskkill /PID 1234 /F",
+          "cosa_fa": "Chiude il processo con quel numero"
+        },
+        {
+          "comando": "where python",
+          "cosa_fa": "Dove si trova il programma che stai lanciando"
+        }
       ]
     },
     {
       "titolo": "Linux e Raspberry — i primi comandi",
       "icona": "🍓",
       "voci": [
-        {"comando": "ssh pi@192.168.1.50", "cosa_fa": "Entra nel Raspberry dal tuo computer o dal telefono"},
-        {"comando": "ls -la", "cosa_fa": "Elenca i file, compresi quelli nascosti, con permessi e dimensioni"},
-        {"comando": "cd /home/pi/progetti", "cosa_fa": "Entra in una cartella"},
-        {"comando": "sudo apt update && sudo apt upgrade", "cosa_fa": "Aggiorna il sistema: il primo comando da dare su una scheda nuova"},
-        {"comando": "sudo apt install python3-pip", "cosa_fa": "Installa un programma"},
-        {"comando": "nano script.py", "cosa_fa": "Apre un editor di testo nel terminale (Ctrl+O salva, Ctrl+X esce)"},
-        {"comando": "python3 script.py", "cosa_fa": "Esegue uno script Python"},
-        {"comando": "sudo systemctl status mioservizio", "cosa_fa": "Vede se un servizio sta girando e perché no"},
-        {"comando": "sudo systemctl enable mioservizio", "cosa_fa": "Lo fa partire da solo a ogni accensione"},
-        {"comando": "journalctl -u mioservizio -f", "cosa_fa": "Mostra i messaggi del servizio mentre accadono"},
-        {"comando": "df -h", "cosa_fa": "Spazio libero sulla scheda SD"},
-        {"comando": "sudo shutdown -h now", "cosa_fa": "Spegne come si deve: non staccare mai la corrente senza questo"}
+        {
+          "comando": "ssh pi@192.168.1.50",
+          "cosa_fa": "Entra nel Raspberry dal tuo computer o dal telefono"
+        },
+        {
+          "comando": "ls -la",
+          "cosa_fa": "Elenca i file, compresi quelli nascosti, con permessi e dimensioni"
+        },
+        {
+          "comando": "cd /home/pi/progetti",
+          "cosa_fa": "Entra in una cartella"
+        },
+        {
+          "comando": "sudo apt update && sudo apt upgrade",
+          "cosa_fa": "Aggiorna il sistema: il primo comando da dare su una scheda nuova"
+        },
+        {
+          "comando": "sudo apt install python3-pip",
+          "cosa_fa": "Installa un programma"
+        },
+        {
+          "comando": "nano script.py",
+          "cosa_fa": "Apre un editor di testo nel terminale (Ctrl+O salva, Ctrl+X esce)"
+        },
+        {
+          "comando": "python3 script.py",
+          "cosa_fa": "Esegue uno script Python"
+        },
+        {
+          "comando": "sudo systemctl status mioservizio",
+          "cosa_fa": "Vede se un servizio sta girando e perché no"
+        },
+        {
+          "comando": "sudo systemctl enable mioservizio",
+          "cosa_fa": "Lo fa partire da solo a ogni accensione"
+        },
+        {
+          "comando": "journalctl -u mioservizio -f",
+          "cosa_fa": "Mostra i messaggi del servizio mentre accadono"
+        },
+        {
+          "comando": "df -h",
+          "cosa_fa": "Spazio libero sulla scheda SD"
+        },
+        {
+          "comando": "sudo shutdown -h now",
+          "cosa_fa": "Spegne come si deve: non staccare mai la corrente senza questo"
+        }
       ]
     },
     {
       "titolo": "SQL — le query che risolvono il 90% dei casi",
       "icona": "🗄️",
       "voci": [
-        {"comando": "SELECT * FROM lezioni WHERE allievo = 'Andrea Pinto' ORDER BY data DESC;", "cosa_fa": "Filtra e ordina"},
-        {"comando": "SELECT allievo, SUM(ore) AS ore_totali FROM lezioni GROUP BY allievo;", "cosa_fa": "Raggruppa e somma: il mattone di ogni rapporto"},
-        {"comando": "SELECT allievo, COUNT(*) FROM lezioni GROUP BY allievo HAVING COUNT(*) > 10;", "cosa_fa": "HAVING filtra dopo il raggruppamento, WHERE prima: è la confusione più comune"},
-        {"comando": "SELECT l.data, a.nome FROM lezioni l JOIN allievi a ON a.id = l.allievo_id;", "cosa_fa": "Unisce due tabelle sui campi collegati"},
-        {"comando": "SELECT * FROM allievi a LEFT JOIN lezioni l ON l.allievo_id = a.id WHERE l.id IS NULL;", "cosa_fa": "Trova gli allievi senza nessuna lezione: il modo di cercare ciò che manca"},
-        {"comando": "SELECT strftime('%Y-%m', data) AS mese, SUM(importo) FROM pagamenti GROUP BY mese;", "cosa_fa": "Raggruppa per mese (SQLite)"},
-        {"comando": "UPDATE lezioni SET pagato = 1 WHERE id = 42;", "cosa_fa": "Modifica: scrivi SEMPRE la WHERE prima della SET, o aggiorni tutta la tabella"},
-        {"comando": "CREATE INDEX idx_lezioni_allievo ON lezioni(allievo_id);", "cosa_fa": "Un indice sulle colonne usate nelle WHERE e nelle JOIN: da secondi a millisecondi"},
-        {"comando": "EXPLAIN QUERY PLAN SELECT ...;", "cosa_fa": "Mostra come il database eseguirà la query: serve a capire perché è lenta"},
-        {"comando": "BEGIN; ... ROLLBACK;", "cosa_fa": "Prova una modifica e annullala: fallo sempre prima di una UPDATE importante"}
+        {
+          "comando": "SELECT * FROM lezioni WHERE allievo = 'Andrea Pinto' ORDER BY data DESC;",
+          "cosa_fa": "Filtra e ordina"
+        },
+        {
+          "comando": "SELECT allievo, SUM(ore) AS ore_totali FROM lezioni GROUP BY allievo;",
+          "cosa_fa": "Raggruppa e somma: il mattone di ogni rapporto"
+        },
+        {
+          "comando": "SELECT allievo, COUNT(*) FROM lezioni GROUP BY allievo HAVING COUNT(*) > 10;",
+          "cosa_fa": "HAVING filtra dopo il raggruppamento, WHERE prima: è la confusione più comune"
+        },
+        {
+          "comando": "SELECT l.data, a.nome FROM lezioni l JOIN allievi a ON a.id = l.allievo_id;",
+          "cosa_fa": "Unisce due tabelle sui campi collegati"
+        },
+        {
+          "comando": "SELECT * FROM allievi a LEFT JOIN lezioni l ON l.allievo_id = a.id WHERE l.id IS NULL;",
+          "cosa_fa": "Trova gli allievi senza nessuna lezione: il modo di cercare ciò che manca"
+        },
+        {
+          "comando": "SELECT strftime('%Y-%m', data) AS mese, SUM(importo) FROM pagamenti GROUP BY mese;",
+          "cosa_fa": "Raggruppa per mese (SQLite)"
+        },
+        {
+          "comando": "UPDATE lezioni SET pagato = 1 WHERE id = 42;",
+          "cosa_fa": "Modifica: scrivi SEMPRE la WHERE prima della SET, o aggiorni tutta la tabella"
+        },
+        {
+          "comando": "CREATE INDEX idx_lezioni_allievo ON lezioni(allievo_id);",
+          "cosa_fa": "Un indice sulle colonne usate nelle WHERE e nelle JOIN: da secondi a millisecondi"
+        },
+        {
+          "comando": "EXPLAIN QUERY PLAN SELECT ...;",
+          "cosa_fa": "Mostra come il database eseguirà la query: serve a capire perché è lenta"
+        },
+        {
+          "comando": "BEGIN; ... ROLLBACK;",
+          "cosa_fa": "Prova una modifica e annullala: fallo sempre prima di una UPDATE importante"
+        },
+        {
+          "comando": "SELECT allievo, ore, SUM(ore) OVER (PARTITION BY allievo ORDER BY data) AS progressivo FROM lezioni;",
+          "cosa_fa": "Totale progressivo per allievo: funzione finestra"
+        },
+        {
+          "comando": "WITH mensili AS (SELECT ...) SELECT * FROM mensili WHERE ...;",
+          "cosa_fa": "CTE: dai un nome a una query e riusala, invece di annidare sottoquery"
+        },
+        {
+          "comando": "SELECT COALESCE(voto, 0) FROM lezioni;",
+          "cosa_fa": "Sostituisce i valori vuoti con un valore scelto"
+        },
+        {
+          "comando": "CREATE VIEW riepilogo AS SELECT ...;",
+          "cosa_fa": "Salva una query complicata con un nome e usala come fosse una tabella"
+        }
       ]
     },
     {
       "titolo": "ESP32 e Arduino — promemoria che si dimenticano sempre",
       "icona": "📟",
       "voci": [
-        {"comando": "Serial.begin(115200);", "cosa_fa": "Sull'ESP32 la velocità abituale è 115200, non 9600: se vedi caratteri strani è questo"},
-        {"comando": "GPIO 6-11", "cosa_fa": "ESP32: riservati alla memoria flash, non usarli"},
-        {"comando": "GPIO 34-39", "cosa_fa": "ESP32: solo ingresso, non hanno resistenza di pull-up interna"},
-        {"comando": "analogRead() 0-4095", "cosa_fa": "ESP32: convertitore a 12 bit, non a 10 come su Arduino UNO"},
-        {"comando": "3,3 V contro 5 V", "cosa_fa": "ESP32 lavora a 3,3 V: un modulo a 5 V può danneggiarlo, serve un adattatore di livello"},
-        {"comando": "ledcAttach(pin, freq, risoluzione)", "cosa_fa": "Sull'ESP32 la PWM non si fa con analogWrite ma con il canale LEDC"},
-        {"comando": "Wire.begin(SDA, SCL)", "cosa_fa": "Su ESP32 i pin I2C si possono scegliere: di solito 21 e 22"},
-        {"comando": "WiFi.begin(ssid, password); while (WiFi.status() != WL_CONNECTED)", "cosa_fa": "Aspetta la connessione prima di procedere, altrimenti le richieste falliscono"},
-        {"comando": "esp_sleep_enable_timer_wakeup(600e6); esp_deep_sleep_start();", "cosa_fa": "Sonno profondo per 10 minuti: è ciò che fa durare una batteria per mesi"},
-        {"comando": "pinMode(pin, INPUT_PULLUP)", "cosa_fa": "Evita la resistenza esterna sui pulsanti; il pulsante premuto legge LOW"},
-        {"comando": "Resistenza LED = (Valim - Vled) / Iled", "cosa_fa": "Con 5 V, LED rosso (2 V) e 20 mA: (5-2)/0,02 = 150 ohm"},
-        {"comando": "Condensatore 100 nF", "cosa_fa": "Vicino all'alimentazione di ogni integrato: metà dei comportamenti strani nasce da qui"},
-        {"comando": "Massa comune", "cosa_fa": "Alimentazioni diverse devono condividere il GND, o niente funziona"}
+        {
+          "comando": "Serial.begin(115200);",
+          "cosa_fa": "Sull'ESP32 la velocità abituale è 115200, non 9600: se vedi caratteri strani è questo"
+        },
+        {
+          "comando": "GPIO 6-11",
+          "cosa_fa": "ESP32: riservati alla memoria flash, non usarli"
+        },
+        {
+          "comando": "GPIO 34-39",
+          "cosa_fa": "ESP32: solo ingresso, non hanno resistenza di pull-up interna"
+        },
+        {
+          "comando": "analogRead() 0-4095",
+          "cosa_fa": "ESP32: convertitore a 12 bit, non a 10 come su Arduino UNO"
+        },
+        {
+          "comando": "3,3 V contro 5 V",
+          "cosa_fa": "ESP32 lavora a 3,3 V: un modulo a 5 V può danneggiarlo, serve un adattatore di livello"
+        },
+        {
+          "comando": "ledcAttach(pin, freq, risoluzione)",
+          "cosa_fa": "Sull'ESP32 la PWM non si fa con analogWrite ma con il canale LEDC"
+        },
+        {
+          "comando": "Wire.begin(SDA, SCL)",
+          "cosa_fa": "Su ESP32 i pin I2C si possono scegliere: di solito 21 e 22"
+        },
+        {
+          "comando": "WiFi.begin(ssid, password); while (WiFi.status() != WL_CONNECTED)",
+          "cosa_fa": "Aspetta la connessione prima di procedere, altrimenti le richieste falliscono"
+        },
+        {
+          "comando": "esp_sleep_enable_timer_wakeup(600e6); esp_deep_sleep_start();",
+          "cosa_fa": "Sonno profondo per 10 minuti: è ciò che fa durare una batteria per mesi"
+        },
+        {
+          "comando": "pinMode(pin, INPUT_PULLUP)",
+          "cosa_fa": "Evita la resistenza esterna sui pulsanti; il pulsante premuto legge LOW"
+        },
+        {
+          "comando": "Resistenza LED = (Valim - Vled) / Iled",
+          "cosa_fa": "Con 5 V, LED rosso (2 V) e 20 mA: (5-2)/0,02 = 150 ohm"
+        },
+        {
+          "comando": "Condensatore 100 nF",
+          "cosa_fa": "Vicino all'alimentazione di ogni integrato: metà dei comportamenti strani nasce da qui"
+        },
+        {
+          "comando": "Massa comune",
+          "cosa_fa": "Alimentazioni diverse devono condividere il GND, o niente funziona"
+        },
+        {
+          "comando": "millis() invece di delay()",
+          "cosa_fa": "Temporizzare senza bloccare tutto il resto del programma"
+        },
+        {
+          "comando": "WiFi.setAutoReconnect(true); WiFi.persistent(true);",
+          "cosa_fa": "Si riconnette da solo quando la rete torna"
+        },
+        {
+          "comando": "ESP.getFreeHeap()",
+          "cosa_fa": "Memoria libera: se cala sempre, c'è una perdita e prima o poi si blocca"
+        },
+        {
+          "comando": "esp_task_wdt_init(30, true)",
+          "cosa_fa": "Watchdog: se il programma si impianta, la scheda si riavvia da sola"
+        },
+        {
+          "comando": "Partitore 10k/20k per leggere 12 V",
+          "cosa_fa": "Porta una tensione alta dentro i 3,3 V dell'ADC senza danni"
+        }
       ]
     },
     {
       "titolo": "Python — quello che userai ogni giorno",
       "icona": "🐍",
       "voci": [
-        {"comando": "df[df[\"Allievo\"] == \"Andrea Pinto\"]", "cosa_fa": "Filtra le righe che soddisfano una condizione"},
-        {"comando": "df.groupby(\"Allievo\")[\"Ore\"].sum()", "cosa_fa": "Raggruppa e somma: l'equivalente della tabella pivot"},
-        {"comando": "df.sort_values(\"Data\", ascending=False)", "cosa_fa": "Ordina"},
-        {"comando": "df[\"Materia\"].value_counts()", "cosa_fa": "Conta quante volte compare ogni valore"},
-        {"comando": "df.head(10)  /  df.info()  /  df.describe()", "cosa_fa": "Le prime righe, la struttura, le statistiche: i tre comandi con cui si guarda un dato nuovo"},
-        {"comando": "for i, riga in df.iterrows():", "cosa_fa": "Scorre le righe una a una (lento: usalo solo quando serve davvero)"},
-        {"comando": "try: ... except Exception as e: print(e)", "cosa_fa": "Prova qualcosa e, se fallisce, non far morire il programma"},
-        {"comando": "print(type(x), x)", "cosa_fa": "Il modo più rapido per capire perché qualcosa non funziona: guarda cosa c'è davvero dentro"},
-        {"comando": "f\"Ciao {nome}, hai {ore:.1f} ore\"", "cosa_fa": "Inserisce valori dentro un testo, con il formato che vuoi"},
-        {"comando": "import pdb; pdb.set_trace()", "cosa_fa": "Ferma il programma lì e ti fa guardare dentro le variabili"}
+        {
+          "comando": "df[df[\"Allievo\"] == \"Andrea Pinto\"]",
+          "cosa_fa": "Filtra le righe che soddisfano una condizione"
+        },
+        {
+          "comando": "df.groupby(\"Allievo\")[\"Ore\"].sum()",
+          "cosa_fa": "Raggruppa e somma: l'equivalente della tabella pivot"
+        },
+        {
+          "comando": "df.sort_values(\"Data\", ascending=False)",
+          "cosa_fa": "Ordina"
+        },
+        {
+          "comando": "df[\"Materia\"].value_counts()",
+          "cosa_fa": "Conta quante volte compare ogni valore"
+        },
+        {
+          "comando": "df.head(10)  /  df.info()  /  df.describe()",
+          "cosa_fa": "Le prime righe, la struttura, le statistiche: i tre comandi con cui si guarda un dato nuovo"
+        },
+        {
+          "comando": "for i, riga in df.iterrows():",
+          "cosa_fa": "Scorre le righe una a una (lento: usalo solo quando serve davvero)"
+        },
+        {
+          "comando": "try: ... except Exception as e: print(e)",
+          "cosa_fa": "Prova qualcosa e, se fallisce, non far morire il programma"
+        },
+        {
+          "comando": "print(type(x), x)",
+          "cosa_fa": "Il modo più rapido per capire perché qualcosa non funziona: guarda cosa c'è davvero dentro"
+        },
+        {
+          "comando": "f\"Ciao {nome}, hai {ore:.1f} ore\"",
+          "cosa_fa": "Inserisce valori dentro un testo, con il formato che vuoi"
+        },
+        {
+          "comando": "import pdb; pdb.set_trace()",
+          "cosa_fa": "Ferma il programma lì e ti fa guardare dentro le variabili"
+        },
+        {
+          "comando": "df.to_excel(\"riepilogo.xlsx\", index=False)",
+          "cosa_fa": "Salva una tabella in Excel"
+        },
+        {
+          "comando": "pd.read_excel(\"file.xlsx\", sheet_name=\"Registro Lezioni\")",
+          "cosa_fa": "Legge una scheda precisa di un file Excel"
+        },
+        {
+          "comando": "df.merge(altro, on=\"Allievo\", how=\"left\")",
+          "cosa_fa": "Unisce due tabelle su una colonna comune"
+        },
+        {
+          "comando": "df[\"Data\"] = pd.to_datetime(df[\"Data\"], dayfirst=True, errors=\"coerce\")",
+          "cosa_fa": "Converte in date vere, mettendo vuoto dove non riesce invece di fermarsi"
+        },
+        {
+          "comando": "df.duplicated(subset=[\"Allievo\",\"Data\"]).sum()",
+          "cosa_fa": "Quante righe duplicate ci sono"
+        },
+        {
+          "comando": "df.isna().sum()",
+          "cosa_fa": "Quanti valori mancanti per colonna: il primo controllo su un dato nuovo"
+        }
+      ]
+    },
+    {
+      "titolo": "Git e GitHub — quello che serve per non perdere il lavoro",
+      "icona": "🐙",
+      "voci": [
+        {
+          "comando": "git clone https://github.com/utente/repo.git",
+          "cosa_fa": "Scarica una repository sul tuo computer"
+        },
+        {
+          "comando": "git status",
+          "cosa_fa": "Cosa è cambiato rispetto all'ultima versione salvata: il comando da dare sempre prima di ogni altro"
+        },
+        {
+          "comando": "git add . && git commit -m \"descrizione\"",
+          "cosa_fa": "Salva una nuova versione con una descrizione"
+        },
+        {
+          "comando": "git push",
+          "cosa_fa": "Manda le versioni salvate su GitHub"
+        },
+        {
+          "comando": "git pull",
+          "cosa_fa": "Scarica le modifiche fatte altrove: dallo da fare prima di cominciare a lavorare"
+        },
+        {
+          "comando": "git log --oneline -10",
+          "cosa_fa": "Le ultime dieci versioni, una per riga"
+        },
+        {
+          "comando": "git diff",
+          "cosa_fa": "Esattamente quali righe hai cambiato"
+        },
+        {
+          "comando": "git checkout -- file.py",
+          "cosa_fa": "Butta via le modifiche a un file e torna all'ultima versione salvata"
+        },
+        {
+          "comando": "git revert <codice>",
+          "cosa_fa": "Annulla una versione creando una versione nuova: il modo sicuro di tornare indietro"
+        },
+        {
+          "comando": "git switch -c prova",
+          "cosa_fa": "Crea un ramo per sperimentare senza toccare quello buono"
+        },
+        {
+          "comando": "git stash / git stash pop",
+          "cosa_fa": "Metti da parte le modifiche a metà e riprendile dopo"
+        },
+        {
+          "comando": ".gitignore",
+          "cosa_fa": "L'elenco dei file da non salvare: ci vanno sempre le credenziali e i file temporanei"
+        }
       ]
     }
   ]
