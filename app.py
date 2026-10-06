@@ -1107,16 +1107,40 @@ with st.sidebar.expander("🔍 Diagnostica lettura"):
 
 # ---- intestazione del marchio -------------------------------------------
 
-def _logo_base64():
-    """Il logo come stringa, per inserirlo direttamente nell'intestazione."""
+@st.cache_data(ttl=3600, show_spinner=False)
+def _logo_base64(_versione: float = 0.0):
+    """Il logo per l'intestazione. Lo cerca prima nella cartella loghi/ della repo,
+    poi nella cartella Drive dei loghi: così funziona anche se tieni le immagini
+    solo su Drive."""
     import base64
+
+    def _codifica(dati: bytes, nome: str) -> str:
+        if nome.lower().endswith(".png"):
+            tipo = "png"
+        elif nome.lower().endswith(".svg"):
+            tipo = "svg+xml"
+        else:
+            tipo = "jpeg"
+        return f"data:image/{tipo};base64," + base64.b64encode(dati).decode()
+
+    # 1) nella repo
     try:
         p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "loghi", APP_LOGO)
         with open(p, "rb") as f:
-            tipo = "png" if APP_LOGO.lower().endswith(".png") else "jpeg"
-            return f"data:image/{tipo};base64," + base64.b64encode(f.read()).decode()
+            return _codifica(f.read(), APP_LOGO)
     except Exception:
-        return ""
+        pass
+
+    # 2) nella cartella Drive dei loghi
+    try:
+        id_loghi = (secret("drive_folder_id_loghi", "") or "").strip()
+        if id_loghi:
+            for f in drive_list_qualsiasi(id_loghi, 0.0):
+                if f["name"].strip().lower() == APP_LOGO.lower():
+                    return _codifica(drive_file_bytes(f["id"], 0.0), f["name"])
+    except Exception:
+        pass
+    return ""
 
 
 def _data_italiana(d=None):
@@ -1139,7 +1163,7 @@ def _saluto():
     return "Buonasera"
 
 
-_logo = _logo_base64()
+_logo = _logo_base64(st.session_state.get("cache_key", 0.0))
 _blocco_logo = (f'<img src="{_logo}" class="qd-logo" alt="{APP_MARCHIO}"/>'
                 if _logo else '<div class="qd-logo qd-logo-vuoto">EN</div>')
 
