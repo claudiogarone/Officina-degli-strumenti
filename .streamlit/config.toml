@@ -1,0 +1,15 @@
+# Tema ENESTAR Maker Lab — verde del marchio su fondo chiaro.
+# Per passare al fondo scuro: base = "dark", backgroundColor = "#11150F",
+# secondaryBackgroundColor = "#1A211A", textColor = "#E8EDE6".
+
+[theme]
+base = "light"
+primaryColor = "#1BAF7A"
+backgroundColor = "#FBFCFA"
+secondaryBackgroundColor = "#F0F5EF"
+textColor = "#16200F"
+font = "sans serif"
+
+[client]
+toolbarMode = "minimal"
+showErrorDetails = true
