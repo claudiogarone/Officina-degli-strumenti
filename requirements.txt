@@ -8,3 +8,4 @@ google-auth>=2.34
 reportlab>=4.0
 svglib>=1.5
 requests>=2.31
+pillow>=10.0
