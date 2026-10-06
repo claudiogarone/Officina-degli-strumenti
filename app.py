@@ -32,9 +32,37 @@ except Exception as _e:          # manca reportlab o il file cancelleria.py
 # CONFIGURAZIONE PAGINA
 # ============================================================================
 
+# ---------------------------------------------------------------------------
+# IDENTITÀ DELL'APPLICAZIONE
+# Cambia queste quattro righe per rinominare tutto: titolo della scheda del
+# browser, intestazione, sottotitolo. Il logo si prende da loghi/enestar.jpg.
+# ---------------------------------------------------------------------------
+
+APP_MARCHIO = "ENESTAR"
+APP_NOME = "Quadro"
+APP_PAYOFF = "Il quadro di comando del Maker Lab"
+APP_TITOLO_BROWSER = "ENESTAR · Quadro"
+APP_LOGO = "enestar.jpg"          # dentro la cartella loghi/
+
+VERDE = "#1BAF7A"
+VERDE_SCURO = "#0E7A54"
+VERDE_CHIARO = "#8FE3C4"
+GRAFITE = "#16200F"
+
+
+def _icona_pagina():
+    """Il logo come icona della scheda del browser; se manca, un'emoji."""
+    try:
+        from PIL import Image
+        return Image.open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                       "loghi", APP_LOGO))
+    except Exception:
+        return "🌿"
+
+
 st.set_page_config(
-    page_title="Registri Lezioni - Dashboard",
-    page_icon="📘",
+    page_title=APP_TITOLO_BROWSER,
+    page_icon=_icona_pagina(),
     layout="wide",
     # "auto": aperta su PC, chiusa su smartphone (si apre col pulsante ☰)
     initial_sidebar_state="auto",
@@ -85,6 +113,95 @@ st.markdown("""
   }
   h1 {font-size: 1.9rem !important; font-weight: 700 !important;}
   .stTabs [data-baseweb="tab"] {font-size: 0.95rem; font-weight: 550;}
+
+  /* ===================== INTESTAZIONE ENESTAR ===================== */
+  .qd-header {
+      position: relative; overflow: hidden;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem; padding: 1.15rem 1.4rem; margin: 0 0 .6rem 0;
+      border-radius: 18px;
+      background:
+        radial-gradient(120% 160% at 0% 0%, rgba(27,175,122,.16) 0%, rgba(27,175,122,0) 58%),
+        linear-gradient(135deg, rgba(27,175,122,.10) 0%, rgba(27,175,122,.02) 55%, rgba(143,227,196,.10) 100%);
+      border: 1px solid rgba(27,175,122,.28);
+  }
+  .qd-piste {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      pointer-events: none;
+  }
+  .qd-base {opacity: .30;}
+  .qd-nodi {opacity: .45;}
+  /* un impulso che percorre le piste, come un segnale sul circuito */
+  .qd-impulso {
+      opacity: .85;
+      stroke-dasharray: 26 1400; stroke-dashoffset: 0;
+      animation: qd-impulso 9s linear infinite;
+  }
+  @keyframes qd-impulso { to { stroke-dashoffset: -1426; } }
+  .qd-header:hover .qd-impulso {animation-duration: 3.5s;}
+  @media (prefers-reduced-motion: reduce) {
+      .qd-impulso {animation: none; opacity: 0;}
+  }
+
+  .qd-marchio {position: relative; display: flex; align-items: center; gap: .9rem;}
+  .qd-logo {
+      width: 58px; height: 58px; border-radius: 14px; object-fit: cover;
+      box-shadow: 0 3px 14px rgba(14,122,84,.26);
+      transition: transform .25s ease, box-shadow .25s ease;
+  }
+  .qd-header:hover .qd-logo {
+      transform: translateY(-2px) scale(1.04);
+      box-shadow: 0 7px 22px rgba(14,122,84,.34);
+  }
+  .qd-logo-vuoto {
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #1BAF7A, #0E7A54);
+      color: #fff; font-weight: 800; letter-spacing: .04em;
+  }
+  h1.qd-nome {
+      font-size: 1.95rem !important; font-weight: 750 !important; line-height: 1.05;
+      letter-spacing: -.015em; color: #16200F;
+      margin: 0 !important; padding: 0 !important;
+  }
+  h1.qd-nome span {
+      color: #0E7A54; letter-spacing: .06em; font-weight: 800;
+  }
+  .qd-payoff {
+      font-size: .86rem; color: #4d5a46; margin-top: .22rem;
+      letter-spacing: .01em;
+  }
+  .qd-stato {position: relative; text-align: right;}
+  .qd-saluto {font-size: .95rem; font-weight: 650; color: #16200F;}
+  .qd-data {font-size: .78rem; color: #6d7a66;}
+
+  /* riquadri che rispondono al passaggio del mouse */
+  div[data-testid="stMetric"] {
+      transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+  }
+  div[data-testid="stMetric"]:hover {
+      transform: translateY(-2px);
+      border-color: rgba(27,175,122,.55);
+      box-shadow: 0 6px 18px rgba(14,122,84,.14);
+  }
+  .stTabs [data-baseweb="tab"]:hover {color: #0E7A54;}
+
+  /* fondo scuro: colori leggibili */
+  @media (prefers-color-scheme: dark) {
+      h1.qd-nome, .qd-saluto {color: #EAF2E6;}
+      h1.qd-nome span {color: #8FE3C4;}
+      .qd-payoff {color: #a9b8a3;}
+      .qd-data {color: #93a38d;}
+      .qd-header {border-color: rgba(143,227,196,.26);}
+  }
+
+  @media (max-width: 820px) {
+      .qd-header {flex-direction: column; align-items: flex-start; gap: .6rem;
+                  padding: .9rem 1rem; border-radius: 14px;}
+      .qd-logo {width: 46px; height: 46px; border-radius: 11px;}
+      h1.qd-nome {font-size: 1.45rem !important;}
+      .qd-payoff {font-size: .78rem;}
+      .qd-stato {text-align: left;}
+  }
 
   /* ---------- TABLET (fino a 1024px): due colonne al massimo ---------- */
   @media (max-width: 1024px) {
@@ -828,7 +945,17 @@ def load_from_uploads(payload):
 # SIDEBAR - SORGENTE E FILTRI
 # ============================================================================
 
-st.sidebar.markdown("### 📘 Registri Lezioni")
+st.sidebar.markdown(f"### 🌿 {APP_MARCHIO} {APP_NOME}")
+
+def _mtime(nome_file: str) -> float:
+    """Data di modifica di un file accanto al codice. Entra nella chiave della
+    cache, così quando il file cambia la cache si invalida da sola."""
+    try:
+        return os.path.getmtime(
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), nome_file))
+    except Exception:
+        return 0.0
+
 
 SECRETS_ERRORE = ""   # errore di lettura/sintassi dei Secrets, se c'è
 
@@ -978,8 +1105,83 @@ with st.sidebar.expander("🔍 Diagnostica lettura"):
 # INTESTAZIONE + KPI
 # ============================================================================
 
-st.title("📘 Dashboard Registri Lezioni")
-st.caption(f"Periodo {df['Data'].min():%d/%m/%Y} – {df['Data'].max():%d/%m/%Y} · "
+# ---- intestazione del marchio -------------------------------------------
+
+def _logo_base64():
+    """Il logo come stringa, per inserirlo direttamente nell'intestazione."""
+    import base64
+    try:
+        p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "loghi", APP_LOGO)
+        with open(p, "rb") as f:
+            tipo = "png" if APP_LOGO.lower().endswith(".png") else "jpeg"
+            return f"data:image/{tipo};base64," + base64.b64encode(f.read()).decode()
+    except Exception:
+        return ""
+
+
+def _data_italiana(d=None):
+    """La data per esteso in italiano: il server non ha la lingua installata."""
+    d = d or dt.date.today()
+    giorni = ["lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato",
+              "domenica"]
+    testo = f"{giorni[d.weekday()]} {d.day} {MESI_IT[d.month - 1].lower()} {d.year}"
+    return testo[0].upper() + testo[1:]
+
+
+def _saluto():
+    ora = dt.datetime.now().hour
+    if ora < 6:
+        return "Ancora in piedi"
+    if ora < 13:
+        return "Buongiorno"
+    if ora < 18:
+        return "Buon pomeriggio"
+    return "Buonasera"
+
+
+_logo = _logo_base64()
+_blocco_logo = (f'<img src="{_logo}" class="qd-logo" alt="{APP_MARCHIO}"/>'
+                if _logo else '<div class="qd-logo qd-logo-vuoto">EN</div>')
+
+st.markdown(f"""
+<div class="qd-header">
+  <svg class="qd-piste" viewBox="0 0 1200 160" preserveAspectRatio="none"
+       aria-hidden="true">
+    <defs>
+      <g id="qd-tracciati" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M0 118 H160 L190 88 H330 L356 62 H520"/>
+        <path d="M0 52 H96 L124 80 H268 L296 108 H470"/>
+        <path d="M1200 44 H1040 L1012 72 H880 L854 100 H700"/>
+        <path d="M1200 126 H1080 L1052 98 H930"/>
+        <path d="M560 160 V124 L590 96 H660"/>
+      </g>
+    </defs>
+    <use href="#qd-tracciati" class="qd-base" stroke="{VERDE}" stroke-width="1.5"/>
+    <use href="#qd-tracciati" class="qd-impulso" stroke="{VERDE_SCURO}" stroke-width="2.6"/>
+    <g fill="{VERDE}" class="qd-nodi">
+      <circle cx="190" cy="88" r="4"/><circle cx="356" cy="62" r="4"/>
+      <circle cx="124" cy="80" r="4"/><circle cx="296" cy="108" r="4"/>
+      <circle cx="1012" cy="72" r="4"/><circle cx="854" cy="100" r="4"/>
+      <circle cx="1052" cy="98" r="4"/><circle cx="590" cy="96" r="4"/>
+    </g>
+  </svg>
+
+  <div class="qd-marchio">
+    {_blocco_logo}
+    <div class="qd-testo">
+      <h1 class="qd-nome"><span>{APP_MARCHIO}</span> {APP_NOME}</h1>
+      <div class="qd-payoff">{APP_PAYOFF}</div>
+    </div>
+  </div>
+
+  <div class="qd-stato">
+    <div class="qd-saluto">{_saluto()}, Claudio</div>
+    <div class="qd-data">{_data_italiana()}</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+st.caption(f"Registri dal {df['Data'].min():%d/%m/%Y} al {df['Data'].max():%d/%m/%Y} · "
            f"aggiornamento automatico dai fogli su Google Drive")
 
 # --- controllo qualità dei dati -------------------------------------------
@@ -1158,7 +1360,7 @@ with TAB[0]:
     st.markdown("##### Collegamenti rapidi")
 
     @st.cache_data(show_spinner=False)
-    def carica_collegamenti():
+    def carica_collegamenti(_versione: float):
         import json as _json
         try:
             with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -1167,7 +1369,8 @@ with TAB[0]:
         except Exception:
             return []
 
-    voci = [v for v in carica_collegamenti() if (v.get("url") or "").strip()]
+    voci = [v for v in carica_collegamenti(_mtime("collegamenti.json"))
+            if (v.get("url") or "").strip()]
 
     # le cartelle Drive si ricavano dai Secrets: nessuna configurazione in più
     for etichetta, chiave in [("Cartella Registri", "drive_folder_id"),
@@ -2318,7 +2521,7 @@ with TAB[7]:
 with TAB[8]:
 
     @st.cache_data(show_spinner=False)
-    def carica_studio():
+    def carica_studio(_versione: float):
         import json as _json
         try:
             with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -2327,7 +2530,7 @@ with TAB[8]:
         except Exception as e:
             return {"_errore": str(e)}
 
-    S = carica_studio()
+    S = carica_studio(_mtime("studio.json"))
     if "_errore" in S:
         st.error(f"Non riesco a leggere `studio.json`: {S['_errore']}")
         st.caption("Controlla che il file sia nella repo accanto ad app.py e che il "
@@ -2481,10 +2684,19 @@ with TAB[8]:
                 st.caption("Per non doverla reinserire ogni volta, mettila nei "
                            "Secrets dell'app come `google_api_key = \"AIza...\"`.")
 
+            # la chiave dipende dal valore predefinito: se cambia studio.json,
+            # il campo riparte dal nuovo valore invece di tenere quello vecchio
             modello = st.text_input("Modello", MODELLO_DEF,
+                                    key=f"modello_ai__{MODELLO_DEF}",
                                     help="Se ricevi un errore 404, il nome del "
                                          "modello non è più valido: usa il pulsante "
                                          "qui sotto e scegline uno dall'elenco.")
+            if st.button("🔄 Ricarica i contenuti dai file"):
+                st.cache_data.clear()
+                for k in list(st.session_state.keys()):
+                    if str(k).startswith("modello_ai__"):
+                        del st.session_state[k]
+                st.rerun()
             if chiave and st.button("Quali modelli posso usare?"):
                 try:
                     r = requests.get(
