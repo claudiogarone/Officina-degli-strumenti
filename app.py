@@ -2561,25 +2561,65 @@ with TAB[8]:
                    "JSON sia valido (una virgola di troppo basta a invalidarlo).")
         st.stop()
 
-    # ---------------- link rapidi -----------------------------------------
-    link = [l for l in S.get("link_rapidi", []) if (l.get("url") or "").strip()]
-    mancanti = [l["nome"] for l in S.get("link_rapidi", []) if not (l.get("url") or "").strip()]
-    if link:
-        cols = st.columns(min(4, len(link)))
-        for col, l in zip(cols, link):
-            col.link_button(f"{l.get('icona', '🔗')} {l['nome']}", l["url"],
-                            width='stretch', help=l.get("nota", ""))
-    if mancanti:
-        st.caption("Senza indirizzo in `studio.json`, quindi non mostrati: "
-                   + ", ".join(mancanti))
-
-    st.divider()
-
-    SEZ = st.tabs(["🎯 Percorsi", "🧰 Strumenti", "📋 Prontuari",
+    SEZ = st.tabs(["🧪 Officina", "🎯 Percorsi", "🧰 Strumenti", "📋 Prontuari",
                    "🤖 Assistente", "💬 Prompt pronti"])
 
-    # ================= PERCORSI ==========================================
+    # ================= OFFICINA ==========================================
+    # I tuoi strumenti, quelli che hai costruito tu. Vivono su un indirizzo
+    # loro (microfono, webcam e memoria del browser non funzionano dentro
+    # Quadro), quindi qui ci sono le porte d'ingresso, non le app incastrate.
     with SEZ[0]:
+        OFF = S.get("officina", {})
+        st.caption(OFF.get("intro", "L'officina degli strumenti: quelli che hai "
+                                    "costruito tu, raccolti in un posto solo."))
+
+        strumenti_off = OFF.get("strumenti", [])
+        for riga in range(0, len(strumenti_off), 2):
+            cols = st.columns(2)
+            for col, t in zip(cols, strumenti_off[riga:riga + 2]):
+                with col:
+                    with st.container(border=True):
+                        st.markdown(f"#### {t.get('icona', '🔧')} {t['nome']}")
+                        if t.get("sottotitolo"):
+                            st.caption(t["sottotitolo"])
+                        if t.get("cosa_ci_fai"):
+                            st.markdown(t["cosa_ci_fai"])
+
+                        url = (t.get("url") or "").strip()
+                        if url:
+                            st.link_button(f"Apri {t['nome']} ↗", url,
+                                           width='stretch', type="primary")
+                        else:
+                            st.info("Manca l'indirizzo: aggiungilo in `studio.json`, "
+                                    f"voce **{t['nome']}**, campo `url`.")
+
+                        # sezioni interne (p.es. «Scienza» dentro Inchiostro)
+                        sezioni = t.get("sezioni", [])
+                        if sezioni:
+                            st.markdown("**Dentro ci trovi**")
+                            for sz in sezioni:
+                                u = (sz.get("url") or "").strip() or url
+                                c1, c2 = st.columns([3, 1])
+                                c1.markdown(f"**{sz['nome']}** — {sz.get('nota', '')}")
+                                if u:
+                                    c2.link_button("Vai", u, width='stretch')
+
+        # ---------------- altri collegamenti -------------------------------
+        link = [l for l in S.get("link_rapidi", []) if (l.get("url") or "").strip()]
+        mancanti = [l["nome"] for l in S.get("link_rapidi", [])
+                    if not (l.get("url") or "").strip()]
+        if link:
+            st.markdown("##### Altri collegamenti")
+            cols = st.columns(min(4, len(link)))
+            for col, l in zip(cols, link):
+                col.link_button(f"{l.get('icona', '🔗')} {l['nome']}", l["url"],
+                                width='stretch', help=l.get("nota", ""))
+        if mancanti:
+            st.caption("Senza indirizzo in `studio.json`, quindi non mostrati: "
+                       + ", ".join(mancanti))
+
+    # ================= PERCORSI ==========================================
+    with SEZ[1]:
         percorsi = S.get("percorsi", [])
         nomi = [p["argomento"] for p in percorsi]
         scelto_p = st.radio("Argomento", nomi, horizontal=True,
@@ -2624,7 +2664,7 @@ with TAB[8]:
                         f"{p['come_so_di_aver_capito']}")
 
     # ================= PRONTUARI =========================================
-    with SEZ[2]:
+    with SEZ[3]:
         prontuari = S.get("prontuari", [])
         cerca = st.text_input("Cerca fra tutti i comandi",
                               placeholder="per esempio: rinomina, groupby, GPIO, JOIN")
@@ -2679,7 +2719,7 @@ with TAB[8]:
                    "insieme. Per aggiungerne, modifica `studio.json`.")
 
     # ================= ASSISTENTE IA =====================================
-    with SEZ[3]:
+    with SEZ[4]:
         MODELLO_DEF = S.get("ai", {}).get("modello", "gemini-3.8-flash")
 
         chiave = (secret("google_api_key", "") or "").strip()
@@ -2880,7 +2920,7 @@ with TAB[8]:
                     st.link_button("Apri", t["url"], width='stretch')
 
     # ================= STRUMENTI DI STUDIO ===============================
-    with SEZ[1]:
+    with SEZ[2]:
         st.caption("Scelti per quello che serve davvero: prendere appunti che "
                    "ritrovi, fissare le cose in memoria, provare senza comprare "
                    "hardware.")
@@ -2893,7 +2933,7 @@ with TAB[8]:
             st.markdown("")
 
     # ================= PROMPT PRONTI =====================================
-    with SEZ[4]:
+    with SEZ[5]:
         st.caption("Copia il testo, incollalo nell'assistente e sostituisci le parti "
                    "fra parentesi quadre. Sono scritti per farti **spiegare** le cose, "
                    "non per fartele risolvere.")
