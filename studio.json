@@ -4,30 +4,55 @@
     "modello": "gemini-3.8-flash",
     "nota": "Il nome del modello cambia nel tempo. Se l'assistente dà errore 404, usa il pulsante «Quali modelli posso usare» nel tab Studio e scrivi qui uno di quelli elencati."
   },
+  "officina": {
+    "intro": "L'officina degli strumenti: quelli che hai costruito tu. Vivono su un indirizzo loro perché microfono, webcam e memoria del browser non funzionano dentro Quadro — qui ci sono le porte d'ingresso, aperte da telefono, tablet e PC.",
+    "strumenti": [
+      {
+        "icona": "✍️",
+        "nome": "Inchiostro",
+        "sottotitolo": "Le note scritte a mano, trascritte e ricercabili",
+        "url": "https://spectacular-pasca-19236e.netlify.app",
+        "cosa_ci_fai": "Fotografi il foglio della smartpen, l'AI lo trascrive, e da lì cerchi, correggi e riordini. È il tuo quaderno, ma ricercabile.",
+        "sezioni": [
+          {
+            "nome": "Scienza",
+            "nota": "Taccuino delle anomalie, esercizio del giorno, i 12 problemi aperti: l'allenamento a ragionare da scienziato.",
+            "url": ""
+          }
+        ]
+      },
+      {
+        "icona": "🎙️",
+        "nome": "ParlaChiaro",
+        "sottotitolo": "Allenamento alla comunicazione e al public speaking",
+        "url": "",
+        "cosa_ci_fai": "Sei blocchi da 45 minuti con timer, registrazione della voce e analisi: ritmo, intercalari, linguaggio manageriale. Serve il microfono, quindi va aperto fuori da Quadro.",
+        "sezioni": []
+      },
+      {
+        "icona": "🛠️",
+        "nome": "MakerHub Italia",
+        "sottotitolo": "La tua piattaforma per la comunità maker",
+        "url": "https://app.maker-hub.it",
+        "cosa_ci_fai": "Simulatori, officine e laboratori: il posto dove mandi chi vuole provare prima di comprare l'hardware.",
+        "sezioni": []
+      },
+      {
+        "icona": "🌐",
+        "nome": "Portfolio one-page",
+        "sottotitolo": "La vetrina pubblica dei progetti",
+        "url": "https://enchanting-empanada-8c55cc.netlify.app/",
+        "cosa_ci_fai": "Quello che vede chi ti cerca da fuori. Da qui prendi anche i collegamenti da mettere sulla cancelleria.",
+        "sezioni": []
+      }
+    ]
+  },
   "link_rapidi": [
-    {
-      "icona": "✍️",
-      "nome": "Inchiostro",
-      "url": "",
-      "nota": "Le tue note scritte a mano, trascritte e ricercabili — metti qui l'indirizzo quando è online"
-    },
-    {
-      "icona": "🛠️",
-      "nome": "MakerHub Italia",
-      "url": "https://app.maker-hub.it",
-      "nota": "La tua piattaforma: simulatori, officine, laboratori"
-    },
     {
       "icona": "📚",
       "nome": "Materiale di studio su Drive",
       "url": "",
       "nota": "Metti qui il link alla tua cartella Drive degli appunti"
-    },
-    {
-      "icona": "🌐",
-      "nome": "Portfolio one-page",
-      "url": "https://enchanting-empanada-8c55cc.netlify.app/",
-      "nota": "La vetrina dei progetti"
     }
   ],
   "strumenti_studio": [
