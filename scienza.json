@@ -1,0 +1,76 @@
+{
+  "_nota": "L'allenamento all'intuizione scientifica: la rotazione settimanale e le abitudini. Puoi cambiare i testi liberamente, non toccare i nomi dei campi.",
+  "intro": "Non si allena il talento, si allenano sette abitudini precise. Cinque minuti di taccuino tutti i giorni, quindici minuti sull'esercizio del giorno. Il resto lo fa la costanza.",
+  "rotazione": [
+    {
+      "giorno": 0,
+      "nome": "Lunedì",
+      "abilita": "Rendere visibile",
+      "esercizio": "Scegli una grandezza invisibile — calore, flusso d'aria, sforzi meccanici, umidità, campo elettrico — e progetta un rivelatore povero che la traduca in qualcosa che si vede.",
+      "esempio": "Un pezzo stampato in plastica fra due filtri polarizzatori mostra gli sforzi interni come bande colorate. Faraday non vedeva il campo magnetico: vedeva come si disponeva la limatura di ferro.",
+      "domanda": "Qual è la grandezza, e qual è l'impronta visibile che lascia?"
+    },
+    {
+      "giorno": 1,
+      "nome": "Martedì",
+      "abilita": "Stimare",
+      "esercizio": "Una stima di Fermi, a mente, senza cercare niente: ti serve solo l'ordine di grandezza. Poi verifica e guarda di quanto hai sbagliato.",
+      "esempio": "Quanti watt dissipano tutti i caricabatterie lasciati in standby nel tuo comune? Quanti metri di filo ci sono in un trasformatore da palo?",
+      "domanda": "Qual è la catena di numeri che ti porta alla stima, e quale anello è il più fragile?"
+    },
+    {
+      "giorno": 2,
+      "nome": "Mercoledì",
+      "abilita": "Analogia",
+      "esercizio": "Prendi un problema vero di un tuo progetto e chiediti chi lo ha già risolto: in natura, in un altro mestiere, in un altro secolo. Trovane almeno tre.",
+      "esempio": "Darwin trovò la selezione naturale leggendo un economista. Il velcro nasce dai semi di bardana attaccati al pelo del cane.",
+      "domanda": "Che cosa, nella soluzione che hai trovato altrove, si trasferisce davvero e che cosa no?"
+    },
+    {
+      "giorno": 3,
+      "nome": "Giovedì",
+      "abilita": "Esperimento mentale",
+      "esercizio": "Porta un parametro all'estremo: moltiplicalo per mille, dividilo per mille, mandalo a zero, mandalo all'infinito. Ragiona su cosa succede.",
+      "esempio": "Einstein a sedici anni si chiedeva cosa avrebbe visto correndo accanto a un raggio di luce. Il comportamento estremo quasi sempre rivela il meccanismo.",
+      "domanda": "A quale estremo il sistema smette di comportarsi come ti aspetti, e perché proprio lì?"
+    },
+    {
+      "giorno": 4,
+      "nome": "Venerdì",
+      "abilita": "Inversione",
+      "esercizio": "Invece di «come faccio funzionare X», chiediti «come lo farei fallire nel modo peggiore». Fai la lista dei sabotaggi, poi rovesciala: è la tua lista di requisiti.",
+      "esempio": "È il modo più rapido per trovare i punti deboli di un progetto senza aspettare che li trovi il cliente.",
+      "domanda": "Quale dei modi di fallire è insieme il più probabile e il più economico da prevenire?"
+    },
+    {
+      "giorno": 5,
+      "nome": "Sabato",
+      "abilita": "Esperimento reale",
+      "esercizio": "Verifica un'intuizione della settimana con il banco che hai. La previsione si scrive PRIMA della prova, altrimenti non vale.",
+      "esempio": "È la parte meno romantica e la più importante: un'intuizione vale qualcosa solo se accetti che la prova la smentisca.",
+      "domanda": "Che cosa avevi previsto, cosa è successo, e quale delle due cose ti ha sorpreso?"
+    },
+    {
+      "giorno": 6,
+      "nome": "Domenica",
+      "abilita": "Rilettura",
+      "esercizio": "Rileggi il taccuino della settimana e cerca due annotazioni che si collegano fra loro. Poi aggiorna la lista dei problemi aperti.",
+      "esempio": "Scrivere non serve a ricordare: serve a correlare. I collegamenti emergono rileggendo cose annotate a mesi di distanza.",
+      "domanda": "Quali due annotazioni lontane fra loro parlano della stessa cosa?"
+    }
+  ],
+  "abitudini": [
+    {"titolo": "Trasforma l'invisibile in un effetto visibile", "testo": "Non osservi la cosa: osservi l'impronta che lascia su qualcosa che puoi vedere, misurare o sentire. La camera a nebbia non mostra le particelle, mostra le scie."},
+    {"titolo": "Prendi sul serio le anomalie", "testo": "Röntgen notò uno schermo che brillava quando non avrebbe dovuto. Fleming vide una muffa in una piastra «rovinata». La mente preparata è quella che si ferma davanti al «che strano…»."},
+    {"titolo": "Fai esperimenti mentali", "testo": "Un laboratorio gratuito, sempre aperto. Galileo smontò Aristotele legando insieme un sasso pesante e uno leggero, solo col ragionamento."},
+    {"titolo": "Trasferisci idee da un campo all'altro", "testo": "Maxwell pensò l'elettromagnetismo con vortici e ingranaggi. Molte scoperte sono una soluzione presa in prestito altrove."},
+    {"titolo": "Scrivi tutto", "testo": "I taccuini di Leonardo, il diario di Faraday con migliaia di paragrafi numerati. Serve a correlare, non a ricordare."},
+    {"titolo": "Scegli bene le domande", "testo": "Feynman teneva in testa una dozzina di problemi preferiti e provava ogni strumento nuovo su ciascuno. Ogni tanto uno si sbloccava."},
+    {"titolo": "Lascia lavorare l'inconscio", "testo": "Prima si carica il problema a fondo, poi ci si stacca, poi arriva l'intuizione, poi la si verifica. La sequenza conta."},
+    {"titolo": "Cerca di non ingannare te stesso", "testo": "La previsione si scrive prima della prova. È la regola meno romantica e quella che separa la ricerca dal tifo."}
+  ],
+  "taccuino": {
+    "domanda": "Che cosa ti ha sorpreso oggi?",
+    "istruzioni": "Anche una banalità: un rumore, un dato strano al lavoro, un comportamento della stampante. Scrivi tre ipotesi diverse sul perché, e il test più economico per distinguerle. Questo è il muscolo principale."
+  }
+}

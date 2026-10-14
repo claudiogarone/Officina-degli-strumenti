@@ -1,0 +1,138 @@
+{
+  "_nota": "Il contenuto del tab Guida. Ogni sezione ha un titolo, un'icona e delle voci; ogni voce ha una domanda e una risposta scritta in markdown. Aggiungi, togli e riscrivi quello che vuoi: il codice non va toccato.",
+  "intro": "Tutto quello che serve per usare Quadro e per modificarlo da solo. Usa la ricerca qui sopra se cerchi una cosa precisa.",
+  "sezioni": [
+    {
+      "icona": "🧭",
+      "titolo": "Come si usa, giorno per giorno",
+      "voci": [
+        {
+          "domanda": "Il giro della mattina, in tre minuti",
+          "risposta": "Apri la **Scrivania**. In alto scegli *cosa fai adesso* e *per quanto*, premi **Comincia** e parte il cronometro. Se l'attività apre uno strumento esterno, il pulsante compare lì sotto.\n\nQuando hai finito registri i minuti veri, com'è andata da 1 a 5 e una riga su cosa hai fatto. Quella riga vale più di quanto pensi: fra un mese è l'unica cosa che ti dirà che stavi facendo.\n\nPoi, se hai cinque minuti, scrivi una riga nel **taccuino delle anomalie**. È l'esercizio più corto e quello che rende utile tutto il resto."
+        },
+        {
+          "domanda": "A cosa serve ogni tab",
+          "risposta": "- **Scrivania** — la sala di comando: la sessione di oggi, l'allenamento all'intuizione, i corsi, l'andamento, gli avvisi su consegne e pagamenti.\n- **Panoramica** — ore e lezioni mese per mese.\n- **Allievi** — scheda per allievo, chi è fermo da quanto.\n- **Economia** — incassato, da incassare, resa oraria.\n- **Didattica** — materie, argomenti, compiti.\n- **Dettaglio** — tutte le lezioni, riga per riga, filtrabili.\n- **Progetti** — consulenze: stato, consegne, margini, movimenti di pagamento.\n- **Cancelleria** — carta intestata, biglietti, preventivi, NDA, attestati, tessere QR.\n- **Studio** — Officina (i tuoi strumenti), percorsi con le tappe da spuntare, prontuari di comandi, assistente AI, prompt pronti.\n- **Parla chiaro** — allenamento alla comunicazione con registrazione e analisi."
+        },
+        {
+          "domanda": "Perché a volte i dati sembrano vecchi",
+          "risposta": "Quadro tiene in memoria quello che legge da Drive per qualche minuto, altrimenti ricaricherebbe tutto a ogni clic e sarebbe lentissimo.\n\nSe hai appena modificato un registro e vuoi vederlo subito, usa il pulsante **🔄 Ricarica i contenuti dai file** nel tab Studio, oppure ricarica la pagina del browser."
+        }
+      ]
+    },
+    {
+      "icona": "✏️",
+      "titolo": "Modificare i contenuti da solo",
+      "voci": [
+        {
+          "domanda": "La regola generale",
+          "risposta": "I **testi e gli elenchi** stanno nei file che finiscono per `.json`. Il **comportamento** sta nei file che finiscono per `.py`.\n\nPer cambiare cosa c'è scritto non devi quasi mai toccare il codice: apri il `.json` giusto e modifichi le parole fra virgolette."
+        },
+        {
+          "domanda": "Quale file contiene cosa",
+          "risposta": "- `scrivania.json` — le attività che puoi scegliere, le durate, le faccine da 1 a 5\n- `scienza.json` — l'esercizio di ogni giorno della settimana, le otto abitudini, il taccuino\n- `studio.json` — i percorsi con le tappe e le fonti, i prontuari, i prompt, l'Officina\n- `parlachiaro.json` — i sei esercizi, gli scenari, le domande del coach, le 18 carte, le lezioni\n- `marchi.json` — i tuoi marchi con colori e loghi, per la cancelleria\n- `collegamenti.json` — i collegamenti rapidi della Scrivania\n- `guida.json` — questa guida"
+        },
+        {
+          "domanda": "Le tre regole per non rompere un file .json",
+          "risposta": "1. **Le virgolette vanno sempre a coppie.** Se ne cancelli una, il file non si legge più.\n2. **La virgola separa, non chiude.** Fra un blocco e il successivo ci va la virgola; dopo l'ultimo blocco **no**.\n3. **Gli apostrofi vanno bene**, le virgolette dentro il testo no: se devi scrivere una citazione usa « e ».\n\nSe sbagli, Quadro non si rompe in silenzio: ti scrive in rosso quale file non riesce a leggere. Incolla il file su `jsonlint.com` e ti dice la riga esatta."
+        },
+        {
+          "domanda": "Aggiungere un'attività alla Scrivania",
+          "risposta": "Apri `scrivania.json`, copia un blocco intero fra parentesi graffe, incollalo sotto e cambia i testi:\n\n```\n{\n  \"icona\": \"🔧\",\n  \"nome\": \"Come si chiama\",\n  \"strumento\": \"Dove si lavora\",\n  \"url\": \"https://...\",\n  \"nota\": \"Una riga di spiegazione\"\n}\n```\n\nLascia `url` vuoto se l'attività non apre niente. Ricorda la virgola fra un blocco e l'altro."
+        },
+        {
+          "domanda": "Aggiungere una tappa o una fonte a un percorso",
+          "risposta": "In `studio.json`, dentro `percorsi`, ogni argomento ha tre `livelli` e ogni livello ha una lista `tappe`: sono semplici righe di testo fra virgolette, ne aggiungi una e basta.\n\nLe `fonti` sono blocchi con `nome`, `url` e `nota`, come le attività."
+        }
+      ]
+    },
+    {
+      "icona": "🚀",
+      "titolo": "Mettere online le modifiche",
+      "voci": [
+        {
+          "domanda": "Dal sito di GitHub, senza comandi",
+          "risposta": "1. Vai sul repository `Officina-degli-strumenti`.\n2. **Add file → Upload files**, trascina i file nuovi.\n3. In basso scrivi due parole su cosa hai cambiato e premi **Commit changes**.\n4. Su `share.streamlit.io`, menù dell'app (i tre puntini) → **Reboot app**.\n\nI file con lo stesso nome vengono sostituiti: è il comportamento che vuoi."
+        },
+        {
+          "domanda": "Dal computer, con i comandi",
+          "risposta": "La prima volta, una volta sola:\n\n```\ngit clone https://github.com/claudiogarone/Officina-degli-strumenti.git\ncd Officina-degli-strumenti\n```\n\nPoi, ogni volta che hai file nuovi da mettere online: copia i file nella cartella e lancia\n\n```\ngit add .\ngit commit -m \"descrizione di cosa hai cambiato\"\ngit push\n```\n\n`git add .` prende tutto quello che è cambiato, `commit` lo registra con la tua descrizione, `push` lo manda su GitHub. Streamlit se ne accorge da solo nel giro di un minuto; se non succede, Reboot."
+        },
+        {
+          "domanda": "Come capisco se è andata",
+          "risposta": "Apri l'app e guarda in basso a destra: se Streamlit sta ricostruendo, lo scrive. Quando ha finito, ricarica la pagina.\n\nSe vedi ancora la versione vecchia: controlla di aver fatto il commit (su GitHub il file deve mostrare la data di oggi) e poi fai Reboot. **Non rinominare mai il repository**: Streamlit perde il collegamento e smette di leggere i commit senza dirtelo."
+        }
+      ]
+    },
+    {
+      "icona": "🔑",
+      "titolo": "Le chiavi e le cartelle (i Secrets)",
+      "voci": [
+        {
+          "domanda": "Cosa sono e dove stanno",
+          "risposta": "Sono le informazioni riservate che non devono finire su GitHub: le credenziali di Google e la chiave dell'intelligenza artificiale.\n\nStanno su `share.streamlit.io`, menù dell'app → **Settings → Secrets**. Si incollano lì e basta: l'app le legge da sola."
+        },
+        {
+          "domanda": "L'elenco completo",
+          "risposta": "- `gcp_service_account` — il blocco intero delle credenziali Google. Si copia dal file JSON che ti ha dato Google, campo per campo.\n- `drive_folder_id` — la cartella dei registri delle lezioni\n- `drive_folder_id_progetti` — la cartella dei progetti\n- `drive_folder_id_loghi` — la cartella dei loghi\n- `drive_folder_id_diario` — facoltativa: se la metti, il diario va cercato lì\n- `google_api_key` — la chiave di Google AI Studio, per l'assistente e la trascrizione\n- `diario_sheet_id` — facoltativa, solo se usi un foglio di Google invece del file Excel\n\nL'ID di una cartella è il pezzo di indirizzo dopo `/folders/`."
+        },
+        {
+          "domanda": "Condividere le cartelle con il service account",
+          "risposta": "Ogni cartella di Drive che Quadro deve leggere va condivisa con l'indirizzo del service account (quello che finisce per `.iam.gserviceaccount.com`).\n\n**Visualizzatore** basta per leggere. La cartella dove sta il diario invece vuole **Editor**, perché lì Quadro deve scrivere."
+        }
+      ]
+    },
+    {
+      "icona": "📓",
+      "titolo": "Il diario: dove finiscono i tuoi dati",
+      "voci": [
+        {
+          "domanda": "Dove vengono salvati",
+          "risposta": "In un file Excel che si chiama `Quadro_Diario.xlsx`, dentro una delle tue cartelle di Drive. Quadro lo cerca **per nome**, quindi non rinominarlo.\n\nPuoi aprirlo quando vuoi e correggerlo a mano: è tuo, e si legge anche senza la dashboard."
+        },
+        {
+          "domanda": "Perché non si salva sul server",
+          "risposta": "Perché Streamlit Cloud ricostruisce la macchina a ogni riavvio e cancella tutto quello che l'app ha scritto su disco. Non è una limitazione aggirabile: i dati devono stare fuori, su Drive."
+        },
+        {
+          "domanda": "Cosa vuol dire la colonna Tipo",
+          "risposta": "- `sessione` — una sessione di lavoro o allenamento, con i minuti\n- `parlachiaro` — un allenamento di comunicazione, con il punteggio in Valore\n- `anomalia` — una riga del taccuino delle anomalie\n- `problema` — uno dei tuoi problemi aperti\n- `esercizio` — un esercizio del giorno completato\n- `tappa` — una tappa di studio segnata come fatta\n- `corso` — un avanzamento su un corso, con la percentuale in Valore"
+        },
+        {
+          "domanda": "Come porto via tutto",
+          "risposta": "In fondo alla Scrivania, dentro *Tutte le righe del diario*, trovi i pulsanti per scaricare in CSV, in Excel e in JSON. Il JSON è l'archivio completo.\n\nLo stesso vale per quasi ogni tabella e grafico della dashboard: sotto trovi sempre CSV ed Excel, e i grafici si salvano in immagine con l'icona della macchina fotografica in alto a destra."
+        }
+      ]
+    },
+    {
+      "icona": "🩹",
+      "titolo": "Quando qualcosa non va",
+      "voci": [
+        {
+          "domanda": "«Credenziali Google non configurate»",
+          "risposta": "Manca o è scritto male il blocco `gcp_service_account` nei Secrets. L'errore più comune è aver incollato il modello con i puntini al posto dei valori veri: ogni campo va copiato dal file JSON di Google."
+        },
+        {
+          "domanda": "«Unable to load PEM file»",
+          "risposta": "La chiave privata è incollata male. Deve stare tutta su una riga sola, fra virgolette, con i `\\n` scritti così come sono — non devi mandarla a capo tu."
+        },
+        {
+          "domanda": "L'assistente dà errore 503",
+          "risposta": "Vuol dire che i server di Google sono pieni in quel momento. Non è un problema tuo né della chiave.\n\nQuadro riprova da solo tre volte e poi passa ai modelli di riserva, scrivendotelo a schermo. Se insiste, riprova fra qualche minuto: nelle ore di punta capita."
+        },
+        {
+          "domanda": "L'assistente dà errore 404",
+          "risposta": "Il nome del modello non esiste più: Google li cambia ogni tanto. Nel tab Studio, dentro l'assistente, premi **Quali modelli posso usare** e copia uno di quelli che ti elenca."
+        },
+        {
+          "domanda": "Un tab è vuoto",
+          "risposta": "Quasi sempre è la cartella di Drive: o l'ID nei Secrets è sbagliato, o la cartella non è condivisa con il service account.\n\nIn fondo ai tab Progetti e Dettaglio c'è un riquadro **Diagnostica**: dice quali file ha trovato e cosa ha scartato, e di solito la risposta è lì."
+        },
+        {
+          "domanda": "Non riesco a salvare nel diario",
+          "risposta": "La cartella dove sta `Quadro_Diario.xlsx` è condivisa come Visualizzatore invece che come **Editor**. Cambia il permesso e ricarica la pagina.\n\nIntanto Quadro salva in memoria, così non perdi quello che hai scritto, ma al riavvio sparisce."
+        }
+      ]
+    }
+  ]
+}

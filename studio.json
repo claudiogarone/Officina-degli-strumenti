@@ -22,11 +22,11 @@
         ]
       },
       {
-        "icona": "🎙️",
-        "nome": "ParlaChiaro",
-        "sottotitolo": "Allenamento alla comunicazione e al public speaking",
+        "icona": "🗄️",
+        "nome": "ParlaChiaro (old)",
+        "sottotitolo": "La versione vecchia, da usare solo per lo specchio di presenza",
         "url": "https://stupendous-trifle-b14c45.netlify.app/",
-        "cosa_ci_fai": "Sei blocchi da 45 minuti con timer, registrazione della voce e analisi: ritmo, intercalari, linguaggio manageriale. Serve il microfono, quindi va aperto fuori da Quadro.",
+        "cosa_ci_fai": "ParlaChiaro ora vive dentro Quadro, nel tab **Parla chiaro**: usa quello. Questa versione resta per una cosa sola, lo specchio di presenza con la webcam, che dentro Quadro non si può fare. I dati salvati qui non arrivano al diario.",
         "sezioni": []
       },
       {
@@ -346,6 +346,28 @@
             "Rendi la lettura dei 17 file parallela e misura quanto guadagni"
           ]
         }
+      ],
+      "fonti": [
+        {
+          "nome": "Il tutorial ufficiale, in italiano",
+          "url": "https://docs.python.org/it/3/tutorial/",
+          "nota": "La fonte di riferimento. Leggila a pezzi, non tutta: un capitolo per tappa."
+        },
+        {
+          "nome": "Automate the Boring Stuff",
+          "url": "https://automatetheboringstuff.com/",
+          "nota": "Il libro gratuito online che insegna Python facendoti automatizzare cose vere: file, Excel, PDF."
+        },
+        {
+          "nome": "Real Python",
+          "url": "https://realpython.com/",
+          "nota": "Articoli lunghi e fatti bene su un argomento alla volta. Molti gratuiti."
+        },
+        {
+          "nome": "Esercizi su Exercism",
+          "url": "https://exercism.org/tracks/python",
+          "nota": "Esercizi con correzione e commenti di persone vere."
+        }
       ]
     },
     {
@@ -415,6 +437,28 @@
             "Disegna in Fusion il PCB di una scheda ESP32 con tre sensori",
             "Misura il consumo medio di un nodo che dorme fra una lettura e l'altra"
           ]
+        }
+      ],
+      "fonti": [
+        {
+          "nome": "All About Circuits — il libro",
+          "url": "https://www.allaboutcircuits.com/textbook/",
+          "nota": "Il manuale gratuito più completo: corrente continua, alternata, semiconduttori, digitale."
+        },
+        {
+          "nome": "Tutorial SparkFun",
+          "url": "https://learn.sparkfun.com/tutorials",
+          "nota": "Spiegazioni pratiche con foto e schemi, pensate per chi costruisce."
+        },
+        {
+          "nome": "Electronics Tutorials",
+          "url": "https://www.electronics-tutorials.ws/",
+          "nota": "Teoria con le formule e gli esempi svolti, capitolo per capitolo."
+        },
+        {
+          "nome": "Falstad — simulatore di circuiti",
+          "url": "https://www.falstad.com/circuit/",
+          "nota": "Disegni il circuito e vedi la corrente scorrere. Il modo più rapido per capire un partitore."
         }
       ]
     },
@@ -486,6 +530,28 @@
             "Misura la memoria libera nel tempo e trova la perdita"
           ]
         }
+      ],
+      "fonti": [
+        {
+          "nome": "Documentazione ufficiale",
+          "url": "https://docs.arduino.cc/",
+          "nota": "Guide alle schede, ai sensori e all'ambiente di sviluppo."
+        },
+        {
+          "nome": "Il riferimento del linguaggio",
+          "url": "https://www.arduino.cc/reference/en/",
+          "nota": "Ogni funzione spiegata con un esempio. Tienilo aperto mentre scrivi."
+        },
+        {
+          "nome": "Wokwi — simulatore",
+          "url": "https://wokwi.com/",
+          "nota": "Monti il circuito e lo fai girare nel browser, anche dal telefono, senza comprare niente."
+        },
+        {
+          "nome": "Last Minute Engineers",
+          "url": "https://lastminuteengineers.com/electronics/arduino-projects/",
+          "nota": "Un sensore alla volta: schema, codice e spiegazione."
+        }
       ]
     },
     {
@@ -552,6 +618,28 @@
             "Portale di configurazione WiFi al primo avvio",
             "Nodo solare che sopravvive a una settimana di pioggia"
           ]
+        }
+      ],
+      "fonti": [
+        {
+          "nome": "Random Nerd Tutorials — ESP32",
+          "url": "https://randomnerdtutorials.com/projects-esp32/",
+          "nota": "La raccolta più usata al mondo per ESP32: WiFi, web server, MQTT, deep sleep."
+        },
+        {
+          "nome": "Documentazione ufficiale Espressif",
+          "url": "https://docs.espressif.com/projects/esp-idf/en/latest/esp32/",
+          "nota": "Il riferimento serio quando vuoi capire davvero come funziona il chip."
+        },
+        {
+          "nome": "Last Minute Engineers — ESP32",
+          "url": "https://lastminuteengineers.com/electronics/esp32-projects/",
+          "nota": "Progetti spiegati passo passo con gli schemi."
+        },
+        {
+          "nome": "Wokwi — ESP32",
+          "url": "https://wokwi.com/projects/new/esp32",
+          "nota": "Lo stesso simulatore, con il WiFi simulato."
         }
       ]
     },
@@ -620,6 +708,28 @@
             "InfluxDB più Grafana per i dati dei sensori",
             "Avviso su Telegram quando un servizio cade"
           ]
+        }
+      ],
+      "fonti": [
+        {
+          "nome": "Documentazione ufficiale Raspberry Pi",
+          "url": "https://www.raspberrypi.com/documentation/",
+          "nota": "Installazione, configurazione, GPIO, camera: tutto dalla fonte."
+        },
+        {
+          "nome": "LinuxCommand.org",
+          "url": "https://linuxcommand.org/",
+          "nota": "Il corso gratuito sulla riga di comando, dal primo comando agli script."
+        },
+        {
+          "nome": "The Linux Command Line (libro gratuito)",
+          "url": "https://linuxcommand.org/tlcl.php",
+          "nota": "Il libro completo in PDF, da leggere con calma."
+        },
+        {
+          "nome": "explainshell",
+          "url": "https://explainshell.com/",
+          "nota": "Incolli un comando e ti spiega pezzo per pezzo cosa fa ogni opzione."
         }
       ]
     },
@@ -690,6 +800,28 @@
             "Migra i registri da Excel a SQLite senza perdere dati"
           ]
         }
+      ],
+      "fonti": [
+        {
+          "nome": "SQLBolt",
+          "url": "https://sqlbolt.com/",
+          "nota": "Lezioni brevi con l'esercizio subito dopo, direttamente nel browser. Il punto di partenza migliore."
+        },
+        {
+          "nome": "SQLZoo",
+          "url": "https://sqlzoo.net/",
+          "nota": "Esercizi graduali su dati veri. Più tosto di SQLBolt, ottimo dopo."
+        },
+        {
+          "nome": "Documentazione PostgreSQL",
+          "url": "https://www.postgresql.org/docs/current/",
+          "nota": "Il riferimento quando vuoi la risposta esatta su una funzione."
+        },
+        {
+          "nome": "DB Fiddle",
+          "url": "https://www.db-fiddle.com/",
+          "nota": "Un database vuoto nel browser per provare una query senza installare niente."
+        }
       ]
     },
     {
@@ -756,6 +888,28 @@
             "Misura e migliora il tempo di caricamento"
           ]
         }
+      ],
+      "fonti": [
+        {
+          "nome": "MDN — impara lo sviluppo web",
+          "url": "https://developer.mozilla.org/it/docs/Learn",
+          "nota": "Il corso di Mozilla, in italiano. È la fonte che usano i professionisti."
+        },
+        {
+          "nome": "web.dev — Learn HTML",
+          "url": "https://web.dev/learn/html/",
+          "nota": "Il corso di Google, aggiornato, con le pratiche di oggi."
+        },
+        {
+          "nome": "HTML Reference",
+          "url": "https://htmlreference.io/",
+          "nota": "Ogni tag con l'esempio visivo accanto. Si consulta in dieci secondi."
+        },
+        {
+          "nome": "CodePen",
+          "url": "https://codepen.io/",
+          "nota": "Scrivi e vedi il risultato subito, anche da tablet."
+        }
       ]
     },
     {
@@ -820,6 +974,28 @@
             "Script che interroga un'API e salva i dati",
             "Report settimanale via email"
           ]
+        }
+      ],
+      "fonti": [
+        {
+          "nome": "Documentazione Microsoft",
+          "url": "https://learn.microsoft.com/it-it/powershell/",
+          "nota": "Il riferimento ufficiale, in italiano."
+        },
+        {
+          "nome": "SS64 — PowerShell",
+          "url": "https://ss64.com/ps/",
+          "nota": "Ogni comando su una riga, con la sintassi e un esempio. Il prontuario più veloce che esista."
+        },
+        {
+          "nome": "SS64 — prompt dei comandi",
+          "url": "https://ss64.com/nt/",
+          "nota": "Lo stesso per i comandi CMD classici."
+        },
+        {
+          "nome": "PowerShell in a Month of Lunches",
+          "url": "https://www.manning.com/books/learn-windows-powershell-in-a-month-of-lunches-fourth-edition",
+          "nota": "Il libro con cui ci hanno imparato quasi tutti: un capitolo al giorno."
         }
       ]
     }

@@ -1,0 +1,89 @@
+{
+  "_nota": "Le attività che puoi scegliere quando apri una sessione di lavoro. Aggiungine quante vuoi: ogni voce ha un nome, un'icona, lo strumento da aprire e il suo indirizzo. Lascia url vuoto per le attività che non aprono niente.",
+  "durate": [
+    15,
+    30,
+    45,
+    60,
+    90
+  ],
+  "attivita": [
+    {
+      "icona": "🔬",
+      "nome": "Scienza — allenamento all'intuizione",
+      "strumento": "Qui dentro",
+      "url": "",
+      "nota": "L'esercizio del giorno e il taccuino delle anomalie, più sotto in questa pagina."
+    },
+    {
+      "icona": "🎙️",
+      "nome": "Comunicazione e public speaking",
+      "strumento": "Qui dentro",
+      "url": "",
+      "nota": "Il tab «Parla chiaro»: registri la voce, l'AI trascrive e l'analisi misura ritmo, riempitivi e registro."
+    },
+    {
+      "icona": "✍️",
+      "nome": "Appunti e rilettura",
+      "strumento": "Inchiostro",
+      "url": "https://spectacular-pasca-19236e.netlify.app",
+      "nota": "Trascrivi il taccuino di carta e rileggi quello che hai scritto."
+    },
+    {
+      "icona": "🐍",
+      "nome": "Python",
+      "strumento": "Studio → Percorsi",
+      "url": "",
+      "nota": "La tappa successiva del percorso, nel tab Studio."
+    },
+    {
+      "icona": "⚡",
+      "nome": "Elettronica e schede",
+      "strumento": "Wokwi",
+      "url": "https://wokwi.com",
+      "nota": "Arduino ed ESP32 simulati, anche dal telefono."
+    },
+    {
+      "icona": "🗄️",
+      "nome": "Database e query",
+      "strumento": "Studio → Prontuari",
+      "url": "",
+      "nota": "SQL: comandi e esercizi."
+    },
+    {
+      "icona": "🛠️",
+      "nome": "Lavoro su un progetto",
+      "strumento": "MakerHub",
+      "url": "https://app.maker-hub.it",
+      "nota": "Tempo speso su un progetto vero, non su esercizi."
+    },
+    {
+      "icona": "🖋️",
+      "nome": "Cancelleria e documenti",
+      "strumento": "Qui dentro",
+      "url": "",
+      "nota": "Preventivi, NDA, carta intestata: il tab Cancelleria."
+    },
+    {
+      "icona": "🎓",
+      "nome": "Preparazione delle lezioni",
+      "strumento": "Qui dentro",
+      "url": "",
+      "nota": "Materiale, registri, esercizi per gli allievi."
+    },
+    {
+      "icona": "📖",
+      "nome": "Lettura e studio libero",
+      "strumento": "NotebookLM",
+      "url": "https://notebooklm.google.com",
+      "nota": "I tuoi PDF e manuali, con le domande sopra."
+    }
+  ],
+  "sensazioni": {
+    "1": "Faticosa",
+    "2": "In salita",
+    "3": "Normale",
+    "4": "Scorrevole",
+    "5": "Ottima"
+  }
+}

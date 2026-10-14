@@ -101,6 +101,38 @@ def style(fig, height=380, title=None, showlegend=None):
     return fig
 
 
+def scarica_tabella(tab, nome_file, etichetta="⬇️ Scarica i dati"):
+    """
+    Due pulsanti sotto a una tabella o a un grafico: CSV ed Excel.
+
+    Sta in una funzione sola perché serve in una ventina di punti, e così
+    quando vorrai cambiare qualcosa (il separatore, il nome dei file) la
+    cambi qui una volta e vale ovunque.
+
+    Nota sui grafici: il PNG non serve che lo faccia io. Ogni grafico ha in
+    alto a destra, al passaggio del mouse, un'icona a forma di macchina
+    fotografica che lo salva come immagine. Da telefono si tiene premuto.
+    """
+    import io as _io
+    t = tab.copy()
+    for c in t.columns:
+        if pd.api.types.is_datetime64_any_dtype(t[c]):
+            t[c] = t[c].dt.strftime("%Y-%m-%d")
+    c1, c2 = st.columns(2)
+    c1.download_button(f"{etichetta} (CSV)",
+                       t.to_csv(index=False).encode("utf-8-sig"),
+                       f"{nome_file}.csv", "text/csv",
+                       width='stretch', key=f"csv_{nome_file}")
+    buf = _io.BytesIO()
+    with pd.ExcelWriter(buf, engine="openpyxl") as w:
+        t.to_excel(w, index=False, sheet_name="Dati")
+    c2.download_button(f"{etichetta} (Excel)", buf.getvalue(),
+                       f"{nome_file}.xlsx",
+                       "application/vnd.openxmlformats-officedocument."
+                       "spreadsheetml.sheet",
+                       width='stretch', key=f"xls_{nome_file}")
+
+
 st.markdown("""
 <style>
   .block-container {padding-top: 2.2rem; padding-bottom: 3rem; max-width: 1500px;}
@@ -1281,7 +1313,7 @@ else:
 
 TAB = st.tabs(["🧭 Scrivania", "📊 Panoramica", "👥 Allievi", "💶 Economia",
                "🎓 Didattica", "📋 Dettaglio", "🗂️ Progetti", "🖋️ Cancelleria",
-               "📚 Studio"])
+               "📚 Studio", "🎙️ Parla chiaro", "❓ Guida"])
 
 
 # ============================================================================
@@ -1290,8 +1322,586 @@ TAB = st.tabs(["🧭 Scrivania", "📊 Panoramica", "👥 Allievi", "💶 Econom
 with TAB[0]:
     oggi_ts = pd.Timestamp(dt.date.today())
 
-    # ---------------- cose che richiedono attenzione ----------------------
-    st.markdown("##### Cosa richiede attenzione")
+    # ========================================================================
+    # SALA DI COMANDO — la sessione di oggi, l'allenamento, l'andamento
+    # ========================================================================
+    import diario as DIARIO
+    import assistente as AI
+
+    @st.cache_data(show_spinner=False)
+    def _carica_json(nome, _versione: float):
+        import json as _json
+        try:
+            with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   nome), encoding="utf-8") as f:
+                return _json.load(f)
+        except Exception as e:
+            return {"_errore": str(e)}
+
+    CFG = _carica_json("scrivania.json", _mtime("scrivania.json"))
+    SCI = _carica_json("scienza.json", _mtime("scienza.json"))
+
+    SA = secret("gcp_service_account", None)
+    FOGLIO = (secret("diario_sheet_id", "") or "").strip()
+
+    # ------------------------------------------------------------ il diario --
+    # Dove finiscono i dati, in ordine di preferenza: il file Excel su Drive,
+    # un foglio di Google, la sola memoria. Il primo che si trova vince.
+    @st.cache_data(ttl=900, show_spinner=False)
+    def _cerca_file_diario(_segno):
+        if not SA:
+            return None
+        cartelle = [secret("drive_folder_id_diario", ""),
+                    secret("drive_folder_id_progetti", ""),
+                    secret("drive_folder_id", "")]
+        try:
+            return DIARIO.trova_file(dict(SA), cartelle)
+        except Exception:
+            return None
+
+    FILE_DIARIO = _cerca_file_diario(0) if not FOGLIO else None
+
+    if FILE_DIARIO:
+        DOVE, COME = FILE_DIARIO, "file"
+    elif FOGLIO and SA:
+        DOVE, COME = FOGLIO, "foglio"
+    else:
+        DOVE, COME = None, "memoria"
+
+    @st.cache_data(ttl=60, show_spinner=False)
+    def _leggi_diario(_dove, _come, _segno):
+        if _come == "file":
+            return DIARIO.leggi_xlsx(dict(SA), _dove)
+        return DIARIO.leggi_foglio(dict(SA), _dove)
+
+    def diario_corrente():
+        if COME == "memoria":
+            return st.session_state.get("diario_locale", DIARIO.vuoto()), None
+        try:
+            return _leggi_diario(DOVE, COME,
+                                 st.session_state.get("diario_segno", 0)), None
+        except Exception as e:
+            return st.session_state.get("diario_locale", DIARIO.vuoto()), str(e)
+
+    def diario_scrivi(righe):
+        """Salva dove si può, e dice dove ha salvato."""
+        if isinstance(righe, dict):
+            righe = [righe]
+        try:
+            if COME == "file":
+                DIARIO.aggiungi_xlsx(dict(SA), DOVE, righe)
+            elif COME == "foglio":
+                DIARIO.aggiungi_foglio(dict(SA), DOVE, righe)
+            else:
+                raise RuntimeError("nessun archivio collegato")
+            st.session_state["diario_segno"] = st.session_state.get("diario_segno", 0) + 1
+            return COME
+        except Exception as e:
+            if COME != "memoria":
+                st.warning(f"Non sono riuscito a scrivere sull'archivio: {e}")
+                st.caption("Salvo in memoria per non perdere quello che hai "
+                           "scritto, ma controlla i permessi dell'archivio.")
+            locale = st.session_state.get("diario_locale", DIARIO.vuoto())
+            nuovo = pd.concat([locale, pd.DataFrame(righe)], ignore_index=True)
+            st.session_state["diario_locale"] = DIARIO._sistema(nuovo)
+            return "memoria"
+
+    DIA, errore_diario = diario_corrente()
+    if errore_diario:
+        st.warning(f"Non riesco a leggere l'archivio del diario: {errore_diario}")
+        st.caption("Controlla che sia condiviso **come Editor** con l'indirizzo "
+                   "del service account. Intanto salvo in memoria.")
+
+    # --------------------------------------------------------- i tre numeri --
+    minuti_7 = DIARIO.andamento(DIA, 7).sum()
+    minuti_28 = DIARIO.andamento(DIA, 28).sum()
+    n_ses = int(DIA["Tipo"].isin(DIARIO.TIPI_TEMPO).sum())
+    k = st.columns(4)
+    k[0].markdown('<span class="kpi-mark"></span>', unsafe_allow_html=True)
+    k[0].metric("Giorni di fila", f"{DIARIO.striscia(DIA)}")
+    k[1].metric("Minuti ultimi 7 giorni", f"{minuti_7:,.0f}".replace(",", "."))
+    k[2].metric("Media al giorno (28 gg)", f"{minuti_28 / 28:.0f} min")
+    k[3].metric("Sessioni registrate", f"{n_ses}")
+
+    if COME == "memoria":
+        st.warning("**Il diario non è collegato a nessun archivio**: quello che "
+                   "registri adesso si perde quando chiudi la pagina.")
+        with st.expander("Come si collega — due minuti, si fa una volta sola"):
+            st.markdown(
+                "Scarica qui sotto il file già pronto, caricalo in una delle "
+                "cartelle di Drive che Quadro già conosce (quella dei progetti "
+                "va benissimo) e condividi quella cartella con l'indirizzo del "
+                "service account **come Editor** — non come Visualizzatore, "
+                "perché qui deve scrivere. Poi ricarica questa pagina.\n\n"
+                "Non serve nessun Secret nuovo: Quadro cerca il file per nome, "
+                "quindi **non rinominarlo**.\n\n"
+                "Perché non si può salvare direttamente sul server: Streamlit "
+                "Cloud ricostruisce la macchina a ogni riavvio e cancella tutto "
+                "quello che l'app ha scritto su disco. Non è aggirabile, i dati "
+                "devono stare fuori.")
+            st.download_button("⬇️ Scarica Quadro_Diario.xlsx",
+                               DIARIO.modello_xlsx(), DIARIO.NOME_FILE,
+                               "application/vnd.openxmlformats-officedocument."
+                               "spreadsheetml.sheet", type="primary")
+    else:
+        dove_umano = ("il file **Quadro_Diario.xlsx** su Drive" if COME == "file"
+                      else "il tuo foglio di Google")
+        st.caption(f"Diario collegato a {dove_umano}.")
+
+    st.divider()
+
+    # =================== LA SESSIONE DI OGGI ================================
+    st.markdown("### 🎯 La sessione di oggi")
+
+    attivita = CFG.get("attivita", [])
+    etichette = [f"{a.get('icona', '•')} {a['nome']}" for a in attivita]
+
+    if st.session_state.get("ses_avvio") is None:
+        c1, c2 = st.columns([3, 2])
+        scelta = c1.selectbox("Cosa fai adesso", etichette,
+                              index=st.session_state.get("ses_indice", 0))
+        durata = c2.radio("Per quanto", CFG.get("durate", [15, 30, 45, 60]),
+                          index=1, horizontal=True,
+                          format_func=lambda m: f"{m} min")
+        a = attivita[etichette.index(scelta)]
+        if a.get("nota"):
+            st.caption(a["nota"])
+        b1, b2 = st.columns([1, 3])
+        if b1.button("▶️ Comincia", type="primary", width='stretch'):
+            st.session_state["ses_avvio"] = dt.datetime.now()
+            st.session_state["ses_durata"] = durata
+            st.session_state["ses_attivita"] = a["nome"]
+            st.session_state["ses_strumento"] = a.get("strumento", "")
+            st.session_state["ses_url"] = a.get("url", "")
+            st.session_state["ses_indice"] = etichette.index(scelta)
+            st.rerun()
+        if (a.get("url") or "").strip():
+            b2.link_button(f"Apri {a.get('strumento', 'lo strumento')} ↗",
+                           a["url"], width='stretch')
+    else:
+        avvio = st.session_state["ses_avvio"]
+        durata = st.session_state["ses_durata"]
+
+        @st.fragment(run_every="1s")
+        def _cronometro():
+            passati = (dt.datetime.now() - avvio).total_seconds()
+            restano = max(0, durata * 60 - passati)
+            mm, ss = int(restano // 60), int(restano % 60)
+            fatti = int(passati // 60)
+            if restano > 0:
+                st.markdown(
+                    f"<div style='font-size:46px;font-weight:700;color:{VERDE_SCURO};"
+                    f"letter-spacing:2px'>{mm:02d}:{ss:02d}</div>",
+                    unsafe_allow_html=True)
+                st.progress(min(1.0, passati / (durata * 60)))
+            else:
+                st.markdown(
+                    f"<div style='font-size:46px;font-weight:700;color:{VERDE}'>"
+                    f"✓ fatto</div>", unsafe_allow_html=True)
+            st.caption(f"**{st.session_state['ses_attivita']}** · cominciata alle "
+                       f"{avvio:%H:%M} · {fatti} minuti finora")
+
+        _cronometro()
+
+        if (st.session_state.get("ses_url") or "").strip():
+            st.link_button(f"Apri {st.session_state['ses_strumento']} ↗",
+                           st.session_state["ses_url"], width='stretch',
+                           type="primary")
+
+        with st.form("chiudi_sessione"):
+            st.markdown("**Quando hai finito**")
+            f1, f2 = st.columns([1, 2])
+            minuti_reali = f1.number_input(
+                "Minuti davvero fatti", min_value=1, max_value=600,
+                value=max(1, int((dt.datetime.now() - avvio).total_seconds() // 60)) or durata)
+            sens = CFG.get("sensazioni", {})
+            voto = f2.select_slider(
+                "Com'è andata", options=[1, 2, 3, 4, 5], value=3,
+                format_func=lambda v: sens.get(str(v), str(v)))
+            nota = st.text_input("Una riga su cosa hai fatto (facoltativa)")
+            cc1, cc2 = st.columns(2)
+            salva = cc1.form_submit_button("💾 Salva la sessione", type="primary",
+                                           width='stretch')
+            annulla = cc2.form_submit_button("Annulla", width='stretch')
+
+        if salva:
+            dove = diario_scrivi(DIARIO.riga(
+                "sessione", st.session_state["ses_attivita"],
+                st.session_state["ses_strumento"], minuti_reali, voto, nota))
+            for chiave_s in ("ses_avvio", "ses_durata", "ses_attivita",
+                             "ses_strumento", "ses_url"):
+                st.session_state.pop(chiave_s, None)
+            st.success("Sessione salvata nel foglio." if dove == "foglio"
+                       else "Sessione salvata in memoria per questa sessione.")
+            st.rerun()
+        if annulla:
+            for chiave_s in ("ses_avvio", "ses_durata", "ses_attivita",
+                             "ses_strumento", "ses_url"):
+                st.session_state.pop(chiave_s, None)
+            st.rerun()
+
+    st.divider()
+
+    # =================== SCIENZA: ESERCIZIO DEL GIORNO ======================
+    st.markdown("### 🔬 Allenamento all'intuizione")
+
+    if "_errore" in SCI:
+        st.error(f"Non riesco a leggere `scienza.json`: {SCI['_errore']}")
+    else:
+        rot = SCI.get("rotazione", [])
+        oggi_idx = dt.date.today().weekday()
+        voce = next((r for r in rot if r.get("giorno") == oggi_idx),
+                    rot[0] if rot else None)
+
+        SC1, SC2, SC3 = st.tabs(["Esercizio del giorno", "Taccuino delle anomalie",
+                                 "I problemi aperti"])
+
+        with SC1:
+            if voce:
+                st.markdown(f"#### {voce['nome']} — {voce['abilita']}")
+                st.markdown(voce["esercizio"])
+                if voce.get("esempio"):
+                    st.caption(voce["esempio"])
+                if voce.get("domanda"):
+                    st.info(f"**La domanda a cui rispondere** — {voce['domanda']}")
+
+                risp = st.text_area("La tua risposta", height=160,
+                                    key="scienza_risposta",
+                                    placeholder="Scrivi qui. Non deve venire bene: "
+                                                "deve venire scritto.")
+                e1, e2 = st.columns(2)
+                if e1.button("💾 Salva l'esercizio", type="primary", width='stretch'):
+                    if risp.strip():
+                        diario_scrivi(DIARIO.riga("esercizio", voce["abilita"],
+                                                  "Scienza", 15, None, risp.strip()))
+                        st.success("Salvato.")
+                        st.rerun()
+                    else:
+                        st.warning("Scrivi qualcosa prima di salvare.")
+
+                if e2.button("🤖 Fammi le domande giuste", width='stretch'):
+                    chiave_ai = (secret("google_api_key", "") or "").strip()
+                    modello_ai = ((SCI.get("ai") or {}).get("modello")
+                                  or "gemini-3.8-flash")
+                    stato = st.empty()
+                    try:
+                        with st.spinner("Sto pensando…"):
+                            testo_ai = AI.chiedi(
+                                "Sei un ricercatore esperto che fa da allenatore. "
+                                f"L'esercizio di oggi è: {voce['esercizio']}\n"
+                                f"La persona ha scritto:\n{risp.strip() or '(ancora niente)'}\n\n"
+                                "Non dargli la soluzione. Fagli tre domande brevi "
+                                "che lo costringano a essere più preciso, e "
+                                "indicagli un modo economico per verificare quello "
+                                "che pensa. Rispondi in italiano, frasi brevi.",
+                                chiave_ai, modello_ai,
+                                al_tentativo=lambda m: stato.info(m))
+                        stato.empty()
+                        st.markdown(testo_ai)
+                    except AI.ErroreAI as e:
+                        stato.empty()
+                        st.error(e.messaggio)
+                        if e.dettaglio:
+                            st.caption(e.dettaglio)
+
+                storico_es = DIA[DIA["Tipo"] == "esercizio"]
+                if not storico_es.empty:
+                    with st.expander(f"Gli esercizi già fatti ({len(storico_es)})"):
+                        for _, r in storico_es.sort_values("Data", ascending=False).head(20).iterrows():
+                            st.markdown(f"**{r['Data']:%d/%m/%Y} · {r['Attivita']}** — {r['Nota']}")
+
+        with SC2:
+            tac = SCI.get("taccuino", {})
+            st.markdown(f"**{tac.get('domanda', 'Che cosa ti ha sorpreso oggi?')}**")
+            st.caption(tac.get("istruzioni", ""))
+            an = st.text_area("L'anomalia, le tre ipotesi e il test più economico",
+                              height=130, key="scienza_anomalia")
+            if st.button("💾 Salva nel taccuino", type="primary"):
+                if an.strip():
+                    diario_scrivi(DIARIO.riga("anomalia", "Taccuino", "Scienza",
+                                              5, None, an.strip()))
+                    st.success("Annotata.")
+                    st.rerun()
+                else:
+                    st.warning("Scrivi qualcosa prima di salvare.")
+
+            anomalie = DIA[DIA["Tipo"] == "anomalia"].sort_values("Data", ascending=False)
+            if not anomalie.empty:
+                st.markdown(f"##### Le ultime annotazioni ({len(anomalie)} in tutto)")
+                for _, r in anomalie.head(10).iterrows():
+                    st.markdown(f"**{r['Data']:%d/%m/%Y}** — {r['Nota']}")
+
+        with SC3:
+            st.caption("La lista dei problemi che ti stanno a cuore, tecnici o no. "
+                       "Feynman ne teneva una dozzina in testa e provava su quelli "
+                       "ogni strumento nuovo che imparava. È la lente con cui "
+                       "guardi tutto il resto.")
+            nuovo_p = st.text_input("Aggiungi un problema aperto")
+            if st.button("➕ Aggiungi alla lista"):
+                if nuovo_p.strip():
+                    diario_scrivi(DIARIO.riga("problema", "Problema aperto",
+                                              "Scienza", 0, None, nuovo_p.strip()))
+                    st.success("Aggiunto.")
+                    st.rerun()
+
+            problemi = DIA[DIA["Tipo"] == "problema"].sort_values("Data")
+            if problemi.empty:
+                st.info("La lista è vuota. Scrivine anche solo tre: si completa "
+                        "da sola nelle settimane.")
+            else:
+                for i, (_, r) in enumerate(problemi.iterrows(), 1):
+                    st.markdown(f"**{i}.** {r['Nota']}  \n"
+                                f"<small style='opacity:.6'>annotato il "
+                                f"{r['Data']:%d/%m/%Y}</small>",
+                                unsafe_allow_html=True)
+                if len(problemi) < 12:
+                    st.caption(f"Ne hai {len(problemi)}: ne mancano "
+                               f"{12 - len(problemi)} ai dodici.")
+
+        with st.expander("Le otto abitudini, per quando ti serve rileggerle"):
+            for ab in SCI.get("abitudini", []):
+                st.markdown(f"**{ab['titolo']}** — {ab['testo']}")
+
+    st.divider()
+
+    # =================== I CORSI CHE SEGUI ==================================
+    st.markdown("### 🎓 I corsi che segui")
+    st.caption("Udemy, YouTube, un libro, un corso in aula: qui dentro ci sta "
+               "tutto. Ogni volta che avanzi registri a che punto sei, e la "
+               "percentuale vecchia resta nello storico — così vedi se stai "
+               "andando avanti o se un corso si è fermato.")
+
+    riepilogo = DIARIO.corsi(DIA)
+
+    with st.expander("➕ Registra un avanzamento", expanded=riepilogo.empty):
+        gia_noti = sorted(riepilogo["Corso"].tolist()) if not riepilogo.empty else []
+        with st.form("avanzamento_corso", clear_on_submit=True):
+            q1, q2 = st.columns([3, 2])
+            if gia_noti:
+                scelto_c = q1.selectbox("Corso", gia_noti + ["➕ un corso nuovo…"])
+            else:
+                scelto_c = "➕ un corso nuovo…"
+                q1.caption("Ancora nessun corso: scrivine uno qui sotto.")
+            nome_nuovo = q1.text_input(
+                "Nome del corso nuovo",
+                disabled=scelto_c != "➕ un corso nuovo…",
+                placeholder="es. 100 Days of Code — Python")
+            piatt = q2.text_input("Dove", value="Udemy")
+            q3, q4 = st.columns(2)
+            perc = q3.slider("A che punto sei (%)", 0, 100, 0, step=5)
+            min_c = q4.number_input("Minuti fatti oggi", 0, 600, 30, step=5)
+            lez = st.text_input("Sezione o lezione a cui sei arrivato",
+                                placeholder="es. Sezione 7 — i dizionari")
+            salva_c = st.form_submit_button("💾 Registra", type="primary")
+
+        if salva_c:
+            nome_c = (nome_nuovo.strip() if scelto_c == "➕ un corso nuovo…"
+                      else scelto_c)
+            if not nome_c:
+                st.warning("Serve il nome del corso.")
+            else:
+                diario_scrivi(DIARIO.riga("corso", nome_c, piatt.strip() or "—",
+                                          min_c, perc, lez.strip()))
+                st.success(f"«{nome_c}» aggiornato al {perc}%.")
+                st.rerun()
+
+    if not riepilogo.empty:
+        for _, c in riepilogo.iterrows():
+            with st.container(border=True):
+                t1, t2 = st.columns([3, 1])
+                t1.markdown(f"**{c['Corso']}** · {c['Piattaforma']}")
+                t1.progress(min(1.0, c["Avanzamento"] / 100),
+                            text=f"{c['Avanzamento']:.0f}%")
+                if c["Ultima lezione"]:
+                    t1.caption(f"Ultima lezione: {c['Ultima lezione']}")
+                gg = (pd.Timestamp(dt.date.today()) - c["Ultimo aggiornamento"]).days
+                t2.metric("Ore in tutto", f"{c['Minuti'] / 60:.1f}")
+                t2.caption(f"aggiornato {gg} giorni fa" if gg else "aggiornato oggi")
+
+        storia = DIA[DIA["Tipo"] == "corso"]
+        if len(storia) >= 3:
+            figc = go.Figure()
+            for i, (nome_c, g) in enumerate(storia.groupby("Attivita")):
+                g = g.sort_values("Data")
+                figc.add_scatter(x=g["Data"], y=g["Valore"], mode="lines+markers",
+                                 name=nome_c,
+                                 line=dict(color=PALETTE[i % len(PALETTE)], width=2),
+                                 hovertemplate="%{x|%d/%m/%Y}<br>%{y:.0f}%<extra></extra>")
+            figc.update_yaxes(range=[0, 104], ticksuffix="%")
+            st.plotly_chart(style(figc, 300, "Avanzamento nel tempo"),
+                            width='stretch')
+
+        tabc = riepilogo.copy()
+        tabc["Ultimo aggiornamento"] = tabc["Ultimo aggiornamento"].dt.strftime("%d/%m/%Y")
+        scarica_tabella(tabc, "corsi", "⬇️ Scarica i corsi")
+
+    st.divider()
+
+    # =================== ANDAMENTO E SUGGERIMENTI ===========================
+    st.markdown("### 📈 Come sta andando")
+
+    ses = DIA[DIA["Tipo"].isin(DIARIO.TIPI_TEMPO)]
+    if ses.empty:
+        st.info("Qui comparirà l'andamento appena registri la prima sessione.")
+    else:
+        # ------------------------- scelta del periodo e del passo ------------
+        primo_giorno = DIA["Data"].min().date()
+        oggi_d = dt.date.today()
+
+        p1, p2 = st.columns([2, 3])
+        passo = p1.segmented_control(
+            "Raggruppa per", list(DIARIO.PASSI.keys()), default="Giorno",
+            key="passo_andamento") or "Giorno"
+
+        preset = p2.segmented_control(
+            "Periodo",
+            ["7 giorni", "30 giorni", "3 mesi", "12 mesi", "Tutto", "Scelgo io"],
+            default="30 giorni", key="periodo_andamento") or "30 giorni"
+
+        salti = {"7 giorni": 7, "30 giorni": 30, "3 mesi": 91, "12 mesi": 365}
+        if preset == "Tutto":
+            dal, al = primo_giorno, oggi_d
+        elif preset == "Scelgo io":
+            scelta_date = st.date_input(
+                "Da quando a quando",
+                value=(max(primo_giorno, oggi_d - dt.timedelta(days=29)), oggi_d),
+                min_value=primo_giorno, max_value=oggi_d, format="DD/MM/YYYY")
+            if isinstance(scelta_date, (tuple, list)) and len(scelta_date) == 2:
+                dal, al = scelta_date
+            else:
+                dal, al = primo_giorno, oggi_d
+        else:
+            dal = max(primo_giorno, oggi_d - dt.timedelta(days=salti[preset] - 1))
+            al = oggi_d
+
+        serie = DIARIO.serie_minuti(DIA, dal, al, passo)
+        etic = DIARIO.etichette(serie.index, passo)
+        nel_periodo = ses[(ses["Data"] >= pd.Timestamp(dal))
+                          & (ses["Data"] <= pd.Timestamp(al))]
+
+        # lo storico non si perde mai: questi numeri sono su TUTTO il diario
+        s1, s2, s3, s4 = st.columns(4)
+        s1.metric("Minuti nel periodo", f"{serie.sum():,.0f}".replace(",", "."))
+        s2.metric("Sessioni nel periodo", f"{len(nel_periodo)}")
+        s3.metric(f"Media per {passo.lower()}", f"{serie.mean():.0f} min")
+        s4.metric("Ore da sempre", f"{ses['Minuti'].sum() / 60:,.1f}".replace(",", "."))
+
+        g1, g2 = st.columns([3, 2])
+        with g1:
+            fig = go.Figure()
+            fig.add_bar(x=etic, y=serie.values,
+                        marker=dict(color=PALETTE[0], line=dict(width=0)),
+                        name="minuti",
+                        hovertemplate="%{x}<br>%{y:.0f} minuti<extra></extra>")
+            if passo == "Giorno" and len(serie) >= 10:
+                media = serie.rolling(7, min_periods=1).mean()
+                fig.add_scatter(x=etic, y=media.values, mode="lines",
+                                name="media su 7 giorni",
+                                line=dict(color=VERDE_SCURO, width=2),
+                                hovertemplate="%{x}<br>media %{y:.0f} min<extra></extra>")
+            fig.update_xaxes(type="category")
+            st.plotly_chart(
+                style(fig, 320, f"Minuti per {passo.lower()} · "
+                                f"dal {dal:%d/%m/%Y} al {al:%d/%m/%Y}"),
+                width='stretch')
+            tab_serie = pd.DataFrame({"Periodo": etic, "Minuti": serie.values})
+            scarica_tabella(tab_serie, "andamento_minuti", "⬇️ I dati del grafico")
+
+        with g2:
+            if nel_periodo.empty:
+                st.info("Nessuna sessione in questo periodo.")
+            else:
+                per_att = (nel_periodo.groupby("Attivita")["Minuti"].sum()
+                           .sort_values(ascending=True))
+                fig2 = go.Figure()
+                fig2.add_bar(x=per_att.values, y=per_att.index, orientation="h",
+                             marker=dict(color=PALETTE[1], line=dict(width=0)),
+                             hovertemplate="%{y}<br>%{x:.0f} minuti<extra></extra>")
+                fig2.update_xaxes(range=[0, float(per_att.max()) * 1.22])
+                st.plotly_chart(style(fig2, 320, "Dove è finito il tempo"),
+                                width='stretch')
+                scarica_tabella(
+                    per_att.rename("Minuti").rename_axis("Attività").reset_index(),
+                    "minuti_per_attivita", "⬇️ I dati del grafico")
+
+        # ----------------------------- i suggerimenti ------------------------
+        st.markdown("##### Cosa noto nei tuoi dati")
+        sugg = []
+
+        strisc = DIARIO.striscia(DIA)
+        if strisc >= 7:
+            sugg.append(("🟢", f"Sei a **{strisc} giorni di fila**. È la cosa che "
+                               "conta più di quanto fai in ogni singola sessione."))
+        elif strisc == 0 and len(ses) > 0:
+            ultima = ses["Data"].max()
+            gg = (pd.Timestamp(dt.date.today()) - ultima).days
+            sugg.append(("🟡", f"Ultima sessione **{gg} giorni fa**. Per ripartire "
+                               "fai la più corta che hai: quindici minuti valgono "
+                               "più di un'ora rimandata."))
+
+        ultimi14 = ses[ses["Data"] >= pd.Timestamp(dt.date.today()) - pd.Timedelta(days=13)]
+        if len(ultimi14) >= 3:
+            fatte = set(ultimi14["Attivita"])
+            trascurate = [a["nome"] for a in attivita if a["nome"] not in fatte]
+            if trascurate:
+                sugg.append(("🟡", "In due settimane non hai toccato: **"
+                             + "**, **".join(trascurate[:3]) + "**."))
+
+        voti = ses["Valore"].dropna()
+        if len(voti) >= 5:
+            recenti = voti.tail(5).mean()
+            prima = voti.head(max(1, len(voti) - 5)).mean()
+            if recenti >= prima + 0.5:
+                sugg.append(("🟢", f"Le ultime sessioni ti stanno risultando più "
+                                   f"scorrevoli di prima (media {recenti:.1f} "
+                                   f"contro {prima:.1f})."))
+            elif recenti <= prima - 0.5:
+                sugg.append(("🟡", f"Le ultime sessioni sono più faticose della "
+                                   f"media (media {recenti:.1f} contro {prima:.1f}). "
+                                   "Spesso vuol dire che il passo è troppo lungo: "
+                                   "spezza l'obiettivo in due."))
+
+        lunghe = ses[ses["Minuti"] >= 60]
+        if len(ses) >= 8 and len(lunghe) / len(ses) > 0.6:
+            sugg.append(("🟡", "Quasi tutte le tue sessioni superano l'ora. "
+                               "Le sessioni lunghe sono le prime a saltare quando "
+                               "la giornata si complica: tienine qualcuna da trenta."))
+
+        fermi = riepilogo[riepilogo["Ultimo aggiornamento"]
+                          < pd.Timestamp(dt.date.today()) - pd.Timedelta(days=21)] \
+            if not riepilogo.empty else pd.DataFrame()
+        for _, c in fermi.iterrows():
+            sugg.append(("🟡", f"Il corso **{c['Corso']}** è fermo al "
+                               f"{c['Avanzamento']:.0f}% da più di tre settimane."))
+
+        n_anom = int((DIA["Tipo"] == "anomalia").sum())
+        if n_anom == 0:
+            sugg.append(("🟡", "Il taccuino delle anomalie è ancora vuoto. È "
+                               "l'esercizio che rende tutto il resto più utile, e "
+                               "costa cinque minuti."))
+        elif n_anom >= 10:
+            sugg.append(("🟢", f"**{n_anom} anomalie** annotate. Da qui in poi la "
+                               "rilettura della domenica comincia a pagare: cerca "
+                               "due annotazioni lontane che parlano della stessa cosa."))
+
+        if not sugg:
+            sugg.append(("🟢", "Troppo pochi dati per dire qualcosa di sensato. "
+                               "Torna fra qualche sessione."))
+        for pallino, testo in sugg:
+            st.markdown(f"{pallino} &nbsp;{testo}", unsafe_allow_html=True)
+
+        with st.expander(f"Tutte le righe del diario ({len(DIA)} da sempre)"):
+            tab_dia = DIA.copy()
+            tab_dia["Data"] = tab_dia["Data"].dt.strftime("%d/%m/%Y")
+            st.dataframe(tab_dia, width='stretch', hide_index=True, height=340)
+            scarica_tabella(DIA, "diario_completo")
+            st.download_button("⬇️ Archivio completo (JSON)", DIARIO.esporta(DIA),
+                               f"quadro_diario_{dt.date.today():%Y%m%d}.json",
+                               "application/json")
+
+    st.divider()
+
+    st.markdown("### ⚠️ Cosa richiede attenzione")
 
     avvisi = []
     if not dfp.empty:
@@ -1381,7 +1991,7 @@ with TAB[0]:
     st.divider()
 
     # ---------------- collegamenti rapidi ---------------------------------
-    st.markdown("##### Collegamenti rapidi")
+    st.markdown("### 🔗 Collegamenti rapidi")
 
     @st.cache_data(show_spinner=False)
     def carica_collegamenti(_versione: float):
@@ -1575,6 +2185,7 @@ with TAB[2]:
                 "Incassato": st.column_config.NumberColumn("Incassato", format="€ %.0f"),
                 "DaIncassare": st.column_config.NumberColumn("Da incassare", format="€ %.0f"),
             })
+        scarica_tabella(show, "scheda_allievi", "⬇️ Scarica la scheda")
 
     with c2:
         s = sched.sort_values("GiorniDaUltima")
@@ -1717,6 +2328,7 @@ with TAB[3]:
         st.dataframe(t, width='stretch', hide_index=True,
                      column_config={"OreTotali": st.column_config.NumberColumn("Ore", format="%.1f h"),
                                     "Importo": st.column_config.NumberColumn("Importo", format="€ %.2f")})
+        scarica_tabella(t, "lezioni_da_incassare")
 
 
 # ============================================================================
@@ -2080,9 +2692,7 @@ with TAB[6]:
                 "GuadagnoOrario": st.column_config.NumberColumn("€/ora", format="€ %.2f"),
                 "Link": st.column_config.LinkColumn("Cartella", display_text="apri"),
             })
-        st.download_button("⬇️ Scarica progetti in CSV",
-                           t.to_csv(index=False).encode("utf-8-sig"),
-                           f"progetti_{dt.date.today():%Y%m%d}.csv", "text/csv")
+        scarica_tabella(t, "progetti", "⬇️ Scarica i progetti")
 
         # ---------------- movimenti ----------------
         if not m.empty:
@@ -2095,14 +2705,17 @@ with TAB[6]:
                              width='stretch', hide_index=True,
                              column_config={"Importo": st.column_config.NumberColumn(
                                  "Importo", format="€ %.2f")})
+                scarica_tabella(mv, "movimenti_pagamento")
 
         # ---------------- piano contatti ----------------
         if not contatti.empty:
             with st.expander("📇 Piano contatti dei progetti"):
                 st.dataframe(contatti, width='stretch', hide_index=True, height=340)
+                scarica_tabella(contatti, "piano_contatti")
                 if not esiti.empty:
                     st.markdown("**Registro esiti dei contatti**")
                     st.dataframe(esiti, width='stretch', hide_index=True)
+                    scarica_tabella(esiti, "esiti_contatti")
 
         if not diag_p.empty:
             with st.expander("🔍 Diagnostica lettura progetti"):
@@ -2637,19 +3250,54 @@ with TAB[8]:
         if p.get("prossimo_passo"):
             st.info(f"**Prossimo passo** — {p['prossimo_passo']}")
 
+        # ---- a che punto sei: le spunte si salvano nel diario ---------------
+        # Le tappe spuntate in questo giro restano anche in sessione: così la
+        # pagina non deve ricaricarsi per aggiornare la barra, e soprattutto
+        # non rischia di riscrivere la stessa tappa all'infinito se la
+        # scrittura sull'archivio tarda o fallisce.
+        appena = st.session_state.setdefault("tappe_appena", set())
+        fatte = DIARIO.tappe_fatte(DIA, p["argomento"]) | {
+            n for (a, n) in appena if a == p["argomento"]}
+        tutte_tappe = [t for l in p.get("livelli", []) for t in l.get("tappe", [])]
+        if tutte_tappe:
+            quante = len([t for t in tutte_tappe if t in fatte])
+            st.progress(quante / len(tutte_tappe),
+                        text=f"{quante} tappe su {len(tutte_tappe)} "
+                             f"({quante / len(tutte_tappe) * 100:.0f}%)")
+
+        if p.get("fonti"):
+            st.markdown("##### Su cosa studiare davvero")
+            st.caption("Non sono link generici: sono le fonti su cui studia chi "
+                       "fa questo mestiere. Aprine una e stacci dentro.")
+            for riga_f in range(0, len(p["fonti"]), 2):
+                cf = st.columns(2)
+                for col, f in zip(cf, p["fonti"][riga_f:riga_f + 2]):
+                    with col:
+                        st.markdown(f"**{f['nome']}**")
+                        st.caption(f.get("nota", ""))
+                        st.link_button("Apri ↗", f["url"], width='stretch')
+
         livelli = p.get("livelli", [])
         if livelli:
             st.markdown("")
             LT = st.tabs([f"{i+1} · {l['nome']}" for i, l in enumerate(livelli)])
-            for scheda, l in zip(LT, livelli):
+            for i_liv, (scheda, l) in enumerate(zip(LT, livelli)):
                 with scheda:
                     if l.get("traguardo"):
                         st.markdown(f"**Dove arrivi** — {l['traguardo']}")
                     c1, c2 = st.columns([3, 2])
                     with c1:
-                        st.markdown("###### Le tappe, in ordine")
+                        st.markdown("###### Le tappe — spunta quelle che hai fatto")
                         for i, t in enumerate(l.get("tappe", []), 1):
-                            st.markdown(f"**{i}.** {t}")
+                            chiave_t = f"tappa_{p['argomento']}_{i_liv}_{i}"
+                            era = t in fatte
+                            ora = st.checkbox(f"**{i}.** {t}", value=era,
+                                              key=chiave_t)
+                            if ora and not era:
+                                diario_scrivi(DIARIO.riga(
+                                    "tappa", p["argomento"], "Studio", 0, None, t))
+                                appena.add((p["argomento"], t))
+                                st.toast(f"Tappa segnata: {t}")
                     with c2:
                         st.markdown("###### Esercizi")
                         for e in l.get("esercizi", []):
@@ -2853,34 +3501,25 @@ with TAB[8]:
                         prompt += f"\n\nTesto:\n{testo.strip()}"
                     prompt += ("\n\nRispondi in italiano, con parole semplici e "
                                "frasi brevi.")
+                    import assistente as AI
+                    stato = st.empty()
                     try:
                         with st.spinner("Sto pensando…"):
-                            r = requests.post(
-                                "https://generativelanguage.googleapis.com/v1beta/"
-                                f"models/{modello}:generateContent",
-                                params={"key": chiave},
-                                json={"contents": [{"parts": [{"text": prompt}]}]},
-                                timeout=120)
-                        if r.status_code != 200:
-                            st.error(f"Errore {r.status_code}")
-                            st.code(r.text[:800], language="text")
-                            if r.status_code == 404:
-                                st.caption("Quasi certamente il nome del modello non "
-                                           "è più valido: apri le impostazioni qui "
-                                           "sopra e usa «Quali modelli posso usare».")
-                            elif r.status_code in (401, 403):
-                                st.caption("La chiave non è valida o non è abilitata.")
-                            elif r.status_code == 429:
-                                st.caption("Hai superato il limite gratuito: riprova "
-                                           "fra qualche minuto.")
-                        else:
-                            dati = r.json()
-                            risposta = (dati.get("candidates", [{}])[0]
-                                        .get("content", {})
-                                        .get("parts", [{}])[0].get("text", ""))
-                            st.session_state["ultima_risposta"] = risposta
-                            st.session_state["ultimo_compito"] = compito
+                            risposta = AI.chiedi(prompt, chiave, modello,
+                                                 al_tentativo=lambda m: stato.info(m))
+                        stato.empty()
+                        st.session_state["ultima_risposta"] = risposta
+                        st.session_state["ultimo_compito"] = compito
+                    except AI.ErroreAI as e:
+                        stato.empty()
+                        st.error(e.messaggio)
+                        if e.dettaglio:
+                            st.caption(e.dettaglio)
+                        if e.codice == 404:
+                            st.caption("Apri le impostazioni qui sopra e usa "
+                                       "«Quali modelli posso usare».")
                     except Exception as e:
+                        stato.empty()
                         st.error(f"Non sono riuscito a contattare il servizio: {e}")
 
             risposta = st.session_state.get("ultima_risposta", "")
@@ -2942,3 +3581,342 @@ with TAB[8]:
                 if pr.get("quando"):
                     st.caption(f"*{pr['quando']}*")
                 st.code(pr["testo"], language="text")
+
+
+# ============================================================================
+# TAB 9 - PARLA CHIARO  (allenamento alla comunicazione, nativo in Quadro)
+# ============================================================================
+with TAB[9]:
+    import parlachiaro as PC
+
+    PCFG = _carica_json("parlachiaro.json", _mtime("parlachiaro.json"))
+    if "_errore" in PCFG:
+        st.error(f"Non riesco a leggere `parlachiaro.json`: {PCFG['_errore']}")
+        st.stop()
+
+    CHIAVE_AI = (secret("google_api_key", "") or "").strip()
+    MOD_TRASC = (PCFG.get("ai") or {}).get("modello_trascrizione", "gemini-3.8-flash")
+
+    st.markdown("#### 🎙️ Parla chiaro")
+    st.caption("Sei esercizi, la tua voce, e un'analisi che misura ritmo, "
+               "riempitivi, grammatica e registro. Tutto quello che fai qui "
+               "finisce nel diario insieme al resto.")
+
+    PT = st.tabs(["🏋️ Allenamento", "🧭 Coach", "📇 Grammatica",
+                  "📚 Lezioni", "🧍 Presenza", "📈 Andamento"])
+
+    # ======================= ALLENAMENTO ====================================
+    with PT[0]:
+        blocchi = PCFG.get("blocchi", [])
+        settimane = PCFG.get("settimane", {})
+        scenari = PCFG.get("scenari", [])
+
+        c1, c2 = st.columns([2, 3])
+        sett = c1.selectbox("Settimana", list(settimane.keys()),
+                            format_func=lambda k: f"{k} · "
+                            + ["Fondamenta", "Chiarezza", "Voce manageriale",
+                               "Padronanza"][int(k) - 1])
+        c2.caption(settimane.get(sett, ""))
+
+        scelto_b = st.radio(
+            "Esercizio", range(len(blocchi)), horizontal=True,
+            format_func=lambda i: f"{i+1}. {blocchi[i]['titolo']}",
+            label_visibility="collapsed")
+        B = blocchi[scelto_b]
+
+        with st.container(border=True):
+            b1, b2 = st.columns([4, 1])
+            b1.markdown(f"##### {B['titolo']}")
+            b2.metric("Durata", f"{B['minuti']} min")
+            st.markdown(B["consegna"])
+
+            if scelto_b >= 2 and scenari:
+                if "pc_scenario" not in st.session_state:
+                    st.session_state["pc_scenario"] = 0
+                st.info(f"**Scenario** — {scenari[st.session_state['pc_scenario'] % len(scenari)]}")
+                if st.button("🎲 Cambia scenario"):
+                    st.session_state["pc_scenario"] += 1
+                    st.rerun()
+
+        st.markdown("##### Registra il tuo intervento")
+        st.caption("Uno o due minuti bastano: sono più utili di dieci, e "
+                   "l'analisi è più precisa. Se preferisci, puoi anche solo "
+                   "scrivere il testo più sotto.")
+
+        audio = st.audio_input("Premi per registrare")
+
+        if audio is not None:
+            dati_audio = audio.getvalue()
+            st.caption(f"Registrazione di {len(dati_audio) / 1024 / 1024:.1f} MB.")
+            if st.button("✍️ Trascrivi con l'intelligenza artificiale",
+                         type="primary"):
+                try:
+                    with st.spinner("Sto ascoltando…"):
+                        testo_t = PC.trascrivi(
+                            dati_audio, CHIAVE_AI, MOD_TRASC,
+                            getattr(audio, "type", None) or "audio/wav")
+                    st.session_state["pc_testo"] = testo_t
+                    st.success("Trascritto.")
+                except PC.ErroreTrascrizione as e:
+                    st.error(str(e))
+
+        testo = st.text_area(
+            "Il testo del tuo intervento", height=180,
+            value=st.session_state.get("pc_testo", ""), key="pc_area",
+            placeholder="Qui compare la trascrizione, oppure scrivi tu.")
+
+        d1, d2 = st.columns(2)
+        durata_s = d1.number_input("Quanti secondi è durato", 5, 3600, 60, step=5,
+                                   help="Serve per calcolare le parole al minuto.")
+        minuti_ses = d2.number_input("Minuti di allenamento da registrare",
+                                     1, 180, B["minuti"], step=1)
+
+        t1, t2 = st.columns(2)
+        tens_pre = t1.slider("Tensione prima", 0, 10, 6)
+        tens_post = t2.slider("Tensione dopo", 0, 10, 4)
+
+        if testo.strip():
+            R = PC.analizza(testo, durata_s, PCFG)
+
+            st.divider()
+            m = st.columns(5)
+            m[0].markdown('<span class="kpi-mark"></span>', unsafe_allow_html=True)
+            m[0].metric("Efficacia", f"{R['punteggio']}/100")
+            m[1].metric("Parole al minuto", R["wpm"] or "—")
+            m[2].metric("Parole per frase", R["media_frase"] or "—")
+            m[3].metric("Riempitivi", R["riempitivi"])
+            m[4].metric("Possibili errori", R["errori_grammatica"])
+
+            r1, r2 = st.columns([2, 3])
+            with r1:
+                assi = PC.radar(R)
+                figr = go.Figure()
+                figr.add_scatterpolar(
+                    r=list(assi.values()) + [list(assi.values())[0]],
+                    theta=list(assi.keys()) + [list(assi.keys())[0]],
+                    fill="toself", line=dict(color=VERDE, width=2),
+                    fillcolor="rgba(27,175,122,.25)",
+                    hovertemplate="%{theta}: %{r:.0f}/100<extra></extra>")
+                figr.update_polars(radialaxis=dict(range=[0, 100], showticklabels=False))
+                st.plotly_chart(style(figr, 300, "Le cinque misure",
+                                      showlegend=False), width='stretch')
+                scarica_tabella(
+                    pd.DataFrame({"Misura": list(assi.keys()),
+                                  "Valore": list(assi.values())}),
+                    "parlachiaro_misure", "⬇️ I dati del grafico")
+
+            with r2:
+                st.markdown("##### Cosa migliorare")
+                for tipo_c, testo_c in R["consigli"]:
+                    if tipo_c == "ok":
+                        st.success(testo_c)
+                    elif tipo_c == "errore":
+                        st.warning(testo_c)
+                    else:
+                        st.markdown(f"• {testo_c}")
+
+            nota_pc = st.text_input("Una nota per te (facoltativa)",
+                                    key="pc_nota")
+            if st.button("💾 Salva la sessione nel diario", type="primary"):
+                diario_scrivi(DIARIO.riga(
+                    "parlachiaro", f"{B['titolo']}", "ParlaChiaro",
+                    minuti_ses, R["punteggio"],
+                    f"[{tens_pre}→{tens_post}] {nota_pc.strip()} :: "
+                    f"{testo.strip()[:400]}"))
+                st.success(f"Salvata: {R['punteggio']}/100, {minuti_ses} minuti.")
+                st.session_state.pop("pc_testo", None)
+                st.rerun()
+        else:
+            st.info("Registra o scrivi qualcosa e qui compaiono i punteggi.")
+
+    # ============================ COACH =====================================
+    with PT[1]:
+        domande = PCFG.get("domande_coach", [])
+        st.caption("Sette domande in fila: sono quelle che ti farebbero in una "
+                   "riunione vera. Rispondi a tutte e in fondo esce il "
+                   "canovaccio del tuo intervento.")
+
+        tema = st.text_input("Tema dell'intervento",
+                             value="Presento la Business Review Campania")
+        risposte = st.session_state.setdefault("pc_risposte", {})
+
+        for i, dom in enumerate(domande):
+            risposte[i] = st.text_area(f"**{i+1}.** {dom}",
+                                       value=risposte.get(i, ""),
+                                       height=70, key=f"pc_dom_{i}")
+
+        piene = [r for r in risposte.values() if r.strip()]
+        st.progress(len(piene) / len(domande),
+                    text=f"{len(piene)} risposte su {len(domande)}")
+
+        if len(piene) >= 4:
+            st.markdown("##### Il tuo canovaccio")
+            canovaccio = f"**{tema}**\n\n"
+            for i, dom in enumerate(domande):
+                if risposte.get(i, "").strip():
+                    canovaccio += f"- *{dom}* {risposte[i].strip()}\n"
+            st.markdown(canovaccio)
+            st.download_button("⬇️ Scarica il canovaccio",
+                               canovaccio.encode("utf-8"),
+                               f"canovaccio_{dt.date.today():%Y%m%d}.md",
+                               "text/markdown")
+        else:
+            st.caption("Completa almeno quattro risposte per vedere il canovaccio.")
+
+    # ========================= GRAMMATICA ===================================
+    with PT[2]:
+        carte = PCFG.get("carte", [])
+        st.caption("Diciotto carte. Leggi la frase sbagliata, dì ad alta voce "
+                   "come la correggeresti, poi scopri la risposta. Quelle che "
+                   "sbagli tornano più spesso.")
+
+        memoria = st.session_state.setdefault("pc_memoria", {})
+        i_carta = st.session_state.setdefault("pc_carta", 0)
+        C = carte[i_carta % len(carte)]
+
+        giuste = sum(1 for v in memoria.values() if v >= 2)
+        st.progress(giuste / len(carte),
+                    text=f"{giuste} carte su {len(carte)} sai farle")
+
+        with st.container(border=True):
+            st.caption(f"Carta {C['id']} · {C['categoria']}")
+            st.markdown(f"### ❌ {C['sbagliato']}")
+            if st.session_state.get("pc_scopri") == C["id"]:
+                st.markdown(f"### ✅ {C['giusto']}")
+                st.info(C["regola"])
+                g1, g2 = st.columns(2)
+                if g1.button("👍 La sapevo", width='stretch', type="primary"):
+                    memoria[C["id"]] = memoria.get(C["id"], 0) + 1
+                    st.session_state["pc_carta"] = i_carta + 1
+                    st.session_state.pop("pc_scopri", None)
+                    st.rerun()
+                if g2.button("👎 Da ripassare", width='stretch'):
+                    memoria[C["id"]] = 0
+                    st.session_state["pc_carta"] = i_carta + 1
+                    st.session_state.pop("pc_scopri", None)
+                    st.rerun()
+            else:
+                if st.button("Mostra la risposta", type="primary"):
+                    st.session_state["pc_scopri"] = C["id"]
+                    st.rerun()
+
+        with st.expander("Tutte le carte in un elenco"):
+            tabc = pd.DataFrame([{"N°": c["id"], "Categoria": c["categoria"],
+                                  "Si dice": c["giusto"],
+                                  "Non si dice": c["sbagliato"],
+                                  "Perché": c["regola"]} for c in carte])
+            st.dataframe(tabc, width='stretch', hide_index=True)
+            scarica_tabella(tabc, "carte_grammatica", "⬇️ Scarica le carte")
+
+    # =========================== LEZIONI ====================================
+    with PT[3]:
+        lezioni = PCFG.get("lezioni", [])
+        aree = []
+        for l in lezioni:
+            if l["area"] not in aree:
+                aree.append(l["area"])
+        for area in aree:
+            st.markdown(f"##### {area}")
+            for l in [x for x in lezioni if x["area"] == area]:
+                with st.expander(l["titolo"]):
+                    st.markdown(l["testo"])
+
+    # ========================== PRESENZA ====================================
+    with PT[4]:
+        st.caption("Lo specchio di presenza con la webcam non c'è qui dentro: "
+                   "Quadro gira su un server e non può guardare il video in "
+                   "diretta. Per quello resta la versione vecchia, che trovi "
+                   "fra i collegamenti nel tab Studio marcata «old». Quella "
+                   "che segue è la lista da controllare davanti allo specchio "
+                   "o alla webcam del computer.")
+        for v in PCFG.get("checklist_presenza", []):
+            st.checkbox(v, key=f"pc_chk_{v[:20]}")
+
+    # ========================== ANDAMENTO ===================================
+    with PT[5]:
+        PCD = DIA[DIA["Tipo"] == "parlachiaro"].sort_values("Data")
+        if PCD.empty:
+            st.info("Qui compare l'andamento appena salvi il primo allenamento.")
+        else:
+            a1, a2, a3 = st.columns(3)
+            a1.metric("Allenamenti", len(PCD))
+            a2.metric("Minuti in tutto", f"{PCD['Minuti'].sum():,.0f}".replace(",", "."))
+            a3.metric("Efficacia media", f"{PCD['Valore'].mean():.0f}/100")
+
+            figp = go.Figure()
+            figp.add_scatter(x=PCD["Data"], y=PCD["Valore"], mode="lines+markers",
+                             name="efficacia",
+                             line=dict(color=VERDE, width=2),
+                             hovertemplate="%{x|%d/%m/%Y}<br>%{y:.0f}/100<extra></extra>")
+            if len(PCD) >= 4:
+                med = PCD["Valore"].rolling(3, min_periods=1).mean()
+                figp.add_scatter(x=PCD["Data"], y=med, mode="lines",
+                                 name="media su 3",
+                                 line=dict(color=VERDE_SCURO, width=2, dash="dot"))
+            figp.update_yaxes(range=[0, 104])
+            st.plotly_chart(style(figp, 300, "Indice di efficacia nel tempo"),
+                            width='stretch')
+
+            per_bl = PCD.groupby("Attivita")["Valore"].mean().sort_values()
+            figb = go.Figure()
+            figb.add_bar(x=per_bl.values, y=per_bl.index, orientation="h",
+                         marker=dict(color=PALETTE[1], line=dict(width=0)),
+                         hovertemplate="%{y}<br>%{x:.0f}/100<extra></extra>")
+            figb.update_xaxes(range=[0, 108])
+            st.plotly_chart(style(figb, 280, "Efficacia media per esercizio"),
+                            width='stretch')
+
+            tabp = PCD[["Data", "Attivita", "Minuti", "Valore", "Nota"]].copy()
+            tabp["Data"] = tabp["Data"].dt.strftime("%d/%m/%Y")
+            tabp = tabp.rename(columns={"Attivita": "Esercizio",
+                                        "Valore": "Efficacia"})
+            with st.expander("Tutti gli allenamenti"):
+                st.dataframe(tabp, width='stretch', hide_index=True)
+            scarica_tabella(tabp, "parlachiaro_allenamenti",
+                            "⬇️ Scarica gli allenamenti")
+
+
+# ============================================================================
+# TAB 10 - GUIDA  (come si usa e come si modifica: il testo sta in guida.json)
+# ============================================================================
+with TAB[10]:
+    G = _carica_json("guida.json", _mtime("guida.json"))
+    if "_errore" in G:
+        st.error(f"Non riesco a leggere `guida.json`: {G['_errore']}")
+    else:
+        st.markdown("#### ❓ Guida")
+        st.caption(G.get("intro", ""))
+
+        cerca_g = st.text_input(
+            "Cerca nella guida",
+            placeholder="per esempio: secrets, 503, virgola, diario, git",
+            label_visibility="collapsed")
+
+        q = cerca_g.strip().lower()
+        trovate = 0
+
+        for sez in G.get("sezioni", []):
+            voci = sez.get("voci", [])
+            if q:
+                voci = [v for v in voci
+                        if q in v.get("domanda", "").lower()
+                        or q in v.get("risposta", "").lower()
+                        or q in sez.get("titolo", "").lower()]
+            if not voci:
+                continue
+            trovate += len(voci)
+            st.markdown(f"##### {sez.get('icona', '')} {sez['titolo']}")
+            for v in voci:
+                with st.expander(v["domanda"], expanded=bool(q)):
+                    st.markdown(v["risposta"])
+            st.markdown("")
+
+        if q and not trovate:
+            st.warning("Nessuna voce corrisponde. Prova con una parola più corta: "
+                       "la ricerca guarda dentro al testo, non solo nei titoli.")
+
+        st.divider()
+        st.caption("Questa guida sta in `guida.json`: puoi aggiungere sezioni e "
+                   "voci tue senza toccare il codice. Ogni voce ha una «domanda» "
+                   "e una «risposta», e la risposta accetta il grassetto con i "
+                   "doppi asterischi e gli elenchi con il trattino.")

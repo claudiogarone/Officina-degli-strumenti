@@ -1,0 +1,358 @@
+{
+  "_nota": "I contenuti di ParlaChiaro: blocchi di allenamento, scenari, domande del coach, carte di grammatica, lezioni. Puoi modificare i testi; le espressioni fra // sono regole di ricerca, toccale solo se sai cosa fai.",
+  "blocchi": [
+    {
+      "minuti": 5,
+      "titolo": "Centratura e voce",
+      "consegna": "Leggi lentamente ad alta voce: «Il punto centrale di oggi riguarda il recupero della performance. Presenterò il dato, l'impatto operativo e la mia raccomandazione.»"
+    },
+    {
+      "minuti": 10,
+      "titolo": "Grammatica italiana",
+      "consegna": "Pronuncia le frasi corrette: «Se avessimo più dati, potremmo decidere. Vorrei che valutassimo le cause. Sarebbe meglio se facessimo un controllo.»"
+    },
+    {
+      "minuti": 10,
+      "titolo": "Chiarezza e sintesi",
+      "consegna": "Spiega lo scenario in 90 secondi: messaggio chiave, due evidenze, una conclusione."
+    },
+    {
+      "minuti": 10,
+      "titolo": "Linguaggio manageriale",
+      "consegna": "Presenta lo scenario usando: dato → impatto → opzioni → raccomandazione → decisione richiesta."
+    },
+    {
+      "minuti": 5,
+      "titolo": "Parlare in pubblico",
+      "consegna": "Apri una riunione: saluta, dichiara l'obiettivo, anticipa i tre punti e il risultato atteso."
+    },
+    {
+      "minuti": 5,
+      "titolo": "Revisione finale",
+      "consegna": "Ripeti l'intervento migliore riducendolo del 20% e applicando i suggerimenti ricevuti."
+    }
+  ],
+  "settimane": {
+    "1": "Frasi corrette, brevi e comprensibili: condizionale, congiuntivo, riempitivi, pause.",
+    "2": "Esporre in sequenza logica: messaggio chiave, tre punti, conclusione.",
+    "3": "Dal problema alla decisione: dato, impatto, opzioni, raccomandazione.",
+    "4": "Presenza, domande difficili e simulazioni complete."
+  },
+  "scenari": [
+    "KPI24 sotto target: presenta il dato e un piano di recupero.",
+    "Chiedi priorità e risorse per una criticità sui concentratori.",
+    "Presenta in Business Review uno scostamento regionale rispetto al nazionale.",
+    "Un responsabile chiede: perché questa attività è prioritaria?",
+    "Chiudi una riunione con decisioni, responsabilità e scadenze.",
+    "Presentati a un nuovo gruppo di lavoro: ruolo, competenze, obiettivo.",
+    "Spiega a una persona non tecnica perché la qualità dei dati è importante.",
+    "Non conosci la risposta: rispondi con professionalità e proponi una verifica."
+  ],
+  "domande_coach": [
+    "Qual è il messaggio principale?",
+    "Quale dato lo supporta?",
+    "Quanto vale l'impatto?",
+    "Quali opzioni hai valutato?",
+    "Qual è la tua raccomandazione?",
+    "Quale decisione chiedi oggi?",
+    "Chi farà cosa ed entro quando?"
+  ],
+  "carte": [
+    {
+      "id": 1,
+      "categoria": "condizionale",
+      "sbagliato": "Se avrei più dati, potrei decidere.",
+      "giusto": "Se avessi più dati, potrei decidere.",
+      "regola": "Dopo «se» usa il congiuntivo; nella conseguenza il condizionale."
+    },
+    {
+      "id": 2,
+      "categoria": "congiuntivo",
+      "sbagliato": "Vorrei che valutiamo le cause.",
+      "giusto": "Vorrei che valutassimo le cause.",
+      "regola": "Dopo «vorrei che» usa il congiuntivo imperfetto."
+    },
+    {
+      "id": 3,
+      "categoria": "congiuntivo",
+      "sbagliato": "Sarebbe meglio se facciamo un controllo.",
+      "giusto": "Sarebbe meglio se facessimo un controllo.",
+      "regola": "Un'ipotesi richiede il congiuntivo imperfetto."
+    },
+    {
+      "id": 4,
+      "categoria": "condizionale",
+      "sbagliato": "Se lo sapevo, ti avvisavo prima.",
+      "giusto": "Se lo avessi saputo, ti avrei avvisato prima.",
+      "regola": "Ipotesi non realizzata nel passato: congiuntivo trapassato + condizionale passato."
+    },
+    {
+      "id": 5,
+      "categoria": "congiuntivo",
+      "sbagliato": "Ritengo che questa soluzione è più efficace.",
+      "giusto": "Ritengo che questa soluzione sia più efficace.",
+      "regola": "Dopo verbi di opinione (ritengo, penso, credo che) usa il congiuntivo."
+    },
+    {
+      "id": 6,
+      "categoria": "lessico",
+      "sbagliato": "Dovremmo di verificare i dati.",
+      "giusto": "Dovremmo verificare i dati.",
+      "regola": "Dopo «dovere» non va la preposizione «di»."
+    },
+    {
+      "id": 7,
+      "categoria": "lessico",
+      "sbagliato": "A me mi sembra corretto.",
+      "giusto": "A me sembra corretto. / Mi sembra corretto.",
+      "regola": "Evita la duplicazione del pronome."
+    },
+    {
+      "id": 8,
+      "categoria": "accenti",
+      "sbagliato": "Qual'è la causa principale?",
+      "giusto": "Qual è la causa principale?",
+      "regola": "«Qual è» si scrive senza apostrofo."
+    },
+    {
+      "id": 9,
+      "categoria": "accenti",
+      "sbagliato": "Serve un pò di tempo.",
+      "giusto": "Serve un po' di tempo.",
+      "regola": "«Po'» è un troncamento di «poco»: vuole l'apostrofo, non l'accento."
+    },
+    {
+      "id": 10,
+      "categoria": "accenti",
+      "sbagliato": "Il sistema da esito positivo e il KPI e migliorato.",
+      "giusto": "Il sistema dà esito positivo e il KPI è migliorato.",
+      "regola": "«Dà» ed «è» quando sono verbi vogliono l'accento."
+    },
+    {
+      "id": 11,
+      "categoria": "accenti",
+      "sbagliato": "Si, confermo il risultato.",
+      "giusto": "Sì, confermo il risultato.",
+      "regola": "«Sì» affermativo vuole l'accento."
+    },
+    {
+      "id": 12,
+      "categoria": "lessico",
+      "sbagliato": "Serve un'altro controllo.",
+      "giusto": "Serve un altro controllo.",
+      "regola": "Al maschile «un altro» senza apostrofo; al femminile «un'altra»."
+    },
+    {
+      "id": 13,
+      "categoria": "lessico",
+      "sbagliato": "I dati gli ho verificati.",
+      "giusto": "I dati li ho verificati.",
+      "regola": "«Li» è complemento oggetto; «gli» significa «a lui / a loro»."
+    },
+    {
+      "id": 14,
+      "categoria": "lessico",
+      "sbagliato": "Il documento è apposto e avvolte lo aggiorno.",
+      "giusto": "Il documento è a posto e a volte lo aggiorno.",
+      "regola": "«A posto» e «a volte» si scrivono separati."
+    },
+    {
+      "id": 15,
+      "categoria": "punteggiatura",
+      "sbagliato": "L'azienda, ha aggiornato il processo.",
+      "giusto": "L'azienda ha aggiornato il processo.",
+      "regola": "Non separare mai soggetto e verbo con una virgola."
+    },
+    {
+      "id": 16,
+      "categoria": "punteggiatura",
+      "sbagliato": "Grazie!!! Verifichiamo... domani???",
+      "giusto": "Grazie. Verifichiamo domani?",
+      "regola": "Evita segni ripetuti e puntini di sospensione inutili."
+    },
+    {
+      "id": 17,
+      "categoria": "lessico",
+      "sbagliato": "Cmq nn so xchè il dato è cambiato.",
+      "giusto": "Comunque non so perché il dato è cambiato.",
+      "regola": "Niente abbreviazioni da chat nei contesti professionali."
+    },
+    {
+      "id": 18,
+      "categoria": "lessico",
+      "sbagliato": "Secondo me magari si può fare.",
+      "giusto": "A mio avviso sarebbe opportuno procedere.",
+      "regola": "Registro professionale: formula una raccomandazione chiara."
+    }
+  ],
+  "lezioni": [
+    {
+      "area": "Grammatica",
+      "titolo": "Condizionale e congiuntivo",
+      "testo": "Il condizionale esprime possibilità e conseguenze (potremmo, sarebbe). Dopo «se», «vorrei che», «ritengo che» serve il congiuntivo: «Se avessimo i dati, potremmo decidere». Errore tipico: «se avrei» → «se avessi»."
+    },
+    {
+      "area": "Grammatica",
+      "titolo": "Accenti e apostrofi",
+      "testo": "Qual è (senza apostrofo) · po' (apostrofo) · un altro / un'altra · dà (verbo) · è (verbo) · sì (affermazione) · perché (accento acuto)."
+    },
+    {
+      "area": "Grammatica",
+      "titolo": "Punteggiatura professionale",
+      "testo": "Mai la virgola tra soggetto e verbo. Un solo punto esclamativo o interrogativo. Usa i due punti per introdurre elenchi o spiegazioni. Evita i puntini di sospensione."
+    },
+    {
+      "area": "Chiarezza",
+      "titolo": "Una frase, un concetto",
+      "testo": "Frasi sotto le 20-25 parole, verbi attivi, parole semplici. Apri con il messaggio principale, porta una prova, chiudi con l'azione richiesta. Nel dubbio togli invece di aggiungere."
+    },
+    {
+      "area": "Chiarezza",
+      "titolo": "Pensa al destinatario",
+      "testo": "Prima di parlare chiediti: cosa sa già? cosa gli interessa? cosa deve decidere? Collega operativo: esempi e istruzioni. Management: sintesi, impatto e decisione."
+    },
+    {
+      "area": "Manageriale",
+      "titolo": "Dal dato alla decisione",
+      "testo": "Dato (cosa osserviamo) → Impatto (perché conta) → Opzioni (cosa possiamo fare) → Raccomandazione (cosa propongo) → Decisione (cosa serve oggi)."
+    },
+    {
+      "area": "Manageriale",
+      "titolo": "Frasi autorevoli",
+      "testo": "«Il punto centrale è…» · «Dai dati emerge che…» · «L'impatto operativo riguarda…» · «La mia raccomandazione è…» · «Per chiudere, propongo di concordare…»."
+    },
+    {
+      "area": "Manageriale",
+      "titolo": "Domande difficili",
+      "testo": "Riconosco → Rispondo → Propongo. «La domanda è corretta. Oggi il dato mostra… Propongo di completare la verifica entro venerdì.» Se non sai: «Non dispongo ora del dato preciso; lo verifico e lo condivido entro…»."
+    },
+    {
+      "area": "Public speaking",
+      "titolo": "Voce, ritmo e silenzio",
+      "testo": "Obiettivo 115-145 parole al minuto. Pausa dopo ogni numero importante. Sostituisci i riempitivi con un silenzio di un secondo: il silenzio comunica sicurezza."
+    },
+    {
+      "area": "Public speaking",
+      "titolo": "Postura, sguardo, gesti",
+      "testo": "Piedi stabili, spalle rilassate, mani visibili. In video guarda la webcam quando dici il messaggio chiave. Gesti intenzionali all'altezza del busto, poi ritorno neutro."
+    },
+    {
+      "area": "Ansia",
+      "titolo": "Gestire la tensione",
+      "testo": "Non serve eliminarla: serve completare il messaggio anche con un po' di tensione. Esposizioni brevi e ripetute riducono la paura. Sposta il focus da «non devo sbagliare» a «devo farmi capire»."
+    },
+    {
+      "area": "Ansia",
+      "titolo": "Se perdi il filo",
+      "testo": "Fai una pausa, guarda la scaletta, ripeti l'ultima frase o dichiara: «Riprendo il punto principale…». Nessuno lo vive come un errore grave."
+    }
+  ],
+  "checklist_presenza": [
+    "Piedi stabili e peso distribuito",
+    "Spalle rilassate, mento parallelo",
+    "Mani visibili all'altezza del busto",
+    "Gesti intenzionali, poi ritorno neutro",
+    "Sguardo verso la webcam sul messaggio chiave",
+    "Pausa dopo i dati importanti",
+    "Testa in posizione neutra",
+    "Resto sempre nell'inquadratura",
+    "Respiro regolare, espressione naturale"
+  ],
+  "riempitivi": [
+    "praticamente",
+    "diciamo",
+    "cioè",
+    "allora",
+    "insomma",
+    "tipo",
+    "ecco",
+    "magari",
+    "secondo me",
+    "in pratica",
+    "un attimo",
+    "niente"
+  ],
+  "parole_manageriali": [
+    "dato",
+    "impatto",
+    "obiettivo",
+    "priorità",
+    "opzioni",
+    "opzione",
+    "raccomandazione",
+    "propongo",
+    "proporrei",
+    "decisione",
+    "azione",
+    "responsabile",
+    "scadenza",
+    "risultato",
+    "target",
+    "beneficio",
+    "rischio"
+  ],
+  "sostituzioni": [
+    [
+      "\\bsecondo me\\b",
+      "a mio avviso"
+    ],
+    [
+      "\\bmagari si può\\b",
+      "si potrebbe valutare"
+    ],
+    [
+      "\\bforse possiamo\\b",
+      "potremmo valutare di"
+    ],
+    [
+      "\\bbisogna fare\\b",
+      "ritengo opportuno effettuare"
+    ],
+    [
+      "\\bc'è un problema\\b",
+      "emerge una criticità"
+    ],
+    [
+      "\\bnon lo so\\b",
+      "al momento non dispongo di elementi sufficienti"
+    ],
+    [
+      "\\bio farei\\b",
+      "proporrei"
+    ]
+  ],
+  "controlli_grammatica": {
+    "condizionale": [
+      "\\bse (?:avrei|avresti|avrebbe|avremmo|avreste|avrebbero|sarei|saresti|sarebbe|saremmo|potrei|potremmo|dovrei|dovremmo|farei|faremmo)\\b",
+      "\\bse lo sapevo\\b"
+    ],
+    "congiuntivo": [
+      "\\bvorrei che (?:valutiamo|facciamo|siamo|abbiamo|andiamo|vediamo|verifichiamo)\\b",
+      "\\bsarebbe (?:meglio|opportuno|utile) se (?:facciamo|valutiamo|abbiamo|siamo|verifichiamo)\\b",
+      "\\b(?:ritengo|penso|credo) che (?:è|sono|ha|hanno)\\b"
+    ],
+    "punteggiatura": [
+      "[!?]{2,}",
+      "\\.{4,}"
+    ],
+    "accenti": [
+      "\\bqual'è\\b",
+      "\\bun pò\\b",
+      "\\bperche\\b"
+    ],
+    "lessico": [
+      "\\ba me mi\\b",
+      "\\bdovremmo di\\b",
+      "\\bun'altro\\b",
+      "\\bapposto\\b",
+      "\\bavvolte\\b",
+      "\\b(?:cmq|xchè|nn)\\b",
+      "\\bma però\\b"
+    ]
+  },
+  "apertura": "(punto centrale|obiettivo|oggi (?:analizziamo|presento|vi presento)|vorrei condividere|il tema)",
+  "chiusura": "(propongo|proporrei|raccomandazione|decisione|prossimi passi|per chiudere|in conclusione|concordiamo)",
+  "ai": {
+    "modello_trascrizione": "gemini-3.8-flash"
+  }
+}
