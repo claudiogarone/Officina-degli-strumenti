@@ -53,14 +53,31 @@ def pagina(html, id_modulo):
     """La pagina intera, con tutto nascosto tranne il modulo chiesto."""
     regola = f"""
 <style id="qd-solo-un-modulo">
-  /* l'indice e la testata della guida li sostituisce il menù di Quadro */
-  .toc, nav.toc, header, .topbar {{ display: none !important; }}
+  /* L'indice e la testata della guida li sostituisce il menù di Quadro.
+     ATTENZIONE: nasconderlo non basta. La pagina è una griglia a due
+     colonne — `.shell {{ grid-template-columns: 280px minmax(0,1fr) }}` — e
+     quei 280px restano riservati anche a indice nascosto: il testo finisce
+     schiacciato nella colonna di destra. Per questo la griglia va sciolta. */
+  .toc, nav.toc, header, .topbar,
+  .mobile-toc {{ display: none !important; }}   /* c'è anche l'indice da telefono */
+  .shell {{ display: block !important;
+            grid-template-columns: none !important; }}
+
   section {{ display: none !important; }}
   section#{id_modulo} {{ display: block !important; }}
-  body {{ margin: 0 !important; padding: 16px 20px 48px !important;
-          max-width: none !important; }}
-  main, .wrap, .container {{ margin: 0 !important; padding: 0 !important;
-                             max-width: none !important; width: auto !important; }}
+
+  body {{ margin: 0 !important; max-width: none !important; }}
+  main {{ padding: 8px 4px 48px !important; max-width: none !important;
+          width: auto !important; }}
+  /* la colonna di lettura può respirare: nel riquadro lo spazio è poco */
+  .col {{ max-width: 100% !important; margin: 0 !important; }}
+  /* Figure e tabelle larghe: gli schemi hanno un `min-width` di 680px, che
+     su telefono farebbe scorrere di lato TUTTA la pagina. Confinando lo
+     scorrimento dentro il riquadro, scorre solo la figura. */
+  .figbox, .tw {{ overflow-x: auto; max-width: 100%; }}
+  img, svg, canvas, table {{ max-width: 100%; }}
+  .figbox svg {{ max-width: none; }}   /* qui lo scorrimento è voluto */
+
   /* i collegamenti interni non devono più trascinare la pagina altrove */
   a[href^="#"] {{ pointer-events: none; text-decoration: none; }}
 </style>
