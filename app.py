@@ -101,6 +101,35 @@ def style(fig, height=380, title=None, showlegend=None):
     return fig
 
 
+import diario as DIARIO          # anche per l'ora italiana: DIARIO.adesso()
+
+
+def conferma(messaggio):
+    """
+    Conferma di salvataggio che si vede davvero.
+
+    Il problema: dopo un salvataggio la pagina si ricarica, e un st.success()
+    scritto prima del ricaricamento sparisce senza che tu faccia in tempo a
+    leggerlo. Il toast invece resta a schermo attraverso il ricaricamento, e
+    il messaggio viene anche messo da parte per mostrarlo in cima alla
+    sezione al giro dopo.
+    """
+    st.toast(f"✅ {messaggio}")
+    st.session_state["ultima_conferma"] = (messaggio, DIARIO.adesso())
+
+
+def mostra_conferma():
+    """Ripesca l'ultima conferma, se è recente. Da chiamare in cima a una sezione."""
+    dato = st.session_state.get("ultima_conferma")
+    if not dato:
+        return
+    messaggio, quando = dato
+    if (DIARIO.adesso() - quando).total_seconds() < 25:
+        st.success(f"✅ {messaggio} · {quando:%H:%M}")
+    else:
+        st.session_state.pop("ultima_conferma", None)
+
+
 def pagina_html(html, altezza=600):
     """
     Mostra una pagina HTML dentro la dashboard.
@@ -157,6 +186,19 @@ st.markdown("""
       border-radius: 12px; padding: .9rem 1rem;
   }
   h1 {font-size: 1.9rem !important; font-weight: 700 !important;}
+
+  /* ---- tessere piccole del riepilogo ---- */
+  .qd-tessere {display:flex; flex-wrap:wrap; gap:.5rem; margin:.2rem 0 .9rem 0;}
+  .qd-t {
+      flex:1 1 112px; min-width:102px;
+      background: rgba(27,175,122,.07);
+      border: 1px solid rgba(27,175,122,.20);
+      border-radius: 9px; padding:.45rem .6rem;
+  }
+  .qd-t-eti {font-size:.70rem; opacity:.72; letter-spacing:.01em; line-height:1.15;}
+  .qd-t-val {font-size:1.12rem; font-weight:680; line-height:1.3;}
+  .qd-t-nota {font-size:.64rem; opacity:.62;}
+  @media (max-width: 640px) { .qd-t {flex:1 1 44%;} }
   .stTabs [data-baseweb="tab"] {font-size: 0.95rem; font-weight: 550;}
 
   /* ===================== INTESTAZIONE ENESTAR ===================== */
@@ -1052,7 +1094,7 @@ if modo.startswith("Google"):
     folder_id = st.sidebar.text_input("ID cartella Drive", value=default_folder,
                                       help="La parte dopo /folders/ nell'URL della cartella")
     if st.sidebar.button("🔄 Aggiorna adesso", width='stretch', type="primary"):
-        st.session_state.cache_key = dt.datetime.now().timestamp()
+        st.session_state.cache_key = DIARIO.adesso().timestamp()
         st.cache_data.clear()
     if not has_secrets:
         trovate = chiavi_secrets()
@@ -1190,7 +1232,7 @@ def _logo_base64(_versione: float = 0.0):
 
 def _data_italiana(d=None):
     """La data per esteso in italiano: il server non ha la lingua installata."""
-    d = d or dt.date.today()
+    d = d or DIARIO.oggi()
     giorni = ["lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato",
               "domenica"]
     testo = f"{giorni[d.weekday()]} {d.day} {MESI_IT[d.month - 1].lower()} {d.year}"
@@ -1198,7 +1240,7 @@ def _data_italiana(d=None):
 
 
 def _saluto():
-    ora = dt.datetime.now().hour
+    ora = DIARIO.adesso().hour
     if ora < 6:
         return "Ancora in piedi"
     if ora < 13:
@@ -1254,7 +1296,7 @@ st.caption(f"Registri dal {df['Data'].min():%d/%m/%Y} al {df['Data'].max():%d/%m
            f"aggiornamento automatico dai fogli su Google Drive")
 
 # --- controllo qualità dei dati -------------------------------------------
-anno_ora = dt.date.today().year
+anno_ora = DIARIO.oggi().year
 anomalie = df[(df["Anno"] > anno_ora + 1) | (df["Anno"] < 2015)]
 if not anomalie.empty:
     with st.expander(f"⚠️ {len(anomalie)} lezioni con una data probabilmente errata "
@@ -1272,15 +1314,100 @@ incassato = df["Incassato"].sum()
 da_incassare = df["DaIncassare"].sum()
 tariffa = incassato / ore_lez if ore_lez else 0
 
-k = st.columns(6)
-k[0].markdown('<span class="kpi-mark"></span>', unsafe_allow_html=True)
-k[0].metric("Lezioni", f"{tot_lez:,}".replace(",", "."))
-k[1].metric("Ore totali", f"{tot_ore:,.1f}".replace(",", "."))
-k[2].metric("Allievi", n_all)
-k[3].metric("Incassato", f"€ {incassato:,.0f}".replace(",", "."))
-k[4].metric("Da incassare", f"€ {da_incassare:,.0f}".replace(",", "."),
-            delta=None if da_incassare == 0 else "in sospeso", delta_color="inverse")
-k[5].metric("Tariffa oraria media", f"€ {tariffa:,.1f}".replace(",", "."))
+# I numeri di tutto, piccoli e richiudibili. Prima erano sei riquadroni che
+# occupavano mezzo schermo e mostravano solo le lezioni; ora sono tessere
+# piccole, divise per area, dentro un pannello che si apre quando serve — e
+# il filtro del periodo vale per tutte.
+st.session_state.setdefault("riep_aperto", False)
+
+
+def tessere(voci):
+    """Una fila di numeretti. voci = [(etichetta, valore, nota|None), ...]"""
+    pezzi = []
+    for etichetta_t, valore_t, nota_t in voci:
+        extra = (f"<div class='qd-t-nota'>{nota_t}</div>" if nota_t else "")
+        pezzi.append(
+            f"<div class='qd-t'><div class='qd-t-eti'>{etichetta_t}</div>"
+            f"<div class='qd-t-val'>{valore_t}</div>{extra}</div>")
+    st.markdown("<div class='qd-tessere'>" + "".join(pezzi) + "</div>",
+                unsafe_allow_html=True)
+
+
+def pannello_riepilogo(chiave):
+    """
+    Il riepilogo completo, uguale in ogni sezione.
+
+    `chiave` serve solo a dare un nome diverso ai filtri in ogni tab, perché
+    due widget con lo stesso nome nella stessa pagina non possono esistere.
+    """
+    with st.expander("📌 I numeri — lezioni, progetti, studio", expanded=False):
+        prima = df["Data"].min().date() if not df.empty else DIARIO.oggi()
+        f1, f2 = st.columns([2, 3])
+        quando = f1.selectbox("Periodo", ["Sempre", "Ultimi 12 mesi",
+                                          "Ultimi 3 mesi", "Quest'anno"],
+                              key=f"riep_per_{chiave}")
+        oggi_r = pd.Timestamp(DIARIO.oggi())
+        if quando == "Ultimi 12 mesi":
+            dal_r = oggi_r - pd.Timedelta(days=365)
+        elif quando == "Ultimi 3 mesi":
+            dal_r = oggi_r - pd.Timedelta(days=91)
+        elif quando == "Quest'anno":
+            dal_r = pd.Timestamp(dt.date(oggi_r.year, 1, 1))
+        else:
+            dal_r = pd.Timestamp(prima)
+
+        d = df[df["Data"] >= dal_r] if not df.empty else df
+        allievi_r = sorted(d["Allievo"].unique()) if not d.empty else []
+        scelti_r = f2.multiselect("Allievi", allievi_r, default=[],
+                                  placeholder="Tutti gli allievi",
+                                  key=f"riep_all_{chiave}")
+        if scelti_r:
+            d = d[d["Allievo"].isin(scelti_r)]
+
+        ore_l = d["OreLezione"].sum() if not d.empty else 0
+        inc_r = d["Incassato"].sum() if not d.empty else 0
+        st.markdown("**Ripetizioni**")
+        tessere([
+            ("Lezioni", f"{len(d):,}".replace(",", "."), None),
+            ("Ore totali", f"{d['OreTotali'].sum():,.1f}".replace(",", "."), None),
+            ("Allievi", f"{d['Allievo'].nunique() if not d.empty else 0}", None),
+            ("Incassato", f"€ {inc_r:,.0f}".replace(",", "."), None),
+            ("Da incassare", f"€ {d['DaIncassare'].sum():,.0f}".replace(",", "."),
+             "in sospeso" if (not d.empty and d["DaIncassare"].sum() > 0) else None),
+            ("€ l'ora", f"€ {(inc_r / ore_l if ore_l else 0):,.1f}".replace(",", "."), None),
+        ])
+
+        if "dfp" in globals() and not dfp.empty:
+            p_r = dfp[dfp["Inizio"] >= dal_r] if quando != "Sempre" else dfp
+            aperti = len(p_r[~p_r["Stato"].str.lower().str.contains("complet")])
+            st.markdown("**Progetti**")
+            tessere([
+                ("Progetti", f"{len(p_r)}", None),
+                ("Ancora aperti", f"{aperti}", None),
+                ("Valore", f"€ {p_r['Costo'].sum():,.0f}".replace(",", "."), None),
+                ("Incassato", f"€ {p_r['Incassato'].sum():,.0f}".replace(",", "."), None),
+                ("Residuo", f"€ {p_r['Residuo'].sum():,.0f}".replace(",", "."), None),
+            ])
+
+        if "DIA" in globals() and not DIA.empty:
+            ses_r = DIA[DIA["Tipo"].isin(DIARIO.TIPI_TEMPO)]
+            ses_r = ses_r[ses_r["Data"] >= dal_r]
+            pc_r = DIA[DIA["Tipo"] == "parlachiaro"]
+            tappe_r = int((DIA["Tipo"] == "tappa").sum())
+            st.markdown("**Studio e allenamento**")
+            tessere([
+                ("Giorni di fila", f"{DIARIO.striscia(DIA)}", None),
+                ("Ore nel periodo", f"{ses_r['Minuti'].sum() / 60:,.1f}".replace(",", "."), None),
+                ("Sessioni", f"{len(ses_r)}", None),
+                ("Tappe fatte", f"{tappe_r}", None),
+                ("Parla chiaro", f"{pc_r['Valore'].mean():.0f}/100"
+                 if not pc_r.empty else "—", "media efficacia"),
+                ("Corsi seguiti", f"{len(DIARIO.corsi(DIA))}", None),
+            ])
+
+        st.caption("Il filtro vale solo per questo pannello: i grafici delle "
+                   "sezioni hanno i loro.")
+
 
 st.divider()
 
@@ -1333,12 +1460,12 @@ TAB = st.tabs(["🧭 Scrivania", "🎓 Ripetizioni", "🗂️ Progetti",
 # TAB 0 - SCRIVANIA  (collegamenti rapidi e stato di salute)
 # ============================================================================
 with TAB[0]:
-    oggi_ts = pd.Timestamp(dt.date.today())
+    pannello_riepilogo('scrivania')
+    oggi_ts = pd.Timestamp(DIARIO.oggi())
 
     # ========================================================================
     # SALA DI COMANDO — la sessione di oggi, l'allenamento, l'andamento
     # ========================================================================
-    import diario as DIARIO
     import assistente as AI
 
     @st.cache_data(show_spinner=False)
@@ -1360,7 +1487,7 @@ with TAB[0]:
     # ------------------------------------------------------------ il diario --
     # Dove finiscono i dati, in ordine di preferenza: il file Excel su Drive,
     # un foglio di Google, la sola memoria. Il primo che si trova vince.
-    @st.cache_data(ttl=900, show_spinner=False)
+    @st.cache_data(ttl=120, show_spinner=False)
     def _cerca_file_diario(_segno):
         if not SA:
             return None
@@ -1372,7 +1499,8 @@ with TAB[0]:
         except Exception:
             return None
 
-    FILE_DIARIO = _cerca_file_diario(0) if not FOGLIO else None
+    FILE_DIARIO = (_cerca_file_diario(st.session_state.get("cerca_archivio", 0))
+                   if not FOGLIO else None)
 
     if FILE_DIARIO:
         DOVE, COME = FILE_DIARIO, "file"
@@ -1425,6 +1553,8 @@ with TAB[0]:
         st.caption("Controlla che sia condiviso **come Editor** con l'indirizzo "
                    "del service account. Intanto salvo in memoria.")
 
+    mostra_conferma()
+
     # --------------------------------------------------------- i tre numeri --
     minuti_7 = DIARIO.andamento(DIA, 7).sum()
     minuti_28 = DIARIO.andamento(DIA, 28).sum()
@@ -1452,6 +1582,10 @@ with TAB[0]:
                 "Cloud ricostruisce la macchina a ogni riavvio e cancella tutto "
                 "quello che l'app ha scritto su disco. Non è aggirabile, i dati "
                 "devono stare fuori.")
+            if st.button("🔄 Ho appena caricato il file: cercalo di nuovo"):
+                st.cache_data.clear()
+                st.session_state["cerca_archivio"] = st.session_state.get("cerca_archivio", 0) + 1
+                st.rerun()
             st.download_button("⬇️ Scarica Quadro_Diario.xlsx",
                                DIARIO.modello_xlsx(), DIARIO.NOME_FILE,
                                "application/vnd.openxmlformats-officedocument."
@@ -1481,7 +1615,7 @@ with TAB[0]:
             st.caption(a["nota"])
         b1, b2 = st.columns([1, 3])
         if b1.button("▶️ Comincia", type="primary", width='stretch'):
-            st.session_state["ses_avvio"] = dt.datetime.now()
+            st.session_state["ses_avvio"] = DIARIO.adesso()
             st.session_state["ses_durata"] = durata
             st.session_state["ses_attivita"] = a["nome"]
             st.session_state["ses_strumento"] = a.get("strumento", "")
@@ -1497,7 +1631,7 @@ with TAB[0]:
 
         @st.fragment(run_every="1s")
         def _cronometro():
-            passati = (dt.datetime.now() - avvio).total_seconds()
+            passati = (DIARIO.adesso() - avvio).total_seconds()
             restano = max(0, durata * 60 - passati)
             mm, ss = int(restano // 60), int(restano % 60)
             fatti = int(passati // 60)
@@ -1526,7 +1660,7 @@ with TAB[0]:
             f1, f2 = st.columns([1, 2])
             minuti_reali = f1.number_input(
                 "Minuti davvero fatti", min_value=1, max_value=600,
-                value=max(1, int((dt.datetime.now() - avvio).total_seconds() // 60)) or durata)
+                value=max(1, int((DIARIO.adesso() - avvio).total_seconds() // 60)) or durata)
             sens = CFG.get("sensazioni", {})
             voto = f2.select_slider(
                 "Com'è andata", options=[1, 2, 3, 4, 5], value=3,
@@ -1544,8 +1678,9 @@ with TAB[0]:
             for chiave_s in ("ses_avvio", "ses_durata", "ses_attivita",
                              "ses_strumento", "ses_url"):
                 st.session_state.pop(chiave_s, None)
-            st.success("Sessione salvata nel foglio." if dove == "foglio"
-                       else "Sessione salvata in memoria per questa sessione.")
+            conferma(f"Sessione salvata: {minuti_reali} minuti di "
+                     f"{st.session_state.get('ses_attivita', 'lavoro')}"
+                     + ("" if dove != "memoria" else " (solo in memoria)"))
             st.rerun()
         if annulla:
             for chiave_s in ("ses_avvio", "ses_durata", "ses_attivita",
@@ -1562,7 +1697,7 @@ with TAB[0]:
         st.error(f"Non riesco a leggere `scienza.json`: {SCI['_errore']}")
     else:
         rot = SCI.get("rotazione", [])
-        oggi_idx = dt.date.today().weekday()
+        oggi_idx = DIARIO.oggi().weekday()
         voce = next((r for r in rot if r.get("giorno") == oggi_idx),
                     rot[0] if rot else None)
 
@@ -1587,7 +1722,7 @@ with TAB[0]:
                     if risp.strip():
                         diario_scrivi(DIARIO.riga("esercizio", voce["abilita"],
                                                   "Scienza", 15, None, risp.strip()))
-                        st.success("Salvato.")
+                        conferma("Esercizio del giorno salvato")
                         st.rerun()
                     else:
                         st.warning("Scrivi qualcosa prima di salvare.")
@@ -1633,7 +1768,7 @@ with TAB[0]:
                 if an.strip():
                     diario_scrivi(DIARIO.riga("anomalia", "Taccuino", "Scienza",
                                               5, None, an.strip()))
-                    st.success("Annotata.")
+                    conferma("Anomalia annotata nel taccuino")
                     st.rerun()
                 else:
                     st.warning("Scrivi qualcosa prima di salvare.")
@@ -1654,7 +1789,7 @@ with TAB[0]:
                 if nuovo_p.strip():
                     diario_scrivi(DIARIO.riga("problema", "Problema aperto",
                                               "Scienza", 0, None, nuovo_p.strip()))
-                    st.success("Aggiunto.")
+                    conferma("Problema aggiunto alla lista")
                     st.rerun()
 
             problemi = DIA[DIA["Tipo"] == "problema"].sort_values("Data")
@@ -1715,7 +1850,7 @@ with TAB[0]:
             else:
                 diario_scrivi(DIARIO.riga("corso", nome_c, piatt.strip() or "—",
                                           min_c, perc, lez.strip()))
-                st.success(f"«{nome_c}» aggiornato al {perc}%.")
+                conferma(f"«{nome_c}» aggiornato al {perc}%")
                 st.rerun()
 
     if not riepilogo.empty:
@@ -1727,7 +1862,7 @@ with TAB[0]:
                             text=f"{c['Avanzamento']:.0f}%")
                 if c["Ultima lezione"]:
                     t1.caption(f"Ultima lezione: {c['Ultima lezione']}")
-                gg = (pd.Timestamp(dt.date.today()) - c["Ultimo aggiornamento"]).days
+                gg = (pd.Timestamp(DIARIO.oggi()) - c["Ultimo aggiornamento"]).days
                 t2.metric("Ore in tutto", f"{c['Minuti'] / 60:.1f}")
                 t2.caption(f"aggiornato {gg} giorni fa" if gg else "aggiornato oggi")
 
@@ -1759,7 +1894,7 @@ with TAB[0]:
     else:
         # ------------------------- scelta del periodo e del passo ------------
         primo_giorno = DIA["Data"].min().date()
-        oggi_d = dt.date.today()
+        oggi_d = DIARIO.oggi()
 
         p1, p2 = st.columns([2, 3])
         passo = p1.segmented_control(
@@ -1847,12 +1982,12 @@ with TAB[0]:
                                "conta più di quanto fai in ogni singola sessione."))
         elif strisc == 0 and len(ses) > 0:
             ultima = ses["Data"].max()
-            gg = (pd.Timestamp(dt.date.today()) - ultima).days
+            gg = (pd.Timestamp(DIARIO.oggi()) - ultima).days
             sugg.append(("🟡", f"Ultima sessione **{gg} giorni fa**. Per ripartire "
                                "fai la più corta che hai: quindici minuti valgono "
                                "più di un'ora rimandata."))
 
-        ultimi14 = ses[ses["Data"] >= pd.Timestamp(dt.date.today()) - pd.Timedelta(days=13)]
+        ultimi14 = ses[ses["Data"] >= pd.Timestamp(DIARIO.oggi()) - pd.Timedelta(days=13)]
         if len(ultimi14) >= 3:
             fatte = set(ultimi14["Attivita"])
             trascurate = [a["nome"] for a in attivita if a["nome"] not in fatte]
@@ -1881,7 +2016,7 @@ with TAB[0]:
                                "la giornata si complica: tienine qualcuna da trenta."))
 
         fermi = riepilogo[riepilogo["Ultimo aggiornamento"]
-                          < pd.Timestamp(dt.date.today()) - pd.Timedelta(days=21)] \
+                          < pd.Timestamp(DIARIO.oggi()) - pd.Timedelta(days=21)] \
             if not riepilogo.empty else pd.DataFrame()
         for _, c in fermi.iterrows():
             sugg.append(("🟡", f"Il corso **{c['Corso']}** è fermo al "
@@ -1909,7 +2044,7 @@ with TAB[0]:
             st.dataframe(tab_dia, width='stretch', hide_index=True, height=340)
             scarica_tabella(DIA, "diario_completo")
             st.download_button("⬇️ Archivio completo (JSON)", DIARIO.esporta(DIA),
-                               f"quadro_diario_{dt.date.today():%Y%m%d}.json",
+                               f"quadro_diario_{DIARIO.oggi():%Y%m%d}.json",
                                "application/json")
 
     st.divider()
@@ -2082,6 +2217,7 @@ with TAB[0]:
 # TAB 1 - RIPETIZIONI  (tutto sulle lezioni private: era cinque tab separati)
 # ============================================================================
 with TAB[1]:
+    pannello_riepilogo('ripetizioni')
     RIP = st.tabs(["📊 Panoramica", "👥 Allievi", "💶 Economia", "🎓 Didattica", "📋 Dettaglio"])
 
     # ---------------- Panoramica ----------------
@@ -2167,7 +2303,7 @@ with TAB[1]:
 
     # ---------------- Allievi ----------------
     with RIP[1]:
-        oggi = pd.Timestamp(dt.date.today())
+        oggi = pd.Timestamp(DIARIO.oggi())
         sched = (df.groupby("Allievo").agg(
             Lezioni=("Data", "size"),
             Ore=("OreTotali", "sum"),
@@ -2453,19 +2589,20 @@ with TAB[1]:
 
         c1, c2 = st.columns(2)
         c1.download_button("⬇️ Scarica CSV", tab.to_csv(index=False).encode("utf-8-sig"),
-                           f"registro_lezioni_{dt.date.today():%Y%m%d}.csv", "text/csv",
+                           f"registro_lezioni_{DIARIO.oggi():%Y%m%d}.csv", "text/csv",
                            width='stretch')
         buf = io.BytesIO()
         with pd.ExcelWriter(buf, engine="openpyxl") as w:
             tab.to_excel(w, index=False, sheet_name="Lezioni")
         c2.download_button("⬇️ Scarica Excel", buf.getvalue(),
-                           f"registro_lezioni_{dt.date.today():%Y%m%d}.xlsx",
+                           f"registro_lezioni_{DIARIO.oggi():%Y%m%d}.xlsx",
                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                            width='stretch')
 
 # TAB 2 - PROGETTI E CONSULENZE
 # ============================================================================
 with TAB[2]:
+    pannello_riepilogo('progetti')
     if dfp.empty:
         st.warning(prog_msg or "Nessun progetto trovato nei file indicati.")
         st.markdown("##### Cosa ha visto l'app")
@@ -2555,7 +2692,7 @@ with TAB[2]:
             fig.update_yaxes(autorange="reversed", showgrid=False, title=None)
             style(fig, max(380, 30 * len(g) + 90), "Durata dei progetti")
             # la linea "oggi" solo se cade dentro il periodo mostrato
-            oggi = pd.Timestamp(dt.date.today())
+            oggi = pd.Timestamp(DIARIO.oggi())
             if g["Inizio"].min() <= oggi <= g["Consegna"].max():
                 # su un asse temporale plotly vuole i millisecondi, non una data
                 fig.add_vline(x=oggi.timestamp() * 1000,
@@ -2729,6 +2866,7 @@ with TAB[2]:
 # TAB 3 - CANCELLERIA  (generatore di documenti e materiale intestato)
 # ============================================================================
 with TAB[3]:
+    pannello_riepilogo('cancelleria')
     if not CANCELLERIA_OK:
         st.error("Il modulo della cancelleria non è disponibile: "
                  f"{CANCELLERIA_ERRORE}")
@@ -3027,7 +3165,7 @@ with TAB[3]:
     # ------------------------------------------------------------------ 3
     elif tipo == "Preventivo":
         p1, p2, p3 = st.columns(3)
-        numero = p1.text_input("Numero", f"{dt.date.today():%Y}-001")
+        numero = p1.text_input("Numero", f"{DIARIO.oggi():%Y}-001")
         validita = p2.number_input("Validità (giorni)", 1, 365, 30)
         iva = p3.number_input("Aliquota IVA %", 0.0, 30.0, 0.0, step=1.0)
         dest = campi_destinatario("pv", pre.get("cliente", ""))
@@ -3059,11 +3197,11 @@ with TAB[3]:
     # ------------------------------------------------------------------ 4
     elif tipo == "Ricevuta":
         r1, r2, r3 = st.columns(3)
-        numero = r1.text_input("Numero", f"{dt.date.today():%m}/{dt.date.today():%Y}")
+        numero = r1.text_input("Numero", f"{DIARIO.oggi():%m}/{DIARIO.oggi():%Y}")
         importo = r2.number_input("Importo €", 0.0, 1e6,
                                   float(pre.get("importo_allievo") or pre.get("importo") or 0.0),
                                   step=10.0)
-        data_pag = r3.date_input("Data", dt.date.today())
+        data_pag = r3.date_input("Data", DIARIO.oggi())
         modalita = st.selectbox("Modalità di pagamento",
                                 ["Bonifico bancario", "PayPal", "Contanti",
                                  "Satispay", "Carta di credito"])
@@ -3145,20 +3283,28 @@ with TAB[3]:
 
     # ---- esito ------------------------------------------------------------
     if pdf_bytes:
-        st.success("Documento pronto.")
-        st.download_button("⬇️ Scarica il PDF", pdf_bytes, nome_file,
-                           "application/pdf", type="primary")
+        st.divider()
+        st.markdown("##### Anteprima")
+        st.caption("È il documento vero, pagina per pagina. Se qualcosa non ti "
+                   "torna cambia i campi qui sopra e rigeneralo: il file lo "
+                   "scarichi solo quando ti piace.")
         try:
-            st.pdf(pdf_bytes, height=700)
-        except Exception:
-            st.caption("Anteprima non disponibile in questa versione di Streamlit: "
-                       "scarica il file per vederlo.")
+            st.pdf(pdf_bytes, height=720)
+        except Exception as e:
+            st.info("L'anteprima non è disponibile: scarica il file per vederlo.")
+            if "streamlit-pdf" in str(e) or "pdf" in str(e).lower():
+                st.caption("Manca la libreria dell'anteprima. Nel file "
+                           "`requirements.txt` la riga di streamlit deve essere "
+                           "`streamlit[pdf]>=1.50`, poi Reboot dell'app.")
+        st.download_button("⬇️ Scarica il PDF", pdf_bytes, nome_file,
+                           "application/pdf", type="primary", width='stretch')
 
 
 # ============================================================================
 # TAB 4 - STUDIO  (percorsi, prontuari, strumenti AI, prompt pronti)
 # ============================================================================
 with TAB[4]:
+    pannello_riepilogo('studio')
 
     @st.cache_data(show_spinner=False)
     def carica_studio(_versione: float):
@@ -3358,12 +3504,12 @@ with TAB[4]:
                     columns={"comando": "Comando", "cosa_fa": "Cosa fa"}
                 ).to_excel(w, index=False, sheet_name=nome_sc or "Foglio")
         d1.download_button("⬇️ Scarica tutti i prontuari in Excel", buf_x.getvalue(),
-                           f"prontuari_{dt.date.today():%Y%m%d}.xlsx",
+                           f"prontuari_{DIARIO.oggi():%Y%m%d}.xlsx",
                            "application/vnd.openxmlformats-officedocument."
                            "spreadsheetml.sheet", width='stretch')
         d2.download_button("⬇️ Scarica in CSV",
                            tab_pront.to_csv(index=False).encode("utf-8-sig"),
-                           f"prontuari_{dt.date.today():%Y%m%d}.csv", "text/csv",
+                           f"prontuari_{DIARIO.oggi():%Y%m%d}.csv", "text/csv",
                            width='stretch')
         st.caption(f"{len(tab_pront)} comandi in {len(prontuari)} prontuari. "
                    "Nel file Excel trovi un foglio per prontuario più uno con tutto "
@@ -3546,7 +3692,7 @@ with TAB[4]:
                     st.markdown(risposta)
 
                 st.download_button("⬇️ Scarica il risultato", risposta.encode("utf-8"),
-                                   f"studio_{dt.date.today():%Y%m%d}.md",
+                                   f"studio_{DIARIO.oggi():%Y%m%d}.md",
                                    "text/markdown")
 
         st.divider()
@@ -3589,6 +3735,7 @@ with TAB[4]:
 # TAB 5 - PARLA CHIARO  (allenamento alla comunicazione, nativo in Quadro)
 # ============================================================================
 with TAB[5]:
+    pannello_riepilogo('parlachiaro')
     import parlachiaro as PC
 
     PCFG = _carica_json("parlachiaro.json", _mtime("parlachiaro.json"))
@@ -3599,6 +3746,7 @@ with TAB[5]:
     CHIAVE_AI = (secret("google_api_key", "") or "").strip()
     MOD_TRASC = (PCFG.get("ai") or {}).get("modello_trascrizione", "gemini-3.8-flash")
 
+    mostra_conferma()
     st.markdown("#### 🎙️ Parla chiaro")
     st.caption("Sei esercizi, la tua voce, e un'analisi che misura ritmo, "
                "riempitivi, grammatica e registro. Tutto quello che fai qui "
@@ -3725,7 +3873,8 @@ with TAB[5]:
                     minuti_ses, R["punteggio"],
                     f"[{tens_pre}→{tens_post}] {nota_pc.strip()} :: "
                     f"{testo.strip()[:400]}"))
-                st.success(f"Salvata: {R['punteggio']}/100, {minuti_ses} minuti.")
+                conferma(f"Allenamento salvato: {R['punteggio']}/100, "
+                         f"{minuti_ses} minuti")
                 st.session_state.pop("pc_testo", None)
                 st.rerun()
         else:
@@ -3760,7 +3909,7 @@ with TAB[5]:
             st.markdown(canovaccio)
             st.download_button("⬇️ Scarica il canovaccio",
                                canovaccio.encode("utf-8"),
-                               f"canovaccio_{dt.date.today():%Y%m%d}.md",
+                               f"canovaccio_{DIARIO.oggi():%Y%m%d}.md",
                                "text/markdown")
         else:
             st.caption("Completa almeno quattro risposte per vedere il canovaccio.")
@@ -3883,58 +4032,60 @@ with TAB[5]:
 # TAB 6 - SENTINEL  (il corso «SENTINEL da zero», con l'avanzamento nel diario)
 # ============================================================================
 with TAB[6]:
+    pannello_riepilogo('sentinel')
+    import sentinel as SENT
+
     st.markdown("#### 📡 SENTINEL da zero")
     st.caption("Il corso completo sulla tua stazione ELF: sedici moduli dalle "
                "basi elettriche all'indice PRISMA, più quattro appendici. "
                "Si legge qui dentro e funziona anche senza rete.")
 
-    MODULI = [
-        "00 · Come usare questa guida", "01 · Elettricità di base",
-        "02 · Campi e onde elettromagnetiche", "03 · L'antenna a spira con ferrite",
-        "04 · Amplificare senza aggiungere rumore", "05 · Dall'analogico al digitale",
-        "06 · Fourier e lo spettro", "07 · Trovare i picchi: statistica robusta",
-        "08 · Direzione di arrivo e triangolazione",
-        "09 · Terremoti e ipotesi dei precursori", "10 · Il Sole e il meteo spaziale",
-        "11 · Raspberry Pi e Linux", "12 · Python, dati e database",
-        "13 · Reti, cloud e Git", "14 · L'indice PRISMA",
-        "15 · La catena completa e la seconda stazione",
-        "A1 · Laboratorio sulla tua stazione", "A2 · Formulario",
-        "A3 · Glossario", "A4 · Piano di studio e letture",
-    ]
-    PERCORSO_SENT = "SENTINEL da zero"
+    _p_sent = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                           "sentinel.html")
 
-    fatti_s = DIARIO.tappe_fatte(DIA, PERCORSO_SENT)
-    appena_s = st.session_state.setdefault("sent_appena", set())
-    fatti_s |= appena_s
-
-    st.progress(len(fatti_s) / len(MODULI),
-                text=f"{len(fatti_s)} moduli su {len(MODULI)}")
-
-    with st.expander("Segna i moduli che hai studiato"):
-        st.caption("Le spunte finiscono nel diario, quindi restano anche se "
-                   "cambi dispositivo. Quelle dentro la guida qui sotto no: "
-                   "quelle le tiene il browser e si perdono.")
-        cs = st.columns(2)
-        for i, mod in enumerate(MODULI):
-            with cs[i % 2]:
-                era_s = mod in fatti_s
-                ora_s = st.checkbox(mod, value=era_s, key=f"sent_{i}")
-                if ora_s and not era_s:
-                    diario_scrivi(DIARIO.riga("tappa", PERCORSO_SENT, "SENTINEL",
-                                              0, None, mod))
-                    appena_s.add(mod)
-                    st.toast(f"Modulo segnato: {mod}")
+    @st.cache_data(show_spinner=False)
+    def _corso_sentinel(_versione: float):
+        return SENT.carica(_p_sent)
 
     try:
-        _p_sent = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                               "sentinel.html")
-        with open(_p_sent, encoding="utf-8") as _f:
-            _html_sent = _f.read()
-        pagina_html(_html_sent, 900)
+        HTML_SENT, MODULI_S = _corso_sentinel(_mtime("sentinel.html"))
     except FileNotFoundError:
+        HTML_SENT, MODULI_S = None, []
         st.error("Manca il file `sentinel.html` accanto ad app.py.")
         st.caption("È il corso in un file solo: caricalo nella repo insieme "
                    "agli altri.")
+
+    if MODULI_S:
+        PERCORSO_SENT = "SENTINEL da zero"
+        fatti_s = DIARIO.tappe_fatte(DIA, PERCORSO_SENT)
+        appena_s = st.session_state.setdefault("sent_appena", set())
+        fatti_s |= appena_s
+
+        etichette_s = [SENT.etichetta(m) for m in MODULI_S]
+        scelto_s = st.selectbox(
+            "Modulo", range(len(MODULI_S)),
+            format_func=lambda i: ("✅ " if etichette_s[i] in fatti_s else "")
+                                  + etichette_s[i])
+        M = MODULI_S[scelto_s]
+
+        c1, c2, c3 = st.columns([3, 1, 1])
+        c1.caption(M["parte"])
+        era_s = SENT.etichetta(M) in fatti_s
+        if c2.checkbox("Fatto", value=era_s, key=f"sent_fatto_{M['id']}") and not era_s:
+            diario_scrivi(DIARIO.riga("tappa", PERCORSO_SENT, "SENTINEL",
+                                      0, None, SENT.etichetta(M)))
+            appena_s.add(SENT.etichetta(M))
+            conferma(f"Modulo segnato: {SENT.etichetta(M)}")
+        c3.metric("Avanzamento", f"{len(fatti_s)}/{len(MODULI_S)}")
+
+        st.progress(len(fatti_s) / len(MODULI_S))
+
+        pagina_html(SENT.pagina(HTML_SENT, M["id"]), 900)
+
+        st.caption("I collegamenti dentro la pagina sono disattivati apposta: "
+                   "per cambiare modulo usa il menù qui sopra. Le spunte che "
+                   "metti qui finiscono nel diario, quindi restano anche "
+                   "cambiando dispositivo.")
 
 
 # ============================================================================
@@ -3957,13 +4108,13 @@ with TAB[7]:
             entra = st.form_submit_button("Apri", type="primary")
         if entra:
             if TAR.password_giusta(pw, secret("taratura_password", "")):
-                st.session_state[SBLOCCO] = dt.datetime.now()
+                st.session_state[SBLOCCO] = DIARIO.adesso()
                 st.rerun()
             else:
                 st.error("Password errata.")
     else:
         # ---- l'archivio separato, così non si mescola con il resto ----------
-        @st.cache_data(ttl=900, show_spinner=False)
+        @st.cache_data(ttl=120, show_spinner=False)
         def _cerca_file_taratura(_segno):
             if not SA:
                 return None
@@ -3976,7 +4127,7 @@ with TAB[7]:
             except Exception:
                 return None
 
-        FILE_TAR = _cerca_file_taratura(0)
+        FILE_TAR = _cerca_file_taratura(st.session_state.get("cerca_archivio", 0))
 
         @st.cache_data(ttl=30, show_spinner=False)
         def _leggi_taratura(_f, _segno):
@@ -4027,12 +4178,19 @@ with TAB[7]:
                     "`drive_folder_id_taratura` con il suo ID.\n\n"
                     "È un file separato dal diario normale apposta: quello che "
                     "scrivi qui non si mescola con le sessioni di studio.")
+                if st.button("🔄 Ho appena caricato il file: cercalo di nuovo",
+                             key="ricerca_tar"):
+                    st.cache_data.clear()
+                    st.session_state["cerca_archivio"] = st.session_state.get("cerca_archivio", 0) + 1
+                    st.rerun()
                 st.download_button("⬇️ Scarica Quadro_Taratura.xlsx",
                                    DIARIO.modello_xlsx("Taratura", guida=False),
                                    "Quadro_Taratura.xlsx",
                                    "application/vnd.openxmlformats-officedocument."
                                    "spreadsheetml.sheet", type="primary")
 
+        mostra_conferma()
+        pannello_riepilogo('taratura')
         TT = st.tabs(["✍️ Oggi", "📖 Quello che hai scritto", "📈 Andamento"])
 
         # ------------------------------ oggi --------------------------------
@@ -4050,7 +4208,8 @@ with TAB[7]:
                 if testo_tar.strip():
                     dove_ok = taratura_scrivi(DIARIO.riga(
                         "voce", "diario", "", 0, umore, testo_tar.strip()))
-                    st.success("Salvato." if dove_ok else "Salvato in sessione.")
+                    conferma("Voce salvata nel tuo archivio" if dove_ok
+                             else "Voce salvata solo in questa sessione")
                     st.rerun()
                 else:
                     st.warning("Scrivi qualcosa prima di salvare.")
@@ -4147,6 +4306,7 @@ with TAB[7]:
 # TAB 8 - GUIDA  (come si usa e come si modifica: il testo sta in guida.json)
 # ============================================================================
 with TAB[8]:
+    pannello_riepilogo('guida')
     G = _carica_json("guida.json", _mtime("guida.json"))
     if "_errore" in G:
         st.error(f"Non riesco a leggere `guida.json`: {G['_errore']}")

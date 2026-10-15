@@ -41,6 +41,26 @@ import json
 
 import pandas as pd
 
+# Il server di Streamlit Cloud ha l'orologio su UTC: senza questa riga le ore
+# registrate risultano due indietro d'estate e una d'inverno. Tutte le date e
+# gli orari del diario passano da qui.
+try:
+    from zoneinfo import ZoneInfo
+    FUSO = ZoneInfo("Europe/Rome")
+except Exception:            # pragma: no cover
+    FUSO = None
+
+
+def adesso():
+    """L'ora italiana, senza fuso attaccato (serve per confrontarla con le altre)."""
+    if FUSO is None:
+        return dt.datetime.now()
+    return dt.datetime.now(FUSO).replace(tzinfo=None)
+
+
+def oggi():
+    return adesso().date()
+
 COLONNE = ["Data", "Ora", "Tipo", "Attivita", "Strumento",
            "Minuti", "Valore", "Nota"]
 
@@ -75,7 +95,7 @@ def _sistema(df):
 def riga(tipo, attivita="", strumento="", minuti=0, valore=None, nota="",
          quando=None):
     """Costruisce una riga nel formato giusto, senza ricordarsi l'ordine."""
-    q = quando or dt.datetime.now()
+    q = quando or adesso()
     return {"Data": q.strftime("%Y-%m-%d"), "Ora": q.strftime("%H:%M"),
             "Tipo": tipo, "Attivita": attivita, "Strumento": strumento,
             "Minuti": minuti, "Valore": "" if valore is None else valore,
@@ -255,7 +275,7 @@ def esporta(df):
     d = df.copy()
     d["Data"] = d["Data"].dt.strftime("%Y-%m-%d")
     return json.dumps({"versione": 1,
-                       "esportato": dt.datetime.now().isoformat(timespec="seconds"),
+                       "esportato": adesso().isoformat(timespec="seconds"),
                        "righe": d.to_dict(orient="records")},
                       ensure_ascii=False, indent=1).encode("utf-8")
 
@@ -321,8 +341,8 @@ def etichette(indice, passo):
 
 
 def andamento(df, giorni=56):
-    oggi = pd.Timestamp(dt.date.today())
-    return serie_minuti(df, oggi - pd.Timedelta(days=giorni - 1), oggi, "Giorno")
+    fine = pd.Timestamp(oggi())
+    return serie_minuti(df, fine - pd.Timedelta(days=giorni - 1), fine, "Giorno")
 
 
 def striscia(df):
@@ -330,8 +350,8 @@ def striscia(df):
     giorni = set(df[df["Tipo"].isin(TIPI_TEMPO)]["Data"].dt.date)
     if not giorni:
         return 0
-    oggi = dt.date.today()
-    partenza = oggi if oggi in giorni else oggi - dt.timedelta(days=1)
+    fine = oggi()
+    partenza = fine if fine in giorni else fine - dt.timedelta(days=1)
     if partenza not in giorni:
         return 0
     n, g = 0, partenza

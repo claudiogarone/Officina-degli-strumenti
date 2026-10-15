@@ -123,6 +123,18 @@
         {
           "domanda": "Cambiare la password della Taratura",
           "risposta": "Due posti, e il primo vince sul secondo:\n\n1. nei **Secrets** dell'app, con la riga `taratura_password = \"...\"`\n2. nel file `taratura.py`, nella costante `PASSWORD_DI_SCORTA` in alto\n\n**Usa i Secrets.** Il repository su GitHub è pubblico: una password scritta dentro `taratura.py` è leggibile da chiunque apra il file, quindi non protegge niente. La costante nel file esiste solo come via di scorta se ti dimentichi cosa hai messo nei Secrets.\n\nE c'è una cosa più importante della password: finché l'app su Streamlit è pubblica, chiunque abbia il link arriva alla schermata di ingresso. Metti l'app su «Only specific people» dalle impostazioni di condivisione."
+        },
+        {
+          "domanda": "Il pannello «I numeri»",
+          "risposta": "I riquadroni grossi in cima non ci sono più: al loro posto c'è un pannello che si apre cliccando su **📌 I numeri**, con tessere piccole divise in tre gruppi — Ripetizioni, Progetti, Studio e allenamento.\n\nDue cose comode: il pannello è **in ogni sezione**, quindi i numeri li hai sempre sottomano senza tornare indietro; e ha i suoi filtri (periodo e allievi) che valgono solo per lui, senza toccare i grafici delle sezioni."
+        },
+        {
+          "domanda": "Il tab SENTINEL: come si naviga",
+          "risposta": "Il modulo si sceglie dal **menù a tendina** sopra la pagina, non dai collegamenti dentro la guida: quelli sono disattivati apposta.\n\nIl motivo: il corso è una pagina sola con un indice laterale fisso, e dentro un riquadro incorporato i suoi collegamenti interni facevano scomporre la pagina. Ora la pagina resta intera — così glossario, quiz e mappe continuano a funzionare — e si mostra solo il modulo scelto.\n\nLa spunta **Fatto** accanto al menù finisce nel diario, quindi l'avanzamento resta cambiando dispositivo."
+        },
+        {
+          "domanda": "L'anteprima dei documenti in Cancelleria",
+          "risposta": "Dopo aver premuto **Genera**, sotto compare l'anteprima del PDF vero, pagina per pagina, e solo sotto di essa il pulsante per scaricarlo. Se non ti piace cambi i campi e rigeneri, senza scaricare niente.\n\nSe al posto dell'anteprima vedi un avviso: nel file `requirements.txt` la prima riga deve essere `streamlit[pdf]>=1.50`. Senza quel `[pdf]` la libreria dell'anteprima non viene installata e Streamlit non sa mostrare i PDF."
         }
       ]
     },
@@ -161,6 +173,18 @@
         {
           "domanda": "Ho dimenticato la password della Taratura",
           "risposta": "Se l'avevi messa nei Secrets: apri Settings → Secrets su Streamlit e la rileggi, sono in chiaro lì dentro.\n\nSe invece usavi la costante, aprila in `taratura.py`, riga `PASSWORD_DI_SCORTA`. Cambiandola e ricaricando il file su GitHub la nuova vale subito.\n\nI dati già scritti non si perdono in nessun caso: stanno nel file su Drive."
+        },
+        {
+          "domanda": "Gli orari salvati sono indietro di un'ora o due",
+          "risposta": "Era un difetto, ed è corretto. Il server di Streamlit Cloud ha l'orologio su UTC, quindi registrava le due di meno d'estate e una d'inverno. Ora tutte le date e gli orari passano dal fuso italiano.\n\nLe righe già scritte con l'ora sbagliata restano come sono: se ti danno fastidio, apri il file su Drive e correggi la colonna Ora a mano."
+        },
+        {
+          "domanda": "Ho caricato il file del diario ma dice ancora «non collegato»",
+          "risposta": "Quadro si ricorda per un paio di minuti l'esito della ricerca, per non interrogare Drive a ogni clic. Se hai appena caricato il file, premi **🔄 Ho appena caricato il file: cercalo di nuovo** nel riquadro dell'avviso: rifà la ricerca subito.\n\nSe dopo quello dice ancora di no, allora è il permesso: la cartella va condivisa come **Editor**, non Visualizzatore."
+        },
+        {
+          "domanda": "Non vedo la conferma quando salvo",
+          "risposta": "Adesso la vedi: compare un riquadro verde in alto a destra che resta anche mentre la pagina si ricarica, più un messaggio in cima alla sezione per una ventina di secondi.\n\nPrima il messaggio veniva scritto e subito cancellato dal ricaricamento della pagina: era un difetto, non una tua distrazione."
         }
       ]
     }
