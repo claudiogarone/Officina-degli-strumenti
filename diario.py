@@ -82,7 +82,7 @@ def riga(tipo, attivita="", strumento="", minuti=0, valore=None, nota="",
             "Nota": nota}
 
 
-def modello_xlsx():
+def modello_xlsx(titolo="Diario", guida=True):
     """Il file Excel vuoto ma già impostato, da mettere su Drive."""
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
@@ -90,7 +90,7 @@ def modello_xlsx():
 
     wb = Workbook()
     ws = wb.active
-    ws.title = "Diario"
+    ws.title = titolo
     ws.append(COLONNE)
 
     testa = Font(bold=True, color="FFFFFF")
@@ -112,6 +112,11 @@ def modello_xlsx():
         allow_blank=True)
     ws.add_data_validation(tipi)
     tipi.add(f"C2:C5000")
+
+    if not guida:
+        buf0 = io.BytesIO()
+        wb.save(buf0)
+        return buf0.getvalue()
 
     guida = wb.create_sheet("Come si usa")
     for r in [
@@ -154,12 +159,13 @@ def _servizio_drive(info):
     return build("drive", "v3", credentials=creds, cache_discovery=False)
 
 
-def trova_file(info, cartelle):
-    """Cerca Quadro_Diario.xlsx nelle cartelle indicate. Restituisce l'id."""
+def trova_file(info, cartelle, nome=None):
+    """Cerca il file per nome nelle cartelle indicate. Restituisce l'id."""
+    nome = nome or NOME_FILE
     svc = _servizio_drive(info)
     for cid in [c for c in cartelle if (c or "").strip()]:
         res = svc.files().list(
-            q=f"'{cid}' in parents and trashed = false and name = '{NOME_FILE}'",
+            q=f"'{cid}' in parents and trashed = false and name = '{nome}'",
             fields="files(id,name)", pageSize=5,
             supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
         trovati = res.get("files", [])
@@ -178,7 +184,7 @@ def leggi_xlsx(info, file_id):
     while not fine:
         _, fine = scarico.next_chunk()
     buf.seek(0)
-    df = pd.read_excel(buf, sheet_name="Diario", dtype=str)
+    df = pd.read_excel(buf, sheet_name=0, dtype=str)
     return _sistema(df)
 
 
@@ -197,7 +203,7 @@ def aggiungi_xlsx(info, file_id, righe):
     buf.seek(0)
 
     wb = load_workbook(buf)
-    ws = wb["Diario"] if "Diario" in wb.sheetnames else wb.worksheets[0]
+    ws = wb.worksheets[0]
     if ws.max_row == 1 and all(c.value is None for c in ws[1]):
         ws.append(COLONNE)
     for r in righe:

@@ -101,6 +101,19 @@ def style(fig, height=380, title=None, showlegend=None):
     return fig
 
 
+def pagina_html(html, altezza=600):
+    """
+    Mostra una pagina HTML dentro la dashboard.
+
+    `st.iframe` è il modo nuovo; `components.html` resta come scorta per le
+    versioni di Streamlit più vecchie, dove `st.iframe` non esiste ancora.
+    """
+    if hasattr(st, "iframe"):
+        return st.iframe(html, height=altezza)
+    import streamlit.components.v1 as components
+    return components.html(html, height=altezza, scrolling=True)
+
+
 def scarica_tabella(tab, nome_file, etichetta="⬇️ Scarica i dati"):
     """
     Due pulsanti sotto a una tabella o a un grafico: CSV ed Excel.
@@ -1311,9 +1324,9 @@ else:
     dfp, dfm, contatti, esiti, diag_p = (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(),
                                          pd.DataFrame(), pd.DataFrame())
 
-TAB = st.tabs(["🧭 Scrivania", "📊 Panoramica", "👥 Allievi", "💶 Economia",
-               "🎓 Didattica", "📋 Dettaglio", "🗂️ Progetti", "🖋️ Cancelleria",
-               "📚 Studio", "🎙️ Parla chiaro", "❓ Guida"])
+TAB = st.tabs(["🧭 Scrivania", "🎓 Ripetizioni", "🗂️ Progetti",
+               "🖋️ Cancelleria", "📚 Studio", "🎙️ Parla chiaro",
+               "📡 SENTINEL", "⚙️ Taratura", "❓ Guida"])
 
 
 # ============================================================================
@@ -2066,403 +2079,393 @@ with TAB[0]:
 
 
 # ============================================================================
-# TAB 1 - PANORAMICA
+# TAB 1 - RIPETIZIONI  (tutto sulle lezioni private: era cinque tab separati)
 # ============================================================================
 with TAB[1]:
-    c1, c2 = st.columns([3, 2])
+    RIP = st.tabs(["📊 Panoramica", "👥 Allievi", "💶 Economia", "🎓 Didattica", "📋 Dettaglio"])
 
-    with c1:
-        m = (df.groupby("AnnoMese")
-               .agg(Ore=("OreTotali", "sum"), Lezioni=("Data", "size"))
-               .reset_index().sort_values("AnnoMese"))
-        fig = go.Figure()
-        fig.add_bar(x=m["AnnoMese"], y=m["Ore"], name="Ore erogate",
-                    marker=dict(color=PALETTE[0], line=dict(width=0)),
-                    marker_cornerradius=4,
-                    hovertemplate="<b>%{x}</b><br>%{y:.1f} ore<extra></extra>")
-        if len(m) >= 4:
-            fig.add_scatter(x=m["AnnoMese"], y=m["Ore"].rolling(3, min_periods=1).mean(),
-                            mode="lines", name="media mobile 3 mesi",
-                            line=dict(color=PALETTE[1], width=2),
-                            hovertemplate="media 3 mesi: %{y:.1f} h<extra></extra>")
-        style(fig, 400, "Ore di lezione per mese")
-        fig.update_layout(hovermode="x unified", showlegend=False)
+    # ---------------- Panoramica ----------------
+    with RIP[0]:
+        c1, c2 = st.columns([3, 2])
+
+        with c1:
+            m = (df.groupby("AnnoMese")
+                   .agg(Ore=("OreTotali", "sum"), Lezioni=("Data", "size"))
+                   .reset_index().sort_values("AnnoMese"))
+            fig = go.Figure()
+            fig.add_bar(x=m["AnnoMese"], y=m["Ore"], name="Ore erogate",
+                        marker=dict(color=PALETTE[0], line=dict(width=0)),
+                        marker_cornerradius=4,
+                        hovertemplate="<b>%{x}</b><br>%{y:.1f} ore<extra></extra>")
+            if len(m) >= 4:
+                fig.add_scatter(x=m["AnnoMese"], y=m["Ore"].rolling(3, min_periods=1).mean(),
+                                mode="lines", name="media mobile 3 mesi",
+                                line=dict(color=PALETTE[1], width=2),
+                                hovertemplate="media 3 mesi: %{y:.1f} h<extra></extra>")
+            style(fig, 400, "Ore di lezione per mese")
+            fig.update_layout(hovermode="x unified", showlegend=False)
+            fig.update_yaxes(title="ore")
+            st.plotly_chart(fig, width='stretch')
+
+        with c2:
+            a = (df.groupby("Allievo")["OreTotali"].sum()
+                   .sort_values(ascending=True).reset_index())
+            fig = go.Figure(go.Bar(
+                x=a["OreTotali"], y=a["Allievo"], orientation="h",
+                marker=dict(color=[cmap[x] for x in a["Allievo"]], line=dict(width=0)),
+                marker_cornerradius=4,
+                text=a["OreTotali"].map(lambda v: f"{v:.1f}h"),
+                textposition="outside", textfont=dict(color=INK2, size=11),
+                hovertemplate="<b>%{y}</b><br>%{x:.1f} ore<extra></extra>"))
+            style(fig, max(400, 34 * len(a)), "Ore per allievo", showlegend=False)
+            fig.update_xaxes(title="ore", showgrid=True,
+                             range=[0, float(a["OreTotali"].max()) * 1.18])
+            fig.update_yaxes(showgrid=False)
+            st.plotly_chart(fig, width='stretch')
+
+        c3, c4 = st.columns(2)
+
+        with c3:
+            mt = df.groupby("Materia")["OreTotali"].sum().sort_values(ascending=False).reset_index()
+            fig = px.treemap(mt, path=["Materia"], values="OreTotali",
+                             color="OreTotali", color_continuous_scale=SEQ)
+            fig.update_traces(
+                marker=dict(cornerradius=6, line=dict(width=2, color="rgba(255,255,255,.9)")),
+                texttemplate="<b>%{label}</b><br>%{value:.1f} h",
+                hovertemplate="<b>%{label}</b><br>%{value:.1f} ore<extra></extra>")
+            style(fig, 400, "Ore per materia", showlegend=False)
+            fig.update_layout(coloraxis_showscale=False)
+            st.plotly_chart(fig, width='stretch')
+
+        with c4:
+            hm = df.dropna(subset=["OraStart"]).copy()
+            if not hm.empty:
+                piv = (hm.pivot_table(index="GiornoIdx", columns="OraStart",
+                                      values="Data", aggfunc="size").fillna(0))
+                piv = piv.reindex(range(7), fill_value=0)
+                ore_range = list(range(int(min(piv.columns)), int(max(piv.columns)) + 1))
+                piv = piv.reindex(columns=ore_range, fill_value=0)
+                fig = go.Figure(go.Heatmap(
+                    z=piv.values, x=[f"{int(h):02d}:00" for h in piv.columns], y=GIORNI_IT,
+                    colorscale=SEQ, xgap=2, ygap=2, showscale=False,
+                    hovertemplate="<b>%{y} %{x}</b><br>%{z:.0f} lezioni<extra></extra>"))
+                style(fig, 400, "Quando fai lezione (giorno × ora di inizio)")
+                st.plotly_chart(fig, width='stretch')
+
+        # calendario attività
+        st.markdown("##### Attività giornaliera")
+        day = df.groupby(df["Data"].dt.date)["OreTotali"].sum().reset_index()
+        day.columns = ["Data", "Ore"]
+        fig = go.Figure(go.Bar(
+            x=day["Data"], y=day["Ore"],
+            marker=dict(color=PALETTE[0], line=dict(width=0)), marker_cornerradius=3,
+            hovertemplate="<b>%{x|%d/%m/%Y}</b><br>%{y:.1f} ore<extra></extra>"))
+        style(fig, 260, showlegend=False)
         fig.update_yaxes(title="ore")
+        fig.update_xaxes(rangeslider=dict(visible=True, thickness=0.08))
         st.plotly_chart(fig, width='stretch')
 
-    with c2:
-        a = (df.groupby("Allievo")["OreTotali"].sum()
-               .sort_values(ascending=True).reset_index())
-        fig = go.Figure(go.Bar(
-            x=a["OreTotali"], y=a["Allievo"], orientation="h",
-            marker=dict(color=[cmap[x] for x in a["Allievo"]], line=dict(width=0)),
-            marker_cornerradius=4,
-            text=a["OreTotali"].map(lambda v: f"{v:.1f}h"),
-            textposition="outside", textfont=dict(color=INK2, size=11),
-            hovertemplate="<b>%{y}</b><br>%{x:.1f} ore<extra></extra>"))
-        style(fig, max(400, 34 * len(a)), "Ore per allievo", showlegend=False)
-        fig.update_xaxes(title="ore", showgrid=True,
-                         range=[0, float(a["OreTotali"].max()) * 1.18])
+    # ---------------- Allievi ----------------
+    with RIP[1]:
+        oggi = pd.Timestamp(dt.date.today())
+        sched = (df.groupby("Allievo").agg(
+            Lezioni=("Data", "size"),
+            Ore=("OreTotali", "sum"),
+            OreLezione=("OreLezione", "sum"),
+            OrePrep=("OrePrep", "sum"),
+            DurataMedia=("OreLezione", "mean"),
+            Prima=("Data", "min"),
+            Ultima=("Data", "max"),
+            Incassato=("Incassato", "sum"),
+            DaIncassare=("DaIncassare", "sum"),
+        ).reset_index())
+        sched["GiorniDaUltima"] = (oggi - sched["Ultima"]).dt.days
+        sched = sched.sort_values("Ore", ascending=False)
+
+        c1, c2 = st.columns([3, 2])
+        with c1:
+            st.markdown("##### Scheda riepilogativa per allievo")
+            show = sched.copy()
+            show["Prima"] = show["Prima"].dt.strftime("%d/%m/%Y")
+            show["Ultima"] = show["Ultima"].dt.strftime("%d/%m/%Y")
+            st.dataframe(
+                show[["Allievo", "Lezioni", "Ore", "DurataMedia", "Prima", "Ultima",
+                      "GiorniDaUltima", "Incassato", "DaIncassare"]],
+                width='stretch', hide_index=True,
+                column_config={
+                    "Ore": st.column_config.NumberColumn("Ore totali", format="%.1f h"),
+                    "DurataMedia": st.column_config.NumberColumn("Durata media", format="%.2f h"),
+                    "GiorniDaUltima": st.column_config.NumberColumn("Giorni da ultima", format="%d gg"),
+                    "Incassato": st.column_config.NumberColumn("Incassato", format="€ %.0f"),
+                    "DaIncassare": st.column_config.NumberColumn("Da incassare", format="€ %.0f"),
+                })
+            scarica_tabella(show, "scheda_allievi", "⬇️ Scarica la scheda")
+
+        with c2:
+            s = sched.sort_values("GiorniDaUltima")
+            colori = [C_OK if g <= 14 else (C_WARN if g <= 45 else C_BAD) for g in s["GiorniDaUltima"]]
+            fig = go.Figure(go.Bar(
+                x=s["GiorniDaUltima"], y=s["Allievo"], orientation="h",
+                marker=dict(color=colori, line=dict(width=0)), marker_cornerradius=4,
+                text=s["GiorniDaUltima"].map(lambda v: f"{v} gg"),
+                textposition="outside", textfont=dict(color=INK2, size=11),
+                hovertemplate="<b>%{y}</b><br>%{x} giorni dall'ultima lezione<extra></extra>"))
+            style(fig, max(380, 34 * len(s)), "Giorni dall'ultima lezione", showlegend=False)
+            fig.update_yaxes(showgrid=False)
+            fig.update_xaxes(range=[0, float(s["GiorniDaUltima"].max()) * 1.20])
+            st.plotly_chart(fig, width='stretch')
+            st.caption("🟢 attivo (≤14 gg) · 🟡 da ricontattare (≤45 gg) · 🔴 fermo (>45 gg)")
+
+        c3, c4 = st.columns(2)
+        with c3:
+            fig = go.Figure()
+            for a in sched["Allievo"]:
+                d = df[df["Allievo"] == a]["OreLezione"]
+                fig.add_box(y=d, name=a, marker_color=cmap[a], boxpoints="outliers",
+                            line=dict(width=2), fillcolor="rgba(0,0,0,0)")
+            style(fig, 400, "Distribuzione durata delle lezioni", showlegend=False)
+            fig.update_yaxes(title="ore per lezione")
+            st.plotly_chart(fig, width='stretch')
+
+        with c4:
+            pv = sched[["Allievo", "OreLezione", "OrePrep"]].melt(
+                id_vars="Allievo", value_vars=["OreLezione", "OrePrep"],
+                var_name="Tipo", value_name="OreVal").rename(columns={"OreVal": "Ore"})
+            pv["Tipo"] = pv["Tipo"].map({"OreLezione": "Lezione", "OrePrep": "Preparazione"})
+            fig = px.bar(pv, x="Allievo", y="Ore", color="Tipo",
+                         color_discrete_map={"Lezione": PALETTE[0], "Preparazione": PALETTE[3]})
+            fig.update_traces(marker_line=dict(width=2, color="rgba(255,255,255,.9)"),
+                              marker_cornerradius=4,
+                              hovertemplate="<b>%{x}</b><br>%{y:.1f} ore<extra></extra>")
+            style(fig, 400, "Ore di lezione vs ore di preparazione")
+            fig.update_yaxes(title="ore")
+            st.plotly_chart(fig, width='stretch')
+
+        st.markdown("##### Cadenza delle lezioni nel tempo")
+        fig = go.Figure()
+        for a in sorted(df["Allievo"].unique()):
+            d = df[df["Allievo"] == a]
+            fig.add_scatter(x=d["Data"], y=[a] * len(d), mode="markers", name=a,
+                            marker=dict(size=9, color=cmap[a],
+                                        line=dict(width=2, color="rgba(255,255,255,.9)")),
+                            customdata=np.stack([d["Materia"], d["OreTotali"]], axis=-1),
+                            hovertemplate="<b>%{y}</b> · %{x|%d/%m/%Y}<br>"
+                                          "%{customdata[0]} · %{customdata[1]:.1f} h<extra></extra>")
+        style(fig, max(320, 32 * df["Allievo"].nunique()), showlegend=False)
         fig.update_yaxes(showgrid=False)
         st.plotly_chart(fig, width='stretch')
 
-    c3, c4 = st.columns(2)
-
-    with c3:
-        mt = df.groupby("Materia")["OreTotali"].sum().sort_values(ascending=False).reset_index()
-        fig = px.treemap(mt, path=["Materia"], values="OreTotali",
-                         color="OreTotali", color_continuous_scale=SEQ)
-        fig.update_traces(
-            marker=dict(cornerradius=6, line=dict(width=2, color="rgba(255,255,255,.9)")),
-            texttemplate="<b>%{label}</b><br>%{value:.1f} h",
-            hovertemplate="<b>%{label}</b><br>%{value:.1f} ore<extra></extra>")
-        style(fig, 400, "Ore per materia", showlegend=False)
-        fig.update_layout(coloraxis_showscale=False)
-        st.plotly_chart(fig, width='stretch')
-
-    with c4:
-        hm = df.dropna(subset=["OraStart"]).copy()
-        if not hm.empty:
-            piv = (hm.pivot_table(index="GiornoIdx", columns="OraStart",
-                                  values="Data", aggfunc="size").fillna(0))
-            piv = piv.reindex(range(7), fill_value=0)
-            ore_range = list(range(int(min(piv.columns)), int(max(piv.columns)) + 1))
-            piv = piv.reindex(columns=ore_range, fill_value=0)
-            fig = go.Figure(go.Heatmap(
-                z=piv.values, x=[f"{int(h):02d}:00" for h in piv.columns], y=GIORNI_IT,
-                colorscale=SEQ, xgap=2, ygap=2, showscale=False,
-                hovertemplate="<b>%{y} %{x}</b><br>%{z:.0f} lezioni<extra></extra>"))
-            style(fig, 400, "Quando fai lezione (giorno × ora di inizio)")
+    # ---------------- Economia ----------------
+    with RIP[2]:
+        c1, c2 = st.columns([3, 2])
+        with c1:
+            inc = (df.groupby("AnnoMese")
+                     .agg(Incassato=("Incassato", "sum"), DaIncassare=("DaIncassare", "sum"))
+                     .reset_index().sort_values("AnnoMese"))
+            inc["Cumulato"] = inc["Incassato"].cumsum()
+            fig = go.Figure()
+            fig.add_bar(x=inc["AnnoMese"], y=inc["Incassato"], name="Incassato",
+                        marker=dict(color=PALETTE[2], line=dict(width=2, color="rgba(255,255,255,.9)")),
+                        marker_cornerradius=4,
+                        hovertemplate="<b>%{x}</b><br>€ %{y:,.0f} incassati<extra></extra>")
+            fig.add_bar(x=inc["AnnoMese"], y=inc["DaIncassare"], name="Da incassare",
+                        marker=dict(color=PALETTE[7], line=dict(width=2, color="rgba(255,255,255,.9)")),
+                        marker_cornerradius=4,
+                        hovertemplate="<b>%{x}</b><br>€ %{y:,.0f} da incassare<extra></extra>")
+            style(fig, 400, "Incassi per mese")
+            fig.update_layout(barmode="stack", hovermode="x unified")
+            fig.update_yaxes(title="€")
             st.plotly_chart(fig, width='stretch')
 
-    # calendario attività
-    st.markdown("##### Attività giornaliera")
-    day = df.groupby(df["Data"].dt.date)["OreTotali"].sum().reset_index()
-    day.columns = ["Data", "Ore"]
-    fig = go.Figure(go.Bar(
-        x=day["Data"], y=day["Ore"],
-        marker=dict(color=PALETTE[0], line=dict(width=0)), marker_cornerradius=3,
-        hovertemplate="<b>%{x|%d/%m/%Y}</b><br>%{y:.1f} ore<extra></extra>"))
-    style(fig, 260, showlegend=False)
-    fig.update_yaxes(title="ore")
-    fig.update_xaxes(rangeslider=dict(visible=True, thickness=0.08))
-    st.plotly_chart(fig, width='stretch')
+        with c2:
+            fig = go.Figure(go.Scatter(
+                x=inc["AnnoMese"], y=inc["Cumulato"], mode="lines+markers",
+                line=dict(color=PALETTE[0], width=2, shape="spline"),
+                marker=dict(size=8, line=dict(width=2, color="rgba(255,255,255,.9)")),
+                fill="tozeroy", fillcolor="rgba(42,120,214,.12)",
+                hovertemplate="<b>%{x}</b><br>€ %{y:,.0f} cumulati<extra></extra>"))
+            style(fig, 400, "Incassato cumulato", showlegend=False)
+            fig.update_yaxes(title="€")
+            st.plotly_chart(fig, width='stretch')
 
+        c3, c4 = st.columns(2)
+        with c3:
+            pa = (df.groupby("Allievo")
+                    .agg(Incassato=("Incassato", "sum"), DaIncassare=("DaIncassare", "sum"))
+                    .reset_index().sort_values("Incassato"))
+            fig = go.Figure()
+            fig.add_bar(y=pa["Allievo"], x=pa["Incassato"], orientation="h", name="Incassato",
+                        marker=dict(color=PALETTE[2], line=dict(width=2, color="rgba(255,255,255,.9)")),
+                        marker_cornerradius=4,
+                        hovertemplate="<b>%{y}</b><br>€ %{x:,.0f} incassati<extra></extra>")
+            fig.add_bar(y=pa["Allievo"], x=pa["DaIncassare"], orientation="h", name="Da incassare",
+                        marker=dict(color=PALETTE[7], line=dict(width=2, color="rgba(255,255,255,.9)")),
+                        marker_cornerradius=4,
+                        hovertemplate="<b>%{y}</b><br>€ %{x:,.0f} da incassare<extra></extra>")
+            style(fig, max(400, 36 * len(pa)), "Situazione pagamenti per allievo")
+            fig.update_layout(barmode="stack")
+            fig.update_xaxes(title="€")
+            fig.update_yaxes(showgrid=False)
+            st.plotly_chart(fig, width='stretch')
 
-# ============================================================================
-# TAB 2 - ALLIEVI
+        with c4:
+            tar = df[df["Incassato"] > 0].groupby("Allievo").apply(
+                lambda g: g["Incassato"].sum() / g["OreLezione"].sum() if g["OreLezione"].sum() else 0,
+                include_groups=False).reset_index(name="TariffaOraria")
+            tar = tar[tar["TariffaOraria"] > 0].sort_values("TariffaOraria")
+            if not tar.empty:
+                fig = go.Figure(go.Bar(
+                    x=tar["TariffaOraria"], y=tar["Allievo"], orientation="h",
+                    marker=dict(color=[cmap[x] for x in tar["Allievo"]], line=dict(width=0)),
+                    marker_cornerradius=4,
+                    text=tar["TariffaOraria"].map(lambda v: f"€ {v:.1f}"),
+                    textposition="outside", textfont=dict(color=INK2, size=11),
+                    hovertemplate="<b>%{y}</b><br>€ %{x:.2f} / ora<extra></extra>"))
+                style(fig, max(400, 36 * len(tar)), "Tariffa oraria effettiva", showlegend=False)
+                fig.add_vline(x=tariffa, line=dict(color=INK2, width=2, dash="dot"),
+                              annotation_text=f"media € {tariffa:.1f}", annotation_position="top")
+                fig.update_xaxes(title="€ / ora",
+                                 range=[0, float(tar["TariffaOraria"].max()) * 1.22])
+                fig.update_yaxes(showgrid=False)
+                st.plotly_chart(fig, width='stretch')
+            else:
+                st.info("Nessun pagamento registrato nel periodo selezionato.")
+
+        sosp = df[(~df["Pagato"]) & (df["Importo"] > 0)]
+        if not sosp.empty:
+            st.markdown("##### ⚠️ Lezioni da incassare")
+            t = sosp[["Data", "Allievo", "Materia", "Argomento", "OreTotali", "Importo"]].copy()
+            t["Data"] = t["Data"].dt.strftime("%d/%m/%Y")
+            st.dataframe(t, width='stretch', hide_index=True,
+                         column_config={"OreTotali": st.column_config.NumberColumn("Ore", format="%.1f h"),
+                                        "Importo": st.column_config.NumberColumn("Importo", format="€ %.2f")})
+            scarica_tabella(t, "lezioni_da_incassare")
+
+    # ---------------- Didattica ----------------
+    with RIP[3]:
+        c1, c2 = st.columns(2)
+        with c1:
+            comp = df.groupby("Allievo").agg(
+                Assegnati=("CompitoAssegnato", lambda s: int(s.fillna(False).sum())),
+                Superati=("CompitoSuperato", lambda s: int(s.fillna(False).sum())),
+            ).reset_index().sort_values("Assegnati")
+            comp = comp[comp["Assegnati"] > 0]
+            if not comp.empty:
+                fig = go.Figure()
+                fig.add_bar(y=comp["Allievo"], x=comp["Assegnati"], orientation="h", name="Assegnati",
+                            marker=dict(color=PALETTE[0], line=dict(width=0)), marker_cornerradius=4,
+                            hovertemplate="<b>%{y}</b><br>%{x} compiti assegnati<extra></extra>")
+                fig.add_bar(y=comp["Allievo"], x=comp["Superati"], orientation="h", name="Superati",
+                            marker=dict(color=PALETTE[2], line=dict(width=0)), marker_cornerradius=4,
+                            hovertemplate="<b>%{y}</b><br>%{x} compiti superati<extra></extra>")
+                style(fig, max(380, 42 * len(comp)), "Compiti assegnati e superati")
+                fig.update_layout(barmode="group", bargap=0.3)
+                fig.update_yaxes(showgrid=False)
+                st.plotly_chart(fig, width='stretch')
+            else:
+                st.info("Nessun compito assegnato registrato nel periodo.")
+
+        with c2:
+            vt = df.dropna(subset=["Voto"])
+            if not vt.empty:
+                fig = go.Figure()
+                for a in sorted(vt["Allievo"].unique()):
+                    d = vt[vt["Allievo"] == a].sort_values("Data")
+                    fig.add_scatter(x=d["Data"], y=d["Voto"], mode="lines+markers", name=a,
+                                    line=dict(color=cmap[a], width=2, shape="spline"),
+                                    marker=dict(size=9, line=dict(width=2, color="rgba(255,255,255,.9)")),
+                                    hovertemplate="<b>%{fullData.name}</b><br>"
+                                                  "%{x|%d/%m/%Y} · voto %{y}<extra></extra>")
+                style(fig, 400, "Andamento dei voti")
+                fig.update_yaxes(title="voto")
+                st.plotly_chart(fig, width='stretch')
+            else:
+                st.info("Nessun voto registrato nel periodo selezionato.")
+
+        c3, c4 = st.columns([2, 1])
+        with c3:
+            st.markdown("##### Argomenti trattati più di frequente")
+            arg = (df[df["Argomento"] != ""]["Argomento"]
+                   .str.strip().str.capitalize().value_counts().head(15)
+                   .sort_values().reset_index())
+            arg.columns = ["Argomento", "Volte"]
+            if not arg.empty:
+                fig = go.Figure(go.Bar(
+                    x=arg["Volte"], y=arg["Argomento"].str.slice(0, 60), orientation="h",
+                    marker=dict(color=PALETTE[6], line=dict(width=0)), marker_cornerradius=4,
+                    hovertemplate="<b>%{y}</b><br>%{x} lezioni<extra></extra>"))
+                style(fig, max(400, 30 * len(arg)), showlegend=False)
+                fig.update_yaxes(showgrid=False)
+                st.plotly_chart(fig, width='stretch')
+
+        with c4:
+            st.markdown("##### Copertura materiali")
+            tot = len(df)
+            voci = [
+                ("Materiale fornito", int(df["MaterialeFornito"].fillna(False).sum()), PALETTE[0]),
+                ("Dispense", int((df["LinkDispense"] != "").sum()), PALETTE[2]),
+                ("Registrazione", int((df["LinkRegistrazione"] != "").sum()), PALETTE[3]),
+                ("Mappe concettuali", int((df["LinkMappe"] != "").sum()), PALETTE[6]),
+                ("Compito assegnato", int(df["CompitoAssegnato"].fillna(False).sum()), PALETTE[4]),
+            ]
+            for nome, val, col in voci:
+                pct = val / tot if tot else 0
+                st.markdown(f"**{nome}** — {val} su {tot} ({pct:.0%})")
+                st.progress(min(pct, 1.0))
+
+    # ---------------- Dettaglio ----------------
+    with RIP[4]:
+        st.markdown("##### Tutte le lezioni")
+        q = st.text_input("Cerca (argomento, note, allievo, materia)", "")
+        d = df.copy()
+        if q:
+            mask = (d["Argomento"].str.contains(q, case=False, na=False)
+                    | d["Note"].str.contains(q, case=False, na=False)
+                    | d["Allievo"].str.contains(q, case=False, na=False)
+                    | d["Materia"].str.contains(q, case=False, na=False))
+            d = d[mask]
+
+        tab = d[["Data", "Allievo", "Materia", "NumeroLezione", "OraInizio", "OraFine",
+                 "OreLezione", "OrePrep", "OreTotali", "Argomento", "CompitoAssegnato",
+                 "CompitoSuperato", "Voto", "Pagato", "Importo", "DataPagamento", "Note",
+                 "LinkRiunione", "LinkRegistrazione", "LinkDispense", "LinkMappe"]].copy()
+        tab["Data"] = tab["Data"].dt.strftime("%d/%m/%Y")
+        tab["DataPagamento"] = tab["DataPagamento"].dt.strftime("%d/%m/%Y")
+        tab["OraInizio"] = tab["OraInizio"].map(lambda t: t.strftime("%H:%M") if t else "")
+        tab["OraFine"] = tab["OraFine"].map(lambda t: t.strftime("%H:%M") if t else "")
+
+        st.dataframe(
+            tab, width='stretch', hide_index=True, height=520,
+            column_config={
+                "NumeroLezione": st.column_config.NumberColumn("N°", format="%.0f"),
+                "OreLezione": st.column_config.NumberColumn("Ore lez.", format="%.2f"),
+                "OrePrep": st.column_config.NumberColumn("Ore prep.", format="%.2f"),
+                "OreTotali": st.column_config.NumberColumn("Ore tot.", format="%.2f"),
+                "Importo": st.column_config.NumberColumn("Importo", format="€ %.2f"),
+                "Pagato": st.column_config.CheckboxColumn("Pagato"),
+                "CompitoAssegnato": st.column_config.CheckboxColumn("Compito"),
+                "CompitoSuperato": st.column_config.CheckboxColumn("Superato"),
+                "LinkRiunione": st.column_config.LinkColumn("Riunione", display_text="apri"),
+                "LinkRegistrazione": st.column_config.LinkColumn("Registrazione", display_text="apri"),
+                "LinkDispense": st.column_config.LinkColumn("Dispense", display_text="apri"),
+                "LinkMappe": st.column_config.LinkColumn("Mappe", display_text="apri"),
+            })
+
+        c1, c2 = st.columns(2)
+        c1.download_button("⬇️ Scarica CSV", tab.to_csv(index=False).encode("utf-8-sig"),
+                           f"registro_lezioni_{dt.date.today():%Y%m%d}.csv", "text/csv",
+                           width='stretch')
+        buf = io.BytesIO()
+        with pd.ExcelWriter(buf, engine="openpyxl") as w:
+            tab.to_excel(w, index=False, sheet_name="Lezioni")
+        c2.download_button("⬇️ Scarica Excel", buf.getvalue(),
+                           f"registro_lezioni_{dt.date.today():%Y%m%d}.xlsx",
+                           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                           width='stretch')
+
+# TAB 2 - PROGETTI E CONSULENZE
 # ============================================================================
 with TAB[2]:
-    oggi = pd.Timestamp(dt.date.today())
-    sched = (df.groupby("Allievo").agg(
-        Lezioni=("Data", "size"),
-        Ore=("OreTotali", "sum"),
-        OreLezione=("OreLezione", "sum"),
-        OrePrep=("OrePrep", "sum"),
-        DurataMedia=("OreLezione", "mean"),
-        Prima=("Data", "min"),
-        Ultima=("Data", "max"),
-        Incassato=("Incassato", "sum"),
-        DaIncassare=("DaIncassare", "sum"),
-    ).reset_index())
-    sched["GiorniDaUltima"] = (oggi - sched["Ultima"]).dt.days
-    sched = sched.sort_values("Ore", ascending=False)
-
-    c1, c2 = st.columns([3, 2])
-    with c1:
-        st.markdown("##### Scheda riepilogativa per allievo")
-        show = sched.copy()
-        show["Prima"] = show["Prima"].dt.strftime("%d/%m/%Y")
-        show["Ultima"] = show["Ultima"].dt.strftime("%d/%m/%Y")
-        st.dataframe(
-            show[["Allievo", "Lezioni", "Ore", "DurataMedia", "Prima", "Ultima",
-                  "GiorniDaUltima", "Incassato", "DaIncassare"]],
-            width='stretch', hide_index=True,
-            column_config={
-                "Ore": st.column_config.NumberColumn("Ore totali", format="%.1f h"),
-                "DurataMedia": st.column_config.NumberColumn("Durata media", format="%.2f h"),
-                "GiorniDaUltima": st.column_config.NumberColumn("Giorni da ultima", format="%d gg"),
-                "Incassato": st.column_config.NumberColumn("Incassato", format="€ %.0f"),
-                "DaIncassare": st.column_config.NumberColumn("Da incassare", format="€ %.0f"),
-            })
-        scarica_tabella(show, "scheda_allievi", "⬇️ Scarica la scheda")
-
-    with c2:
-        s = sched.sort_values("GiorniDaUltima")
-        colori = [C_OK if g <= 14 else (C_WARN if g <= 45 else C_BAD) for g in s["GiorniDaUltima"]]
-        fig = go.Figure(go.Bar(
-            x=s["GiorniDaUltima"], y=s["Allievo"], orientation="h",
-            marker=dict(color=colori, line=dict(width=0)), marker_cornerradius=4,
-            text=s["GiorniDaUltima"].map(lambda v: f"{v} gg"),
-            textposition="outside", textfont=dict(color=INK2, size=11),
-            hovertemplate="<b>%{y}</b><br>%{x} giorni dall'ultima lezione<extra></extra>"))
-        style(fig, max(380, 34 * len(s)), "Giorni dall'ultima lezione", showlegend=False)
-        fig.update_yaxes(showgrid=False)
-        fig.update_xaxes(range=[0, float(s["GiorniDaUltima"].max()) * 1.20])
-        st.plotly_chart(fig, width='stretch')
-        st.caption("🟢 attivo (≤14 gg) · 🟡 da ricontattare (≤45 gg) · 🔴 fermo (>45 gg)")
-
-    c3, c4 = st.columns(2)
-    with c3:
-        fig = go.Figure()
-        for a in sched["Allievo"]:
-            d = df[df["Allievo"] == a]["OreLezione"]
-            fig.add_box(y=d, name=a, marker_color=cmap[a], boxpoints="outliers",
-                        line=dict(width=2), fillcolor="rgba(0,0,0,0)")
-        style(fig, 400, "Distribuzione durata delle lezioni", showlegend=False)
-        fig.update_yaxes(title="ore per lezione")
-        st.plotly_chart(fig, width='stretch')
-
-    with c4:
-        pv = sched[["Allievo", "OreLezione", "OrePrep"]].melt(
-            id_vars="Allievo", value_vars=["OreLezione", "OrePrep"],
-            var_name="Tipo", value_name="OreVal").rename(columns={"OreVal": "Ore"})
-        pv["Tipo"] = pv["Tipo"].map({"OreLezione": "Lezione", "OrePrep": "Preparazione"})
-        fig = px.bar(pv, x="Allievo", y="Ore", color="Tipo",
-                     color_discrete_map={"Lezione": PALETTE[0], "Preparazione": PALETTE[3]})
-        fig.update_traces(marker_line=dict(width=2, color="rgba(255,255,255,.9)"),
-                          marker_cornerradius=4,
-                          hovertemplate="<b>%{x}</b><br>%{y:.1f} ore<extra></extra>")
-        style(fig, 400, "Ore di lezione vs ore di preparazione")
-        fig.update_yaxes(title="ore")
-        st.plotly_chart(fig, width='stretch')
-
-    st.markdown("##### Cadenza delle lezioni nel tempo")
-    fig = go.Figure()
-    for a in sorted(df["Allievo"].unique()):
-        d = df[df["Allievo"] == a]
-        fig.add_scatter(x=d["Data"], y=[a] * len(d), mode="markers", name=a,
-                        marker=dict(size=9, color=cmap[a],
-                                    line=dict(width=2, color="rgba(255,255,255,.9)")),
-                        customdata=np.stack([d["Materia"], d["OreTotali"]], axis=-1),
-                        hovertemplate="<b>%{y}</b> · %{x|%d/%m/%Y}<br>"
-                                      "%{customdata[0]} · %{customdata[1]:.1f} h<extra></extra>")
-    style(fig, max(320, 32 * df["Allievo"].nunique()), showlegend=False)
-    fig.update_yaxes(showgrid=False)
-    st.plotly_chart(fig, width='stretch')
-
-
-# ============================================================================
-# TAB 3 - ECONOMIA
-# ============================================================================
-with TAB[3]:
-    c1, c2 = st.columns([3, 2])
-    with c1:
-        inc = (df.groupby("AnnoMese")
-                 .agg(Incassato=("Incassato", "sum"), DaIncassare=("DaIncassare", "sum"))
-                 .reset_index().sort_values("AnnoMese"))
-        inc["Cumulato"] = inc["Incassato"].cumsum()
-        fig = go.Figure()
-        fig.add_bar(x=inc["AnnoMese"], y=inc["Incassato"], name="Incassato",
-                    marker=dict(color=PALETTE[2], line=dict(width=2, color="rgba(255,255,255,.9)")),
-                    marker_cornerradius=4,
-                    hovertemplate="<b>%{x}</b><br>€ %{y:,.0f} incassati<extra></extra>")
-        fig.add_bar(x=inc["AnnoMese"], y=inc["DaIncassare"], name="Da incassare",
-                    marker=dict(color=PALETTE[7], line=dict(width=2, color="rgba(255,255,255,.9)")),
-                    marker_cornerradius=4,
-                    hovertemplate="<b>%{x}</b><br>€ %{y:,.0f} da incassare<extra></extra>")
-        style(fig, 400, "Incassi per mese")
-        fig.update_layout(barmode="stack", hovermode="x unified")
-        fig.update_yaxes(title="€")
-        st.plotly_chart(fig, width='stretch')
-
-    with c2:
-        fig = go.Figure(go.Scatter(
-            x=inc["AnnoMese"], y=inc["Cumulato"], mode="lines+markers",
-            line=dict(color=PALETTE[0], width=2, shape="spline"),
-            marker=dict(size=8, line=dict(width=2, color="rgba(255,255,255,.9)")),
-            fill="tozeroy", fillcolor="rgba(42,120,214,.12)",
-            hovertemplate="<b>%{x}</b><br>€ %{y:,.0f} cumulati<extra></extra>"))
-        style(fig, 400, "Incassato cumulato", showlegend=False)
-        fig.update_yaxes(title="€")
-        st.plotly_chart(fig, width='stretch')
-
-    c3, c4 = st.columns(2)
-    with c3:
-        pa = (df.groupby("Allievo")
-                .agg(Incassato=("Incassato", "sum"), DaIncassare=("DaIncassare", "sum"))
-                .reset_index().sort_values("Incassato"))
-        fig = go.Figure()
-        fig.add_bar(y=pa["Allievo"], x=pa["Incassato"], orientation="h", name="Incassato",
-                    marker=dict(color=PALETTE[2], line=dict(width=2, color="rgba(255,255,255,.9)")),
-                    marker_cornerradius=4,
-                    hovertemplate="<b>%{y}</b><br>€ %{x:,.0f} incassati<extra></extra>")
-        fig.add_bar(y=pa["Allievo"], x=pa["DaIncassare"], orientation="h", name="Da incassare",
-                    marker=dict(color=PALETTE[7], line=dict(width=2, color="rgba(255,255,255,.9)")),
-                    marker_cornerradius=4,
-                    hovertemplate="<b>%{y}</b><br>€ %{x:,.0f} da incassare<extra></extra>")
-        style(fig, max(400, 36 * len(pa)), "Situazione pagamenti per allievo")
-        fig.update_layout(barmode="stack")
-        fig.update_xaxes(title="€")
-        fig.update_yaxes(showgrid=False)
-        st.plotly_chart(fig, width='stretch')
-
-    with c4:
-        tar = df[df["Incassato"] > 0].groupby("Allievo").apply(
-            lambda g: g["Incassato"].sum() / g["OreLezione"].sum() if g["OreLezione"].sum() else 0,
-            include_groups=False).reset_index(name="TariffaOraria")
-        tar = tar[tar["TariffaOraria"] > 0].sort_values("TariffaOraria")
-        if not tar.empty:
-            fig = go.Figure(go.Bar(
-                x=tar["TariffaOraria"], y=tar["Allievo"], orientation="h",
-                marker=dict(color=[cmap[x] for x in tar["Allievo"]], line=dict(width=0)),
-                marker_cornerradius=4,
-                text=tar["TariffaOraria"].map(lambda v: f"€ {v:.1f}"),
-                textposition="outside", textfont=dict(color=INK2, size=11),
-                hovertemplate="<b>%{y}</b><br>€ %{x:.2f} / ora<extra></extra>"))
-            style(fig, max(400, 36 * len(tar)), "Tariffa oraria effettiva", showlegend=False)
-            fig.add_vline(x=tariffa, line=dict(color=INK2, width=2, dash="dot"),
-                          annotation_text=f"media € {tariffa:.1f}", annotation_position="top")
-            fig.update_xaxes(title="€ / ora",
-                             range=[0, float(tar["TariffaOraria"].max()) * 1.22])
-            fig.update_yaxes(showgrid=False)
-            st.plotly_chart(fig, width='stretch')
-        else:
-            st.info("Nessun pagamento registrato nel periodo selezionato.")
-
-    sosp = df[(~df["Pagato"]) & (df["Importo"] > 0)]
-    if not sosp.empty:
-        st.markdown("##### ⚠️ Lezioni da incassare")
-        t = sosp[["Data", "Allievo", "Materia", "Argomento", "OreTotali", "Importo"]].copy()
-        t["Data"] = t["Data"].dt.strftime("%d/%m/%Y")
-        st.dataframe(t, width='stretch', hide_index=True,
-                     column_config={"OreTotali": st.column_config.NumberColumn("Ore", format="%.1f h"),
-                                    "Importo": st.column_config.NumberColumn("Importo", format="€ %.2f")})
-        scarica_tabella(t, "lezioni_da_incassare")
-
-
-# ============================================================================
-# TAB 4 - DIDATTICA
-# ============================================================================
-with TAB[4]:
-    c1, c2 = st.columns(2)
-    with c1:
-        comp = df.groupby("Allievo").agg(
-            Assegnati=("CompitoAssegnato", lambda s: int(s.fillna(False).sum())),
-            Superati=("CompitoSuperato", lambda s: int(s.fillna(False).sum())),
-        ).reset_index().sort_values("Assegnati")
-        comp = comp[comp["Assegnati"] > 0]
-        if not comp.empty:
-            fig = go.Figure()
-            fig.add_bar(y=comp["Allievo"], x=comp["Assegnati"], orientation="h", name="Assegnati",
-                        marker=dict(color=PALETTE[0], line=dict(width=0)), marker_cornerradius=4,
-                        hovertemplate="<b>%{y}</b><br>%{x} compiti assegnati<extra></extra>")
-            fig.add_bar(y=comp["Allievo"], x=comp["Superati"], orientation="h", name="Superati",
-                        marker=dict(color=PALETTE[2], line=dict(width=0)), marker_cornerradius=4,
-                        hovertemplate="<b>%{y}</b><br>%{x} compiti superati<extra></extra>")
-            style(fig, max(380, 42 * len(comp)), "Compiti assegnati e superati")
-            fig.update_layout(barmode="group", bargap=0.3)
-            fig.update_yaxes(showgrid=False)
-            st.plotly_chart(fig, width='stretch')
-        else:
-            st.info("Nessun compito assegnato registrato nel periodo.")
-
-    with c2:
-        vt = df.dropna(subset=["Voto"])
-        if not vt.empty:
-            fig = go.Figure()
-            for a in sorted(vt["Allievo"].unique()):
-                d = vt[vt["Allievo"] == a].sort_values("Data")
-                fig.add_scatter(x=d["Data"], y=d["Voto"], mode="lines+markers", name=a,
-                                line=dict(color=cmap[a], width=2, shape="spline"),
-                                marker=dict(size=9, line=dict(width=2, color="rgba(255,255,255,.9)")),
-                                hovertemplate="<b>%{fullData.name}</b><br>"
-                                              "%{x|%d/%m/%Y} · voto %{y}<extra></extra>")
-            style(fig, 400, "Andamento dei voti")
-            fig.update_yaxes(title="voto")
-            st.plotly_chart(fig, width='stretch')
-        else:
-            st.info("Nessun voto registrato nel periodo selezionato.")
-
-    c3, c4 = st.columns([2, 1])
-    with c3:
-        st.markdown("##### Argomenti trattati più di frequente")
-        arg = (df[df["Argomento"] != ""]["Argomento"]
-               .str.strip().str.capitalize().value_counts().head(15)
-               .sort_values().reset_index())
-        arg.columns = ["Argomento", "Volte"]
-        if not arg.empty:
-            fig = go.Figure(go.Bar(
-                x=arg["Volte"], y=arg["Argomento"].str.slice(0, 60), orientation="h",
-                marker=dict(color=PALETTE[6], line=dict(width=0)), marker_cornerradius=4,
-                hovertemplate="<b>%{y}</b><br>%{x} lezioni<extra></extra>"))
-            style(fig, max(400, 30 * len(arg)), showlegend=False)
-            fig.update_yaxes(showgrid=False)
-            st.plotly_chart(fig, width='stretch')
-
-    with c4:
-        st.markdown("##### Copertura materiali")
-        tot = len(df)
-        voci = [
-            ("Materiale fornito", int(df["MaterialeFornito"].fillna(False).sum()), PALETTE[0]),
-            ("Dispense", int((df["LinkDispense"] != "").sum()), PALETTE[2]),
-            ("Registrazione", int((df["LinkRegistrazione"] != "").sum()), PALETTE[3]),
-            ("Mappe concettuali", int((df["LinkMappe"] != "").sum()), PALETTE[6]),
-            ("Compito assegnato", int(df["CompitoAssegnato"].fillna(False).sum()), PALETTE[4]),
-        ]
-        for nome, val, col in voci:
-            pct = val / tot if tot else 0
-            st.markdown(f"**{nome}** — {val} su {tot} ({pct:.0%})")
-            st.progress(min(pct, 1.0))
-
-
-# ============================================================================
-# TAB 5 - DETTAGLIO
-# ============================================================================
-with TAB[5]:
-    st.markdown("##### Tutte le lezioni")
-    q = st.text_input("Cerca (argomento, note, allievo, materia)", "")
-    d = df.copy()
-    if q:
-        mask = (d["Argomento"].str.contains(q, case=False, na=False)
-                | d["Note"].str.contains(q, case=False, na=False)
-                | d["Allievo"].str.contains(q, case=False, na=False)
-                | d["Materia"].str.contains(q, case=False, na=False))
-        d = d[mask]
-
-    tab = d[["Data", "Allievo", "Materia", "NumeroLezione", "OraInizio", "OraFine",
-             "OreLezione", "OrePrep", "OreTotali", "Argomento", "CompitoAssegnato",
-             "CompitoSuperato", "Voto", "Pagato", "Importo", "DataPagamento", "Note",
-             "LinkRiunione", "LinkRegistrazione", "LinkDispense", "LinkMappe"]].copy()
-    tab["Data"] = tab["Data"].dt.strftime("%d/%m/%Y")
-    tab["DataPagamento"] = tab["DataPagamento"].dt.strftime("%d/%m/%Y")
-    tab["OraInizio"] = tab["OraInizio"].map(lambda t: t.strftime("%H:%M") if t else "")
-    tab["OraFine"] = tab["OraFine"].map(lambda t: t.strftime("%H:%M") if t else "")
-
-    st.dataframe(
-        tab, width='stretch', hide_index=True, height=520,
-        column_config={
-            "NumeroLezione": st.column_config.NumberColumn("N°", format="%.0f"),
-            "OreLezione": st.column_config.NumberColumn("Ore lez.", format="%.2f"),
-            "OrePrep": st.column_config.NumberColumn("Ore prep.", format="%.2f"),
-            "OreTotali": st.column_config.NumberColumn("Ore tot.", format="%.2f"),
-            "Importo": st.column_config.NumberColumn("Importo", format="€ %.2f"),
-            "Pagato": st.column_config.CheckboxColumn("Pagato"),
-            "CompitoAssegnato": st.column_config.CheckboxColumn("Compito"),
-            "CompitoSuperato": st.column_config.CheckboxColumn("Superato"),
-            "LinkRiunione": st.column_config.LinkColumn("Riunione", display_text="apri"),
-            "LinkRegistrazione": st.column_config.LinkColumn("Registrazione", display_text="apri"),
-            "LinkDispense": st.column_config.LinkColumn("Dispense", display_text="apri"),
-            "LinkMappe": st.column_config.LinkColumn("Mappe", display_text="apri"),
-        })
-
-    c1, c2 = st.columns(2)
-    c1.download_button("⬇️ Scarica CSV", tab.to_csv(index=False).encode("utf-8-sig"),
-                       f"registro_lezioni_{dt.date.today():%Y%m%d}.csv", "text/csv",
-                       width='stretch')
-    buf = io.BytesIO()
-    with pd.ExcelWriter(buf, engine="openpyxl") as w:
-        tab.to_excel(w, index=False, sheet_name="Lezioni")
-    c2.download_button("⬇️ Scarica Excel", buf.getvalue(),
-                       f"registro_lezioni_{dt.date.today():%Y%m%d}.xlsx",
-                       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                       width='stretch')
-
-
-# ============================================================================
-# TAB 6 - PROGETTI E CONSULENZE
-# ============================================================================
-with TAB[6]:
     if dfp.empty:
         st.warning(prog_msg or "Nessun progetto trovato nei file indicati.")
         st.markdown("##### Cosa ha visto l'app")
@@ -2723,9 +2726,9 @@ with TAB[6]:
 
 
 # ============================================================================
-# TAB 7 - CANCELLERIA  (generatore di documenti e materiale intestato)
+# TAB 3 - CANCELLERIA  (generatore di documenti e materiale intestato)
 # ============================================================================
-with TAB[7]:
+with TAB[3]:
     if not CANCELLERIA_OK:
         st.error("Il modulo della cancelleria non è disponibile: "
                  f"{CANCELLERIA_ERRORE}")
@@ -3153,9 +3156,9 @@ with TAB[7]:
 
 
 # ============================================================================
-# TAB 8 - STUDIO  (percorsi, prontuari, strumenti AI, prompt pronti)
+# TAB 4 - STUDIO  (percorsi, prontuari, strumenti AI, prompt pronti)
 # ============================================================================
-with TAB[8]:
+with TAB[4]:
 
     @st.cache_data(show_spinner=False)
     def carica_studio(_versione: float):
@@ -3528,14 +3531,13 @@ with TAB[8]:
                 if st.session_state.get("ultimo_compito") == "Mappa concettuale":
                     codice = (risposta.replace("```mermaid", "")
                               .replace("```", "").strip())
-                    import streamlit.components.v1 as components
-                    components.html(f"""
+                    pagina_html(f"""
 <div class="mermaid">{codice}</div>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script>mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>
 <style>body{{margin:0;font-family:Helvetica,Arial,sans-serif;background:transparent}}
 .mermaid{{display:flex;justify-content:center}}</style>
-""", height=560, scrolling=True)
+""", 560)
                     with st.expander("Il codice della mappa"):
                         st.code(codice, language="text")
                         st.caption("Puoi incollarlo su mermaid.live per modificarlo "
@@ -3584,9 +3586,9 @@ with TAB[8]:
 
 
 # ============================================================================
-# TAB 9 - PARLA CHIARO  (allenamento alla comunicazione, nativo in Quadro)
+# TAB 5 - PARLA CHIARO  (allenamento alla comunicazione, nativo in Quadro)
 # ============================================================================
-with TAB[9]:
+with TAB[5]:
     import parlachiaro as PC
 
     PCFG = _carica_json("parlachiaro.json", _mtime("parlachiaro.json"))
@@ -3876,10 +3878,275 @@ with TAB[9]:
                             "⬇️ Scarica gli allenamenti")
 
 
+
 # ============================================================================
-# TAB 10 - GUIDA  (come si usa e come si modifica: il testo sta in guida.json)
+# TAB 6 - SENTINEL  (il corso «SENTINEL da zero», con l'avanzamento nel diario)
 # ============================================================================
-with TAB[10]:
+with TAB[6]:
+    st.markdown("#### 📡 SENTINEL da zero")
+    st.caption("Il corso completo sulla tua stazione ELF: sedici moduli dalle "
+               "basi elettriche all'indice PRISMA, più quattro appendici. "
+               "Si legge qui dentro e funziona anche senza rete.")
+
+    MODULI = [
+        "00 · Come usare questa guida", "01 · Elettricità di base",
+        "02 · Campi e onde elettromagnetiche", "03 · L'antenna a spira con ferrite",
+        "04 · Amplificare senza aggiungere rumore", "05 · Dall'analogico al digitale",
+        "06 · Fourier e lo spettro", "07 · Trovare i picchi: statistica robusta",
+        "08 · Direzione di arrivo e triangolazione",
+        "09 · Terremoti e ipotesi dei precursori", "10 · Il Sole e il meteo spaziale",
+        "11 · Raspberry Pi e Linux", "12 · Python, dati e database",
+        "13 · Reti, cloud e Git", "14 · L'indice PRISMA",
+        "15 · La catena completa e la seconda stazione",
+        "A1 · Laboratorio sulla tua stazione", "A2 · Formulario",
+        "A3 · Glossario", "A4 · Piano di studio e letture",
+    ]
+    PERCORSO_SENT = "SENTINEL da zero"
+
+    fatti_s = DIARIO.tappe_fatte(DIA, PERCORSO_SENT)
+    appena_s = st.session_state.setdefault("sent_appena", set())
+    fatti_s |= appena_s
+
+    st.progress(len(fatti_s) / len(MODULI),
+                text=f"{len(fatti_s)} moduli su {len(MODULI)}")
+
+    with st.expander("Segna i moduli che hai studiato"):
+        st.caption("Le spunte finiscono nel diario, quindi restano anche se "
+                   "cambi dispositivo. Quelle dentro la guida qui sotto no: "
+                   "quelle le tiene il browser e si perdono.")
+        cs = st.columns(2)
+        for i, mod in enumerate(MODULI):
+            with cs[i % 2]:
+                era_s = mod in fatti_s
+                ora_s = st.checkbox(mod, value=era_s, key=f"sent_{i}")
+                if ora_s and not era_s:
+                    diario_scrivi(DIARIO.riga("tappa", PERCORSO_SENT, "SENTINEL",
+                                              0, None, mod))
+                    appena_s.add(mod)
+                    st.toast(f"Modulo segnato: {mod}")
+
+    try:
+        _p_sent = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "sentinel.html")
+        with open(_p_sent, encoding="utf-8") as _f:
+            _html_sent = _f.read()
+        pagina_html(_html_sent, 900)
+    except FileNotFoundError:
+        st.error("Manca il file `sentinel.html` accanto ad app.py.")
+        st.caption("È il corso in un file solo: caricalo nella repo insieme "
+                   "agli altri.")
+
+
+# ============================================================================
+# TAB 7 - TARATURA  (sezione riservata: vedi taratura.py per la password)
+# ============================================================================
+with TAB[7]:
+    import taratura as TAR
+
+    SBLOCCO = "tar_aperta_alle"
+    if TAR.scaduta(st.session_state.get(SBLOCCO)):
+        st.session_state.pop(SBLOCCO, None)
+
+    if SBLOCCO not in st.session_state:
+        st.markdown("#### ⚙️ Taratura")
+        st.caption("Sezione riservata.")
+        with st.form("tar_ingresso"):
+            pw = st.text_input("Password", type="password",
+                               label_visibility="collapsed",
+                               placeholder="Password")
+            entra = st.form_submit_button("Apri", type="primary")
+        if entra:
+            if TAR.password_giusta(pw, secret("taratura_password", "")):
+                st.session_state[SBLOCCO] = dt.datetime.now()
+                st.rerun()
+            else:
+                st.error("Password errata.")
+    else:
+        # ---- l'archivio separato, così non si mescola con il resto ----------
+        @st.cache_data(ttl=900, show_spinner=False)
+        def _cerca_file_taratura(_segno):
+            if not SA:
+                return None
+            cartelle = [secret("drive_folder_id_taratura", ""),
+                        secret("drive_folder_id_diario", ""),
+                        secret("drive_folder_id_progetti", ""),
+                        secret("drive_folder_id", "")]
+            try:
+                return DIARIO.trova_file(dict(SA), cartelle, "Quadro_Taratura.xlsx")
+            except Exception:
+                return None
+
+        FILE_TAR = _cerca_file_taratura(0)
+
+        @st.cache_data(ttl=30, show_spinner=False)
+        def _leggi_taratura(_f, _segno):
+            return DIARIO.leggi_xlsx(dict(SA), _f)
+
+        def taratura_corrente():
+            if not FILE_TAR:
+                return st.session_state.get("tar_locale", DIARIO.vuoto())
+            try:
+                return _leggi_taratura(FILE_TAR,
+                                       st.session_state.get("tar_segno", 0))
+            except Exception:
+                return st.session_state.get("tar_locale", DIARIO.vuoto())
+
+        def taratura_scrivi(r):
+            if FILE_TAR:
+                try:
+                    DIARIO.aggiungi_xlsx(dict(SA), FILE_TAR, [r])
+                    st.session_state["tar_segno"] = st.session_state.get("tar_segno", 0) + 1
+                    return True
+                except Exception as e:
+                    st.warning(f"Non sono riuscito a scrivere nell'archivio: {e}")
+            loc = st.session_state.get("tar_locale", DIARIO.vuoto())
+            st.session_state["tar_locale"] = DIARIO._sistema(
+                pd.concat([loc, pd.DataFrame([r])], ignore_index=True))
+            return False
+
+        TARD = taratura_corrente()
+        voci_tar = TARD[TARD["Tipo"] == "voce"].sort_values("Data", ascending=False)
+
+        t_alto = st.columns([4, 1])
+        t_alto[0].markdown("#### ⚙️ Taratura")
+        if t_alto[1].button("🔒 Chiudi", width='stretch'):
+            st.session_state.pop(SBLOCCO, None)
+            st.rerun()
+        st.caption(f"Aperta per {TAR.MINUTI_DI_APERTURA} minuti, poi si "
+                   "richiude da sola e la password va ridigitata.")
+
+        if not FILE_TAR:
+            st.warning("**Archivio non collegato**: quello che scrivi adesso "
+                       "resta solo in questa sessione.")
+            with st.expander("Come collegarlo"):
+                st.markdown(
+                    "Scarica il file qui sotto e caricalo in una cartella di "
+                    "Drive **tua, condivisa solo con il service account come "
+                    "Editor** — non in una cartella che condividi con altri. "
+                    "Se la metti in una cartella a parte, aggiungi nei Secrets "
+                    "`drive_folder_id_taratura` con il suo ID.\n\n"
+                    "È un file separato dal diario normale apposta: quello che "
+                    "scrivi qui non si mescola con le sessioni di studio.")
+                st.download_button("⬇️ Scarica Quadro_Taratura.xlsx",
+                                   DIARIO.modello_xlsx("Taratura", guida=False),
+                                   "Quadro_Taratura.xlsx",
+                                   "application/vnd.openxmlformats-officedocument."
+                                   "spreadsheetml.sheet", type="primary")
+
+        TT = st.tabs(["✍️ Oggi", "📖 Quello che hai scritto", "📈 Andamento"])
+
+        # ------------------------------ oggi --------------------------------
+        with TT[0]:
+            umore = st.slider("Come stai oggi, da 1 a 10", 1, 10, 6,
+                              help="1 = giornata pessima · 10 = giornata ottima")
+            testo_tar = st.text_area(
+                "Scrivi quello che vuoi", height=220,
+                placeholder="Cosa è successo, cosa ti è rimasto addosso, cosa "
+                            "è andato meglio di quanto pensassi. Non deve "
+                            "essere ordinato.")
+
+            b1, b2 = st.columns(2)
+            if b1.button("💾 Salva e basta", width='stretch'):
+                if testo_tar.strip():
+                    dove_ok = taratura_scrivi(DIARIO.riga(
+                        "voce", "diario", "", 0, umore, testo_tar.strip()))
+                    st.success("Salvato." if dove_ok else "Salvato in sessione.")
+                    st.rerun()
+                else:
+                    st.warning("Scrivi qualcosa prima di salvare.")
+
+            if b2.button("💬 Salva e parlane", width='stretch', type="primary"):
+                if not testo_tar.strip():
+                    st.warning("Scrivi qualcosa prima.")
+                else:
+                    taratura_scrivi(DIARIO.riga("voce", "diario", "", 0, umore,
+                                                testo_tar.strip()))
+                    storico = [(r["Data"], r["Valore"], r["Nota"])
+                               for _, r in voci_tar.head(5).iterrows()]
+                    import assistente as AI
+                    stato_t = st.empty()
+                    try:
+                        with st.spinner("Sto leggendo…"):
+                            risp_t = AI.chiedi(
+                                TAR.prompt(testo_tar.strip(), umore, storico),
+                                (secret("google_api_key", "") or "").strip(),
+                                (secret("modello_ai", "") or "gemini-3.8-flash"),
+                                al_tentativo=lambda m: stato_t.info(m))
+                        stato_t.empty()
+                        st.session_state["tar_risposta"] = risp_t
+                    except AI.ErroreAI as e:
+                        stato_t.empty()
+                        st.error(e.messaggio)
+                        if e.dettaglio:
+                            st.caption(e.dettaglio)
+
+            if st.session_state.get("tar_risposta"):
+                st.divider()
+                st.markdown(st.session_state["tar_risposta"])
+                st.caption("Questo è un interlocutore, non uno psicologo. Se "
+                           "una cosa pesa e non si muove, parlarne con una "
+                           "persona vera vale più di qualsiasi schermo.")
+
+        # --------------------------- lo storico -----------------------------
+        with TT[1]:
+            if voci_tar.empty:
+                st.info("Ancora niente. La prima volta è la più difficile.")
+            else:
+                cerca_t = st.text_input("Cerca fra quello che hai scritto",
+                                        placeholder="una parola qualsiasi")
+                mostra = voci_tar
+                if cerca_t.strip():
+                    mostra = mostra[mostra["Nota"].str.contains(
+                        cerca_t.strip(), case=False, na=False)]
+                    st.caption(f"{len(mostra)} voci su {len(voci_tar)}")
+                for _, r in mostra.head(60).iterrows():
+                    with st.expander(f"{r['Data']:%d/%m/%Y} · umore "
+                                     f"{r['Valore']:.0f}/10 — {r['Nota'][:60]}…"):
+                        st.markdown(r["Nota"])
+
+        # --------------------------- andamento ------------------------------
+        with TT[2]:
+            if len(voci_tar) < 2:
+                st.info("Servono almeno due voci per vedere un andamento.")
+            else:
+                ordinate = voci_tar.sort_values("Data")
+                figt = go.Figure()
+                figt.add_scatter(x=ordinate["Data"], y=ordinate["Valore"],
+                                 mode="lines+markers", name="umore",
+                                 line=dict(color=PALETTE[0], width=2),
+                                 hovertemplate="%{x|%d/%m/%Y}<br>%{y:.0f}/10<extra></extra>")
+                if len(ordinate) >= 5:
+                    mm = ordinate["Valore"].rolling(5, min_periods=1).mean()
+                    figt.add_scatter(x=ordinate["Data"], y=mm, mode="lines",
+                                     name="media su 5",
+                                     line=dict(color=VERDE_SCURO, width=2, dash="dot"))
+                figt.update_yaxes(range=[0, 10.5])
+                st.plotly_chart(style(figt, 300, "Come sei stato"),
+                                width='stretch')
+
+                ris = TAR.riassunto_periodo(
+                    [(r["Data"], r["Valore"], r["Nota"])
+                     for _, r in voci_tar.iterrows()])
+                if ris:
+                    q = st.columns(3)
+                    q[0].metric("Voci scritte", ris["voci"])
+                    q[1].metric("Media ultime 7", f"{ris['media_recente']:.1f}/10")
+                    q[2].metric("Media precedente", f"{ris['media_prima']:.1f}/10")
+                    delta = ris["media_recente"] - ris["media_prima"]
+                    if abs(delta) >= 0.8:
+                        st.markdown(
+                            ("🟢 &nbsp;Le ultime giornate stanno andando meglio "
+                             f"di prima, di {delta:+.1f} punti in media."
+                             if delta > 0 else
+                             "🟡 &nbsp;Le ultime giornate sono più pesanti della "
+                             f"media precedente, di {delta:+.1f} punti. Se "
+                             "continua, vale la pena parlarne con qualcuno."),
+                            unsafe_allow_html=True)
+
+# ============================================================================
+# TAB 8 - GUIDA  (come si usa e come si modifica: il testo sta in guida.json)
+# ============================================================================
+with TAB[8]:
     G = _carica_json("guida.json", _mtime("guida.json"))
     if "_errore" in G:
         st.error(f"Non riesco a leggere `guida.json`: {G['_errore']}")

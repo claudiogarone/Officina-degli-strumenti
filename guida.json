@@ -12,7 +12,7 @@
         },
         {
           "domanda": "A cosa serve ogni tab",
-          "risposta": "- **Scrivania** — la sala di comando: la sessione di oggi, l'allenamento all'intuizione, i corsi, l'andamento, gli avvisi su consegne e pagamenti.\n- **Panoramica** — ore e lezioni mese per mese.\n- **Allievi** — scheda per allievo, chi è fermo da quanto.\n- **Economia** — incassato, da incassare, resa oraria.\n- **Didattica** — materie, argomenti, compiti.\n- **Dettaglio** — tutte le lezioni, riga per riga, filtrabili.\n- **Progetti** — consulenze: stato, consegne, margini, movimenti di pagamento.\n- **Cancelleria** — carta intestata, biglietti, preventivi, NDA, attestati, tessere QR.\n- **Studio** — Officina (i tuoi strumenti), percorsi con le tappe da spuntare, prontuari di comandi, assistente AI, prompt pronti.\n- **Parla chiaro** — allenamento alla comunicazione con registrazione e analisi."
+          "risposta": "- **Scrivania** — la sala di comando: la sessione di oggi, l'allenamento all'intuizione, i corsi, l'andamento, gli avvisi su consegne e pagamenti.\n- **Ripetizioni** — tutto sulle lezioni private, in cinque schede: Panoramica, Allievi, Economia, Didattica, Dettaglio. Prima erano cinque tab separati.\n- **Progetti** — consulenze: stato, consegne, margini, movimenti di pagamento.\n- **Cancelleria** — carta intestata, biglietti, preventivi, NDA, attestati, tessere QR.\n- **Studio** — Officina (i tuoi strumenti), percorsi con le tappe da spuntare e le fonti, prontuari di comandi, assistente AI, prompt pronti.\n- **Parla chiaro** — allenamento alla comunicazione con registrazione e analisi.\n- **SENTINEL** — il corso «SENTINEL da zero» sulla tua stazione ELF, con l'avanzamento salvato nel diario.\n- **Taratura** — sezione riservata, chiusa da password.\n- **Guida** — questa."
         },
         {
           "domanda": "Perché a volte i dati sembrano vecchi",
@@ -105,6 +105,28 @@
       ]
     },
     {
+      "icona": "🆕",
+      "titolo": "Le sezioni aggiunte di recente",
+      "voci": [
+        {
+          "domanda": "Perché Panoramica, Allievi, Economia, Didattica e Dettaglio non ci sono più",
+          "risposta": "Ci sono, tutte e cinque: sono diventate le schede interne del tab **Ripetizioni**. Niente è stato tolto e niente ha cambiato comportamento, è cambiato solo dove si clicca.\n\nIl motivo è che nove tab in fila costringevano a cercare; ora i tab in alto sono gli argomenti veri — lezioni, progetti, documenti, studio — e il dettaglio sta dentro."
+        },
+        {
+          "domanda": "Il tab SENTINEL",
+          "risposta": "È il corso **SENTINEL da zero**: sedici moduli dalle basi elettriche all'indice PRISMA, più quattro appendici, tutto in un file solo che funziona anche senza rete.\n\nSopra la guida c'è l'elenco dei moduli da spuntare: **quelle spunte finiscono nel diario**, quindi restano anche se cambi dispositivo. Le spunte che trovi dentro la guida invece le tiene il browser e si perdono: usa quelle in alto.\n\nIl corso vive nel file `sentinel.html`, che deve stare nella repo accanto ad `app.py`."
+        },
+        {
+          "domanda": "Il tab Taratura",
+          "risposta": "È un diario personale chiuso da password: scrivi come stai, metti l'umore da 1 a 10, e se vuoi ne parli con l'assistente.\n\nI dati **non** finiscono nel diario normale: stanno in un file a parte, `Quadro_Taratura.xlsx`, che puoi tenere in una cartella di Drive diversa e condivisa solo con il service account. Se la metti in una cartella sua, aggiungi nei Secrets `drive_folder_id_taratura`.\n\nResta aperta dieci minuti, poi si richiude da sola e la password va ridigitata. C'è anche un pulsante **Chiudi** per bloccarla subito."
+        },
+        {
+          "domanda": "Cambiare la password della Taratura",
+          "risposta": "Due posti, e il primo vince sul secondo:\n\n1. nei **Secrets** dell'app, con la riga `taratura_password = \"...\"`\n2. nel file `taratura.py`, nella costante `PASSWORD_DI_SCORTA` in alto\n\n**Usa i Secrets.** Il repository su GitHub è pubblico: una password scritta dentro `taratura.py` è leggibile da chiunque apra il file, quindi non protegge niente. La costante nel file esiste solo come via di scorta se ti dimentichi cosa hai messo nei Secrets.\n\nE c'è una cosa più importante della password: finché l'app su Streamlit è pubblica, chiunque abbia il link arriva alla schermata di ingresso. Metti l'app su «Only specific people» dalle impostazioni di condivisione."
+        }
+      ]
+    },
+    {
       "icona": "🩹",
       "titolo": "Quando qualcosa non va",
       "voci": [
@@ -131,6 +153,14 @@
         {
           "domanda": "Non riesco a salvare nel diario",
           "risposta": "La cartella dove sta `Quadro_Diario.xlsx` è condivisa come Visualizzatore invece che come **Editor**. Cambia il permesso e ricarica la pagina.\n\nIntanto Quadro salva in memoria, così non perdi quello che hai scritto, ma al riavvio sparisce."
+        },
+        {
+          "domanda": "Il tab SENTINEL dice che manca un file",
+          "risposta": "Manca `sentinel.html` nella repo. È un file grande, circa 250 KB: caricalo accanto ad `app.py` insieme agli altri."
+        },
+        {
+          "domanda": "Ho dimenticato la password della Taratura",
+          "risposta": "Se l'avevi messa nei Secrets: apri Settings → Secrets su Streamlit e la rileggi, sono in chiaro lì dentro.\n\nSe invece usavi la costante, aprila in `taratura.py`, riga `PASSWORD_DI_SCORTA`. Cambiandola e ricaricando il file su GitHub la nuova vale subito.\n\nI dati già scritti non si perdono in nessun caso: stanno nel file su Drive."
         }
       ]
     }
