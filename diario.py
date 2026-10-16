@@ -385,6 +385,40 @@ def corsi(df):
             .reset_index(drop=True))
 
 
+def problemi(df):
+    """
+    La lista dei problemi aperti, con lo stato più recente di ciascuno.
+
+    L'archivio è un registro a cui si aggiunge soltanto: per cambiare lo stato
+    di un problema si scrive una riga nuova con lo stesso testo e lo stato
+    nuovo, e qui vince l'ultima. Così la storia resta tutta e non si perde
+    niente correggendo.
+    """
+    p = df[df["Tipo"] == "problema"].sort_values("Data")
+    if p.empty:
+        return pd.DataFrame(columns=["Problema", "Stato", "Nota", "Aperto",
+                                     "Aggiornato"])
+    fuori = {}
+    for _, r in p.iterrows():
+        testo = r["Nota"].split(" :: ")[0].strip()
+        if not testo:
+            continue
+        nota = (r["Nota"].split(" :: ", 1)[1].strip()
+                if " :: " in r["Nota"] else "")
+        if testo not in fuori:
+            fuori[testo] = {"Problema": testo, "Aperto": r["Data"]}
+        fuori[testo].update({"Stato": (r["Attivita"] or "aperto"),
+                             "Nota": nota, "Aggiornato": r["Data"]})
+    ordine = {"aperto": 0, "in corso": 1, "risolto": 2}
+    d = pd.DataFrame(list(fuori.values()))
+    d["_o"] = d["Stato"].map(lambda x: ordine.get(x, 0))
+    return (d.sort_values(["_o", "Aperto"]).drop(columns="_o")
+            .reset_index(drop=True))
+
+
+STATI_PROBLEMA = ["aperto", "in corso", "risolto"]
+
+
 def tappe_fatte(df, percorso=None):
     """I nomi delle tappe già segnate come fatte, per un percorso o per tutti."""
     t = df[df["Tipo"] == "tappa"]

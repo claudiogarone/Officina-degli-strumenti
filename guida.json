@@ -135,6 +135,30 @@
         {
           "domanda": "L'anteprima dei documenti in Cancelleria",
           "risposta": "Dopo aver premuto **Genera**, sotto compare l'anteprima del PDF vero, pagina per pagina, e solo sotto di essa il pulsante per scaricarlo. Se non ti piace cambi i campi e rigeneri, senza scaricare niente.\n\nSe al posto dell'anteprima vedi un avviso: nel file `requirements.txt` la prima riga deve essere `streamlit[pdf]>=1.50`. Senza quel `[pdf]` la libreria dell'anteprima non viene installata e Streamlit non sa mostrare i PDF."
+        },
+        {
+          "domanda": "Perché prima «tornava sempre all'esercizio del giorno»",
+          "risposta": "Era un difetto, ed era anche il motivo per cui sembrava che le altre sezioni non funzionassero.\n\nLe linguette di Streamlit, quando la pagina si ricarica dopo un salvataggio, tornano **sempre** sulla prima. Quindi salvavi un'anomalia, la pagina si ricaricava, e ti ritrovavi sull'esercizio del giorno senza capire perché.\n\nOra in Scienza la sezione si sceglie con dei pulsanti che si ricordano dove eri. Stesso discorso per le caselle di testo: dopo il salvataggio si svuotano da sole, pronte per la volta dopo."
+        },
+        {
+          "domanda": "Parlare con l'assistente più di una volta",
+          "risposta": "Nell'esercizio del giorno, dopo «🤖 Fammi le domande giuste», sotto compare una conversazione vera: rispondi nella riga in basso e lui tiene conto di quello che hai già detto invece di ricominciare da capo.\n\nQuando hai finito puoi salvare **tutta la conversazione** nell'esercizio di oggi, non solo la prima risposta. Il pulsante «Ricomincia» azzera lo scambio senza cancellare quello che hai già salvato."
+        },
+        {
+          "domanda": "I problemi aperti: stato, note e suggerimenti",
+          "risposta": "Ogni problema ha uno stato — **aperto**, **in corso**, **risolto** — e una riga dove scrivi a che punto sei. Aprilo e aggiorna quando qualcosa si muove.\n\nIl pulsante «🤖 Come lo affronterei» chiede all'assistente tre strade concrete, in ordine da quella più economica da provare, con il modo per capire se funziona.\n\nNiente si cancella mai: ogni aggiornamento è una riga nuova nel diario, quindi la storia di come hai ragionato su un problema resta tutta."
+        },
+        {
+          "domanda": "Il suono del cronometro",
+          "risposta": "Negli ultimi dieci secondi il cronometro diventa rosso e fa un bip al secondo, con un segnale più lungo alla fine. Si spegne con l'interruttore accanto al timer.\n\nIl suono lo genera il browser, non è un file: funziona anche senza rete. Se non lo senti, è il browser che blocca l'audio finché non hai cliccato qualcosa nella pagina — basta premere un pulsante qualsiasi una volta."
+        },
+        {
+          "domanda": "Le carte di grammatica adesso si ricordano",
+          "risposta": "Prima «La sapevo» valeva solo finché la pagina restava aperta. Ora ogni giudizio finisce nel diario, quindi la barra di avanzamento e l'elenco delle carte da ripassare restano anche cambiando dispositivo."
+        },
+        {
+          "domanda": "A cosa serve la checklist di presenza",
+          "risposta": "Le spunte sono un promemoria mentre provi davanti allo specchio e si azzerano ogni volta. Quando hai finito premi **Registra il controllo**: finisce nel diario con il punteggio in percentuale, e dalla seconda volta compare il grafico di come sta andando."
         }
       ]
     },
@@ -185,6 +209,18 @@
         {
           "domanda": "Non vedo la conferma quando salvo",
           "risposta": "Adesso la vedi: compare un riquadro verde in alto a destra che resta anche mentre la pagina si ricarica, più un messaggio in cima alla sezione per una ventina di secondi.\n\nPrima il messaggio veniva scritto e subito cancellato dal ricaricamento della pagina: era un difetto, non una tua distrazione."
+        },
+        {
+          "domanda": "La trascrizione riesce ma il testo non compare",
+          "risposta": "Era un difetto, corretto. Una casella di testo con un nome proprio si tiene il contenuto e ignora quello che il programma prova a metterci dopo: la trascrizione arrivava ma finiva in un cassetto che nessuno apriva. Ora viene scritta direttamente nella casella."
+        },
+        {
+          "domanda": "«Il servizio è occupato» quando trascrivo",
+          "risposta": "È il 503: i server di Google sono pieni, dura pochi secondi e non dipende da te. La trascrizione ora riprova da sola quattro volte aspettando 3, 6 e 12 secondi, scrivendotelo a schermo mentre lo fa.\n\nSe dopo quattro tentativi non ce la fa, aspetta qualche minuto: nelle ore di punta capita."
+        },
+        {
+          "domanda": "«Il modello gemini-2.5-flash non esiste»",
+          "risposta": "Era un messaggio fuorviante, e l'ho corretto. Il modello che avevi scelto era solo occupato; la dashboard provava allora i modelli di riserva, e uno di quelli era un nome ritirato da Google. Ti mostrava l'errore dell'ultimo tentativo invece del primo.\n\nOra i modelli di riserva sono gli alias «-latest», che Google tiene sempre validi, e l'errore mostrato è quello vero. Il nome del modello si cambia in **un posto solo**: `studio.json`, campo `ai.modello`."
         }
       ]
     }

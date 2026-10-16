@@ -104,6 +104,50 @@ def style(fig, height=380, title=None, showlegend=None):
 import diario as DIARIO          # anche per l'ora italiana: DIARIO.adesso()
 
 
+def svuota_dopo(chiave):
+    """
+    Segna una casella di testo da svuotare al prossimo ricaricamento.
+
+    Streamlit non permette di cambiare il contenuto di una casella dopo
+    averla già disegnata in quel giro: solleva un errore. Il modo giusto è
+    lasciare un biglietto adesso e svuotarla all'inizio del giro successivo,
+    prima che venga creata — ci pensa `pulisci_se_segnata`.
+    """
+    st.session_state[f"__svuota__{chiave}"] = True
+
+
+def pulisci_se_segnata(chiave):
+    """Da chiamare subito prima di disegnare la casella."""
+    if st.session_state.pop(f"__svuota__{chiave}", False):
+        st.session_state[chiave] = ""
+
+
+def chiave_ai():
+    """La chiave di Google AI Studio: dai Secrets, o quella messa a mano."""
+    return ((secret("google_api_key", "") or "").strip()
+            or st.session_state.get("chiave_ai", ""))
+
+
+def modello_ai():
+    """
+    Il nome del modello, da un posto solo: `studio.json`, campo ai.modello.
+
+    Prima ogni sezione aveva il suo valore scritto nel codice, e quando Google
+    ritirava un modello bisognava cambiarlo in quattro punti. Ora si cambia lì
+    e vale ovunque.
+    """
+    try:
+        import json as _json
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "studio.json"), encoding="utf-8") as f:
+            m = (_json.load(f).get("ai") or {}).get("modello")
+        if m:
+            return m
+    except Exception:
+        pass
+    return "gemini-flash-latest"
+
+
 def conferma(messaggio):
     """
     Conferma di salvataggio che si vede davvero.
@@ -1629,6 +1673,12 @@ with TAB[0]:
         avvio = st.session_state["ses_avvio"]
         durata = st.session_state["ses_durata"]
 
+        suono_on = st.toggle("Suono negli ultimi 10 secondi", value=True,
+                             key="ses_suono",
+                             help="Un bip al secondo nell'ultimo tratto e un "
+                                  "segnale più lungo alla fine. Il volume è "
+                                  "quello del dispositivo.")
+
         @st.fragment(run_every="1s")
         def _cronometro():
             passati = (DIARIO.adesso() - avvio).total_seconds()
@@ -1636,8 +1686,9 @@ with TAB[0]:
             mm, ss = int(restano // 60), int(restano % 60)
             fatti = int(passati // 60)
             if restano > 0:
+                colore = VERDE_SCURO if restano > 10 else "#C0392B"
                 st.markdown(
-                    f"<div style='font-size:46px;font-weight:700;color:{VERDE_SCURO};"
+                    f"<div style='font-size:46px;font-weight:700;color:{colore};"
                     f"letter-spacing:2px'>{mm:02d}:{ss:02d}</div>",
                     unsafe_allow_html=True)
                 st.progress(min(1.0, passati / (durata * 60)))
@@ -1647,6 +1698,31 @@ with TAB[0]:
                     f"✓ fatto</div>", unsafe_allow_html=True)
             st.caption(f"**{st.session_state['ses_attivita']}** · cominciata alle "
                        f"{avvio:%H:%M} · {fatti} minuti finora")
+
+            # Il bip lo genera il browser: nessun file audio da caricare, e
+            # così funziona anche offline. Suona solo quando il secondo
+            # cambia, altrimenti a ogni ridisegno partirebbe di nuovo.
+            if suono_on and 0 <= restano <= 10:
+                sec = int(restano)
+                if st.session_state.get("ses_ultimo_bip") != sec:
+                    st.session_state["ses_ultimo_bip"] = sec
+                    finale = (sec == 0)
+                    nota_hz = 1320 if finale else 880
+                    durata_bip = 0.6 if finale else 0.12
+                    pagina_html(f"""
+<script>
+try {{
+  const C = new (window.AudioContext || window.webkitAudioContext)();
+  const o = C.createOscillator(), g = C.createGain();
+  o.type = "sine";
+  o.frequency.value = {nota_hz};
+  o.connect(g); g.connect(C.destination);
+  g.gain.setValueAtTime(0.0001, C.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.25, C.currentTime + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, C.currentTime + {durata_bip});
+  o.start(); o.stop(C.currentTime + {durata_bip});
+}} catch (e) {{ /* se il browser non lascia suonare, pazienza */ }}
+</script>""", 0)
 
         _cronometro()
 
@@ -1701,67 +1777,134 @@ with TAB[0]:
         voce = next((r for r in rot if r.get("giorno") == oggi_idx),
                     rot[0] if rot else None)
 
-        SC1, SC2, SC3 = st.tabs(["Esercizio del giorno", "Taccuino delle anomalie",
-                                 "I problemi aperti"])
+        # Qui c'erano st.tabs, ed erano la causa di due difetti che avevi
+        # notato: ogni volta che si salva qualcosa la pagina si ricarica, e le
+        # linguette di Streamlit al ricaricamento tornano SEMPRE sulla prima.
+        # Per questo «tornava a esercizio del giorno» e sembrava che le altre
+        # sezioni non funzionassero. Con una scelta che vive in session_state
+        # il problema non esiste.
+        SEZIONI_SC = ["🎯 Esercizio del giorno", "📓 Taccuino delle anomalie",
+                      "🧩 I problemi aperti"]
+        scelta_sc = st.radio("Sezione", SEZIONI_SC, horizontal=True,
+                             label_visibility="collapsed", key="scienza_sezione")
 
-        with SC1:
-            if voce:
-                st.markdown(f"#### {voce['nome']} — {voce['abilita']}")
-                st.markdown(voce["esercizio"])
-                if voce.get("esempio"):
-                    st.caption(voce["esempio"])
-                if voce.get("domanda"):
-                    st.info(f"**La domanda a cui rispondere** — {voce['domanda']}")
+        # ------------------------------------------- esercizio del giorno ---
+        if scelta_sc == SEZIONI_SC[0] and voce:
+            g1, g2 = st.columns([3, 2])
+            g1.markdown(f"#### {voce['nome']} — {voce['abilita']}")
+            altri = [r["nome"] for r in rot]
+            forzato = g2.selectbox(
+                "Fai un altro esercizio", ["(quello di oggi)"] + altri,
+                key="scienza_altro_giorno",
+                help="La rotazione segue il giorno della settimana, ma se oggi "
+                     "ti va di farne un altro, scegli qui.")
+            if forzato != "(quello di oggi)":
+                voce = next(r for r in rot if r["nome"] == forzato)
+                st.caption(f"Stai facendo l'esercizio di {voce['nome']} "
+                           f"invece di quello di oggi.")
 
-                risp = st.text_area("La tua risposta", height=160,
-                                    key="scienza_risposta",
-                                    placeholder="Scrivi qui. Non deve venire bene: "
-                                                "deve venire scritto.")
-                e1, e2 = st.columns(2)
-                if e1.button("💾 Salva l'esercizio", type="primary", width='stretch'):
-                    if risp.strip():
-                        diario_scrivi(DIARIO.riga("esercizio", voce["abilita"],
-                                                  "Scienza", 15, None, risp.strip()))
-                        conferma("Esercizio del giorno salvato")
-                        st.rerun()
-                    else:
-                        st.warning("Scrivi qualcosa prima di salvare.")
+            st.markdown(voce["esercizio"])
+            if voce.get("esempio"):
+                st.caption(voce["esempio"])
+            if voce.get("domanda"):
+                st.info(f"**La domanda a cui rispondere** — {voce['domanda']}")
 
-                if e2.button("🤖 Fammi le domande giuste", width='stretch'):
-                    chiave_ai = (secret("google_api_key", "") or "").strip()
-                    modello_ai = ((SCI.get("ai") or {}).get("modello")
-                                  or "gemini-3.8-flash")
-                    stato = st.empty()
-                    try:
-                        with st.spinner("Sto pensando…"):
-                            testo_ai = AI.chiedi(
-                                "Sei un ricercatore esperto che fa da allenatore. "
-                                f"L'esercizio di oggi è: {voce['esercizio']}\n"
-                                f"La persona ha scritto:\n{risp.strip() or '(ancora niente)'}\n\n"
-                                "Non dargli la soluzione. Fagli tre domande brevi "
-                                "che lo costringano a essere più preciso, e "
-                                "indicagli un modo economico per verificare quello "
-                                "che pensa. Rispondi in italiano, frasi brevi.",
-                                chiave_ai, modello_ai,
-                                al_tentativo=lambda m: stato.info(m))
-                        stato.empty()
-                        st.markdown(testo_ai)
-                    except AI.ErroreAI as e:
-                        stato.empty()
-                        st.error(e.messaggio)
-                        if e.dettaglio:
-                            st.caption(e.dettaglio)
+            pulisci_se_segnata("scienza_risposta")
+            risp = st.text_area("La tua risposta", height=160,
+                                key="scienza_risposta",
+                                placeholder="Scrivi qui. Non deve venire bene: "
+                                            "deve venire scritto.")
+            e1, e2 = st.columns(2)
+            if e1.button("💾 Salva l'esercizio", type="primary", width='stretch'):
+                if risp.strip():
+                    diario_scrivi(DIARIO.riga("esercizio", voce["abilita"],
+                                              "Scienza", 15, None, risp.strip()))
+                    conferma("Esercizio del giorno salvato")
+                    svuota_dopo("scienza_risposta")
+                    st.session_state.pop("scienza_chat", None)
+                    st.rerun()
+                else:
+                    st.warning("Scrivi qualcosa prima di salvare.")
 
-                storico_es = DIA[DIA["Tipo"] == "esercizio"]
-                if not storico_es.empty:
-                    with st.expander(f"Gli esercizi già fatti ({len(storico_es)})"):
-                        for _, r in storico_es.sort_values("Data", ascending=False).head(20).iterrows():
-                            st.markdown(f"**{r['Data']:%d/%m/%Y} · {r['Attivita']}** — {r['Nota']}")
+            if e2.button("🤖 Fammi le domande giuste", width='stretch'):
+                if not risp.strip():
+                    st.warning("Scrivi almeno due righe: senza, non ha niente "
+                               "su cui farti domande.")
+                else:
+                    st.session_state["scienza_chat"] = [("io", risp.strip())]
+                    st.session_state["scienza_chiedi"] = True
 
-        with SC2:
+            # --------- la conversazione continua, invece di una botta sola ---
+            chat = st.session_state.get("scienza_chat", [])
+            if st.session_state.pop("scienza_chiedi", False):
+                stato = st.empty()
+                try:
+                    with st.spinner("Sto pensando…"):
+                        scambio = "\n\n".join(
+                            ("Lui: " if r == "io" else "Tu: ") + t
+                            for r, t in chat)
+                        testo_ai = AI.chiedi(
+                            "Sei un ricercatore esperto che fa da allenatore. "
+                            f"L'esercizio di oggi è: {voce['esercizio']}\n\n"
+                            f"La conversazione finora:\n{scambio}\n\n"
+                            "Non dargli la soluzione. Fagli al massimo tre "
+                            "domande brevi che lo costringano a essere più "
+                            "preciso, e indicagli un modo economico per "
+                            "verificare quello che pensa. Se ti ha appena "
+                            "risposto, tieni conto di cosa ha detto invece di "
+                            "ricominciare da capo. Italiano, frasi brevi.",
+                            chiave_ai(), modello_ai(),
+                            al_tentativo=lambda m: stato.info(m))
+                    stato.empty()
+                    chat.append(("ai", testo_ai))
+                    st.session_state["scienza_chat"] = chat
+                except AI.ErroreAI as e:
+                    stato.empty()
+                    st.error(e.messaggio)
+                    if e.dettaglio:
+                        st.caption(e.dettaglio)
+
+            if chat:
+                st.divider()
+                for ruolo, testo_c in chat:
+                    with st.chat_message("user" if ruolo == "io" else "assistant"):
+                        st.markdown(testo_c)
+                segue = st.chat_input("Rispondi o chiedi un chiarimento…",
+                                      key="scienza_chat_input")
+                if segue:
+                    chat.append(("io", segue))
+                    st.session_state["scienza_chat"] = chat
+                    st.session_state["scienza_chiedi"] = True
+                    st.rerun()
+                c1, c2 = st.columns(2)
+                if c1.button("💾 Salva tutta la conversazione", width='stretch',
+                             type="primary"):
+                    testo_tot = "\n\n".join(
+                        ("IO: " if r == "io" else "AI: ") + t for r, t in chat)
+                    diario_scrivi(DIARIO.riga("esercizio", voce["abilita"],
+                                              "Scienza", 15, None, testo_tot))
+                    conferma("Conversazione salvata nell'esercizio di oggi")
+                    st.session_state.pop("scienza_chat", None)
+                    svuota_dopo("scienza_risposta")
+                    st.rerun()
+                if c2.button("🗑️ Ricomincia", width='stretch'):
+                    st.session_state.pop("scienza_chat", None)
+                    st.rerun()
+
+            storico_es = DIA[DIA["Tipo"] == "esercizio"]
+            if not storico_es.empty:
+                with st.expander(f"Gli esercizi già fatti ({len(storico_es)})"):
+                    for _, r in storico_es.sort_values(
+                            "Data", ascending=False).head(20).iterrows():
+                        st.markdown(f"**{r['Data']:%d/%m/%Y} · {r['Attivita']}**")
+                        st.caption(r["Nota"][:500])
+
+        # ------------------------------------------- taccuino anomalie ------
+        elif scelta_sc == SEZIONI_SC[1]:
             tac = SCI.get("taccuino", {})
             st.markdown(f"**{tac.get('domanda', 'Che cosa ti ha sorpreso oggi?')}**")
             st.caption(tac.get("istruzioni", ""))
+            pulisci_se_segnata("scienza_anomalia")
             an = st.text_area("L'anomalia, le tre ipotesi e il test più economico",
                               height=130, key="scienza_anomalia")
             if st.button("💾 Salva nel taccuino", type="primary"):
@@ -1769,42 +1912,112 @@ with TAB[0]:
                     diario_scrivi(DIARIO.riga("anomalia", "Taccuino", "Scienza",
                                               5, None, an.strip()))
                     conferma("Anomalia annotata nel taccuino")
+                    svuota_dopo("scienza_anomalia")
                     st.rerun()
                 else:
                     st.warning("Scrivi qualcosa prima di salvare.")
 
-            anomalie = DIA[DIA["Tipo"] == "anomalia"].sort_values("Data", ascending=False)
+            anomalie = DIA[DIA["Tipo"] == "anomalia"].sort_values(
+                "Data", ascending=False)
             if not anomalie.empty:
                 st.markdown(f"##### Le ultime annotazioni ({len(anomalie)} in tutto)")
-                for _, r in anomalie.head(10).iterrows():
+                cerca_an = st.text_input("Cerca fra le annotazioni",
+                                         placeholder="una parola qualsiasi")
+                mostra_an = anomalie
+                if cerca_an.strip():
+                    mostra_an = mostra_an[mostra_an["Nota"].str.contains(
+                        cerca_an.strip(), case=False, na=False)]
+                for _, r in mostra_an.head(20).iterrows():
                     st.markdown(f"**{r['Data']:%d/%m/%Y}** — {r['Nota']}")
+                scarica_tabella(
+                    anomalie[["Data", "Nota"]].rename(
+                        columns={"Nota": "Anomalia"}),
+                    "taccuino_anomalie", "⬇️ Scarica il taccuino")
 
-        with SC3:
-            st.caption("La lista dei problemi che ti stanno a cuore, tecnici o no. "
-                       "Feynman ne teneva una dozzina in testa e provava su quelli "
-                       "ogni strumento nuovo che imparava. È la lente con cui "
-                       "guardi tutto il resto.")
-            nuovo_p = st.text_input("Aggiungi un problema aperto")
-            if st.button("➕ Aggiungi alla lista"):
-                if nuovo_p.strip():
-                    diario_scrivi(DIARIO.riga("problema", "Problema aperto",
-                                              "Scienza", 0, None, nuovo_p.strip()))
+        # ------------------------------------------- problemi aperti --------
+        elif scelta_sc == SEZIONI_SC[2]:
+            st.caption("La lista dei problemi che ti stanno a cuore, tecnici o "
+                       "no. Feynman ne teneva una dozzina in testa e provava su "
+                       "quelli ogni strumento nuovo che imparava.")
+
+            with st.form("nuovo_problema", clear_on_submit=True):
+                nuovo_p = st.text_input("Aggiungi un problema aperto")
+                if st.form_submit_button("➕ Aggiungi alla lista",
+                                         type="primary") and nuovo_p.strip():
+                    diario_scrivi(DIARIO.riga("problema", "aperto", "Scienza",
+                                              0, None, nuovo_p.strip()))
                     conferma("Problema aggiunto alla lista")
                     st.rerun()
 
-            problemi = DIA[DIA["Tipo"] == "problema"].sort_values("Data")
-            if problemi.empty:
+            elenco_p = DIARIO.problemi(DIA)
+            if elenco_p.empty:
                 st.info("La lista è vuota. Scrivine anche solo tre: si completa "
                         "da sola nelle settimane.")
             else:
-                for i, (_, r) in enumerate(problemi.iterrows(), 1):
-                    st.markdown(f"**{i}.** {r['Nota']}  \n"
-                                f"<small style='opacity:.6'>annotato il "
-                                f"{r['Data']:%d/%m/%Y}</small>",
-                                unsafe_allow_html=True)
-                if len(problemi) < 12:
-                    st.caption(f"Ne hai {len(problemi)}: ne mancano "
-                               f"{12 - len(problemi)} ai dodici.")
+                aperti = int((elenco_p["Stato"] != "risolto").sum())
+                st.progress(min(1.0, aperti / 12),
+                            text=f"{aperti} problemi aperti su 12 "
+                                 f"· {len(elenco_p) - aperti} risolti")
+
+                for i, r in elenco_p.iterrows():
+                    pallino = {"aperto": "🔴", "in corso": "🟡",
+                               "risolto": "🟢"}.get(r["Stato"], "🔴")
+                    with st.expander(f"{pallino} {r['Problema']}",
+                                     expanded=False):
+                        st.caption(f"Annotato il {r['Aperto']:%d/%m/%Y}"
+                                   + (f" · aggiornato il {r['Aggiornato']:%d/%m/%Y}"
+                                      if r["Aggiornato"] != r["Aperto"] else ""))
+                        chiave_p = f"prob_{i}"
+                        with st.form(f"form_{chiave_p}"):
+                            s1, s2 = st.columns([1, 3])
+                            nuovo_stato = s1.selectbox(
+                                "Stato", DIARIO.STATI_PROBLEMA,
+                                index=DIARIO.STATI_PROBLEMA.index(r["Stato"])
+                                if r["Stato"] in DIARIO.STATI_PROBLEMA else 0)
+                            nuova_nota = s2.text_input(
+                                "A che punto sei", value=r["Nota"],
+                                placeholder="cosa hai provato, cosa manca")
+                            agg = st.form_submit_button("💾 Aggiorna")
+                        if agg:
+                            testo_riga = r["Problema"] + (
+                                f" :: {nuova_nota.strip()}" if nuova_nota.strip() else "")
+                            diario_scrivi(DIARIO.riga(
+                                "problema", nuovo_stato, "Scienza", 0, None,
+                                testo_riga))
+                            conferma(f"«{r['Problema'][:40]}» → {nuovo_stato}")
+                            st.rerun()
+
+                        if st.button("🤖 Come lo affronterei", key=f"ai_{chiave_p}"):
+                            stato_p = st.empty()
+                            try:
+                                with st.spinner("Sto pensando…"):
+                                    sug = AI.chiedi(
+                                        "Sei un ingegnere esperto e pratico. "
+                                        "Questa persona tiene una lista di "
+                                        "problemi aperti su cui ragiona nel "
+                                        f"tempo.\n\nIl problema: {r['Problema']}\n"
+                                        f"A che punto è: {r['Nota'] or 'non ha ancora provato niente'}\n\n"
+                                        "Proponi tre strade concrete per "
+                                        "affrontarlo, in ordine da quella più "
+                                        "economica da provare. Per ognuna dì in "
+                                        "una riga come capiresti se funziona. "
+                                        "Niente teoria: cose che può fare con "
+                                        "un banco da maker. Italiano, frasi brevi.",
+                                        chiave_ai(), modello_ai(),
+                                        al_tentativo=lambda m: stato_p.info(m))
+                                stato_p.empty()
+                                st.markdown(sug)
+                            except AI.ErroreAI as e:
+                                stato_p.empty()
+                                st.error(e.messaggio)
+                                if e.dettaglio:
+                                    st.caption(e.dettaglio)
+
+                tab_p = elenco_p.copy()
+                for c in ("Aperto", "Aggiornato"):
+                    tab_p[c] = tab_p[c].dt.strftime("%d/%m/%Y")
+                scarica_tabella(tab_p, "problemi_aperti",
+                                "⬇️ Scarica la lista")
 
         with st.expander("Le otto abitudini, per quando ti serve rileggerle"):
             for ab in SCI.get("abitudini", []):
@@ -3743,8 +3956,6 @@ with TAB[5]:
         st.error(f"Non riesco a leggere `parlachiaro.json`: {PCFG['_errore']}")
         st.stop()
 
-    CHIAVE_AI = (secret("google_api_key", "") or "").strip()
-    MOD_TRASC = (PCFG.get("ai") or {}).get("modello_trascrizione", "gemini-3.8-flash")
 
     mostra_conferma()
     st.markdown("#### 🎙️ Parla chiaro")
@@ -3800,19 +4011,32 @@ with TAB[5]:
             st.caption(f"Registrazione di {len(dati_audio) / 1024 / 1024:.1f} MB.")
             if st.button("✍️ Trascrivi con l'intelligenza artificiale",
                          type="primary"):
+                stato_t = st.empty()
                 try:
                     with st.spinner("Sto ascoltando…"):
                         testo_t = PC.trascrivi(
-                            dati_audio, CHIAVE_AI, MOD_TRASC,
-                            getattr(audio, "type", None) or "audio/wav")
-                    st.session_state["pc_testo"] = testo_t
-                    st.success("Trascritto.")
+                            dati_audio, chiave_ai(), modello_ai(),
+                            getattr(audio, "type", None) or "audio/wav",
+                            avvisa=lambda m: stato_t.info(m))
+                    stato_t.empty()
+                    # IMPORTANTE: si scrive direttamente nella chiave del
+                    # riquadro, non in una variabile d'appoggio. Una casella di
+                    # testo che ha una `key` si tiene il proprio contenuto e
+                    # ignora il `value` ai ricaricamenti successivi: era questo
+                    # il motivo per cui la trascrizione riusciva ma non
+                    # compariva da nessuna parte.
+                    st.session_state["__trascritto__"] = testo_t
+                    conferma("Trascrizione pronta nel riquadro qui sotto")
+                    st.rerun()
                 except PC.ErroreTrascrizione as e:
+                    stato_t.empty()
                     st.error(str(e))
 
+        pulisci_se_segnata("pc_area")
+        if "__trascritto__" in st.session_state:
+            st.session_state["pc_area"] = st.session_state.pop("__trascritto__")
         testo = st.text_area(
-            "Il testo del tuo intervento", height=180,
-            value=st.session_state.get("pc_testo", ""), key="pc_area",
+            "Il testo del tuo intervento", height=180, key="pc_area",
             placeholder="Qui compare la trascrizione, oppure scrivi tu.")
 
         d1, d2 = st.columns(2)
@@ -3867,15 +4091,23 @@ with TAB[5]:
 
             nota_pc = st.text_input("Una nota per te (facoltativa)",
                                     key="pc_nota")
-            if st.button("💾 Salva la sessione nel diario", type="primary"):
-                diario_scrivi(DIARIO.riga(
-                    "parlachiaro", f"{B['titolo']}", "ParlaChiaro",
-                    minuti_ses, R["punteggio"],
-                    f"[{tens_pre}→{tens_post}] {nota_pc.strip()} :: "
-                    f"{testo.strip()[:400]}"))
+            if st.button("💾 Salva la sessione nel diario", type="primary",
+                         width='stretch'):
+                diario_scrivi([
+                    DIARIO.riga("parlachiaro", f"{B['titolo']}", "ParlaChiaro",
+                                minuti_ses, R["punteggio"],
+                                f"[tensione {tens_pre}→{tens_post}] "
+                                f"{nota_pc.strip()} :: {testo.strip()[:400]}"),
+                    # la tensione in una riga sua: così finisce nei grafici
+                    # invece di restare sepolta dentro il testo della nota
+                    DIARIO.riga("tensione", B["titolo"], "ParlaChiaro",
+                                0, tens_post - tens_pre,
+                                f"prima {tens_pre} · dopo {tens_post}"),
+                ])
                 conferma(f"Allenamento salvato: {R['punteggio']}/100, "
-                         f"{minuti_ses} minuti")
-                st.session_state.pop("pc_testo", None)
+                         f"{minuti_ses} minuti, tensione da {tens_pre} a "
+                         f"{tens_post}")
+                svuota_dopo("pc_area")
                 st.rerun()
         else:
             st.info("Registra o scrivi qualcosa e qui compaiono i punteggi.")
@@ -3921,13 +4153,28 @@ with TAB[5]:
                    "come la correggeresti, poi scopri la risposta. Quelle che "
                    "sbagli tornano più spesso.")
 
+        # La memoria delle carte sta nel diario, non solo in questa sessione:
+        # prima «La sapevo» si perdeva ricaricando la pagina. Vale l'ultimo
+        # giudizio dato a ogni carta.
         memoria = st.session_state.setdefault("pc_memoria", {})
+        storico_c = DIA[DIA["Tipo"] == "carta"].sort_values("Data")
+        for _, rc in storico_c.iterrows():
+            num = rc["Nota"].split(" · ")[0].strip()
+            try:
+                memoria[int(num)] = int(rc["Valore"]) if pd.notna(rc["Valore"]) else 0
+            except (TypeError, ValueError):
+                pass
+
         i_carta = st.session_state.setdefault("pc_carta", 0)
         C = carte[i_carta % len(carte)]
 
-        giuste = sum(1 for v in memoria.values() if v >= 2)
-        st.progress(giuste / len(carte),
-                    text=f"{giuste} carte su {len(carte)} sai farle")
+        giuste = sum(1 for v in memoria.values() if v >= 1)
+        st.progress(min(1.0, giuste / len(carte)),
+                    text=f"{giuste} carte su {len(carte)} le sai")
+        da_rivedere = [c["id"] for c in carte if memoria.get(c["id"], -1) == 0]
+        if da_rivedere:
+            st.caption("Da ripassare: carte "
+                       + ", ".join(str(n) for n in da_rivedere[:12]))
 
         with st.container(border=True):
             st.caption(f"Carta {C['id']} · {C['categoria']}")
@@ -3938,11 +4185,19 @@ with TAB[5]:
                 g1, g2 = st.columns(2)
                 if g1.button("👍 La sapevo", width='stretch', type="primary"):
                     memoria[C["id"]] = memoria.get(C["id"], 0) + 1
+                    diario_scrivi(DIARIO.riga(
+                        "carta", C["categoria"], "ParlaChiaro", 1, 1,
+                        f"{C['id']} · {C['giusto'][:70]}"))
+                    conferma(f"Carta {C['id']} segnata come saputa")
                     st.session_state["pc_carta"] = i_carta + 1
                     st.session_state.pop("pc_scopri", None)
                     st.rerun()
                 if g2.button("👎 Da ripassare", width='stretch'):
                     memoria[C["id"]] = 0
+                    diario_scrivi(DIARIO.riga(
+                        "carta", C["categoria"], "ParlaChiaro", 1, 0,
+                        f"{C['id']} · {C['giusto'][:70]}"))
+                    conferma(f"Carta {C['id']} messa fra quelle da ripassare")
                     st.session_state["pc_carta"] = i_carta + 1
                     st.session_state.pop("pc_scopri", None)
                     st.rerun()
@@ -3980,8 +4235,40 @@ with TAB[5]:
                    "fra i collegamenti nel tab Studio marcata «old». Quella "
                    "che segue è la lista da controllare davanti allo specchio "
                    "o alla webcam del computer.")
-        for v in PCFG.get("checklist_presenza", []):
+        voci_pres = PCFG.get("checklist_presenza", [])
+        spuntate = [v for v in voci_pres
+                    if st.session_state.get(f"pc_chk_{v[:20]}")]
+        st.progress(len(spuntate) / len(voci_pres) if voci_pres else 0,
+                    text=f"{len(spuntate)} punti su {len(voci_pres)}")
+        for v in voci_pres:
             st.checkbox(v, key=f"pc_chk_{v[:20]}")
+
+        st.caption("Le spunte sono un promemoria mentre provi davanti allo "
+                   "specchio: si azzerano ogni volta. Quando hai finito, "
+                   "registra il controllo qui sotto e finisce nel diario con "
+                   "il punteggio, così vedi se migliora.")
+        if st.button("💾 Registra il controllo di presenza", type="primary",
+                     disabled=not spuntate):
+            diario_scrivi(DIARIO.riga(
+                "presenza", "Controllo presenza", "ParlaChiaro", 5,
+                round(100 * len(spuntate) / len(voci_pres)),
+                "; ".join(spuntate)))
+            conferma(f"Controllo registrato: {len(spuntate)} punti su "
+                     f"{len(voci_pres)}")
+            for v in voci_pres:
+                st.session_state[f"pc_chk_{v[:20]}"] = False
+            st.rerun()
+
+        pres = DIA[DIA["Tipo"] == "presenza"].sort_values("Data")
+        if len(pres) >= 2:
+            figpr = go.Figure()
+            figpr.add_scatter(x=pres["Data"], y=pres["Valore"],
+                              mode="lines+markers",
+                              line=dict(color=PALETTE[0], width=2),
+                              hovertemplate="%{x|%d/%m/%Y}<br>%{y:.0f}%<extra></extra>")
+            figpr.update_yaxes(range=[0, 104], ticksuffix="%")
+            st.plotly_chart(style(figpr, 260, "I tuoi controlli di presenza"),
+                            width='stretch')
 
     # ========================== ANDAMENTO ===================================
     with PT[5]:
@@ -4228,8 +4515,7 @@ with TAB[7]:
                         with st.spinner("Sto leggendo…"):
                             risp_t = AI.chiedi(
                                 TAR.prompt(testo_tar.strip(), umore, storico),
-                                (secret("google_api_key", "") or "").strip(),
-                                (secret("modello_ai", "") or "gemini-3.8-flash"),
+                                chiave_ai(), modello_ai(),
                                 al_tentativo=lambda m: stato_t.info(m))
                         stato_t.empty()
                         st.session_state["tar_risposta"] = risp_t

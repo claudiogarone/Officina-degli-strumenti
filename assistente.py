@@ -21,8 +21,10 @@ import requests
 
 BASE = "https://generativelanguage.googleapis.com/v1beta"
 
-# provati in ordine quando quello scelto non risponde
-RISERVE = ["gemini-3.8-flash", "gemini-flash-latest", "gemini-2.5-flash"]
+# Provati in ordine quando quello scelto non risponde. Gli alias «-latest»
+# sono i più sicuri: Google li fa puntare sempre a un modello esistente,
+# mentre i nomi con il numero di versione prima o poi vengono ritirati.
+RISERVE = ["gemini-flash-latest", "gemini-3.8-flash", "gemini-pro-latest"]
 
 ATTESE = [2, 4, 8]          # secondi fra un tentativo e l'altro
 
@@ -73,6 +75,7 @@ def chiedi(prompt, chiave, modello, al_tentativo=None):
 
     da_provare = [modello] + [m for m in RISERVE if m != modello]
     ultimo = None
+    primo_errore = None
 
     for i_modello, mod in enumerate(da_provare):
         for tentativo in range(len(ATTESE) + 1):
@@ -80,6 +83,7 @@ def chiedi(prompt, chiave, modello, al_tentativo=None):
                 r = _una_chiamata(mod, chiave, prompt)
             except requests.RequestException as e:
                 ultimo = ErroreAI("Non sono riuscito a contattare il servizio", str(e))
+                primo_errore = primo_errore or ultimo
                 break
 
             if r.status_code == 200:
@@ -109,8 +113,11 @@ def chiedi(prompt, chiave, modello, al_tentativo=None):
             if r.status_code == 404:
                 ultimo = ErroreAI(
                     f"Il modello «{mod}» non esiste più",
-                    r.text[:500],
+                    r.text[:500] + ("\n\nNel tab Studio, nelle impostazioni "
+                                    "dell'assistente, usa «Quali modelli posso "
+                                    "usare» e copia il nome in studio.json."),
                     404)
+                primo_errore = primo_errore or ultimo
                 break
 
             if r.status_code in (401, 403):
@@ -118,7 +125,17 @@ def chiedi(prompt, chiave, modello, al_tentativo=None):
                     "La chiave non è valida oppure non è abilitata",
                     r.text[:500], r.status_code)
 
-            ultimo = ErroreAI(f"Errore {r.status_code}", r.text[:500], r.status_code)
+            if r.status_code in (503, 429):
+                ultimo = ErroreAI(
+                    "Il servizio è occupato in questo momento",
+                    "Non è un problema della tua chiave: i server di Google "
+                    "sono sotto carico. Succede nelle ore di punta. Ho già "
+                    "riprovato tre volte; riprova fra qualche minuto.",
+                    r.status_code)
+            else:
+                ultimo = ErroreAI(f"Errore {r.status_code}", r.text[:500],
+                                  r.status_code)
+            primo_errore = primo_errore or ultimo
             break
 
         # se c'è ancora un modello di riserva da provare, avvisa e continua
@@ -126,10 +143,14 @@ def chiedi(prompt, chiave, modello, al_tentativo=None):
             al_tentativo(f"«{mod}» non risponde: provo con "
                          f"«{da_provare[i_modello + 1]}»…")
 
-    if ultimo and ultimo.codice == 503:
-        ultimo.messaggio = "I modelli sono tutti occupati in questo momento"
-        ultimo.dettaglio = ("Non è un problema tuo né della chiave: i server di "
+    # Si mostra il PRIMO errore, non l'ultimo: se il modello scelto era solo
+    # occupato, l'ultimo messaggio sarebbe «il modello di riserva non esiste»,
+    # che manda a cercare il problema nel posto sbagliato.
+    finale = primo_errore or ultimo
+    if finale and finale.codice in (503, 429):
+        finale.messaggio = "I modelli sono tutti occupati in questo momento"
+        finale.dettaglio = ("Non è un problema tuo né della chiave: i server di "
                             "Google sono sotto carico. Succede soprattutto nelle "
                             "ore di punta. Riprova fra qualche minuto.")
-    raise ultimo or ErroreAI("Nessun modello ha risposto",
+    raise finale or ErroreAI("Nessun modello ha risposto",
                              "Prova a cambiare modello nelle impostazioni.")

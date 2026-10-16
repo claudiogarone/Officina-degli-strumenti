@@ -33,6 +33,7 @@ basso di prima. Non è un peggioramento, è la misura che prima mancava.
 
 import base64
 import re
+import time
 
 import requests
 
@@ -165,7 +166,8 @@ class ErroreTrascrizione(Exception):
     pass
 
 
-def trascrivi(audio, chiave, modello="gemini-3.8-flash", mime="audio/wav"):
+def trascrivi(audio, chiave, modello="gemini-flash-latest",
+              mime="audio/wav", avvisa=None):
     """
     Manda l'audio a Gemini e si fa restituire il testo.
 
@@ -186,25 +188,39 @@ def trascrivi(audio, chiave, modello="gemini-3.8-flash", mime="audio/wav"):
             "Registra un pezzo più corto: per l'analisi bastano uno o due "
             "minuti, ed è anche il modo migliore di allenarsi.")
 
-    r = requests.post(
-        f"https://generativelanguage.googleapis.com/v1beta/models/{modello}"
-        f":generateContent",
-        params={"key": chiave},
-        json={"contents": [{"parts": [
-            {"text": "Trascrivi fedelmente in italiano quello che senti. "
-                     "Scrivi solo la trascrizione, senza commenti e senza "
-                     "virgolette. Metti la punteggiatura dove serve, ma non "
-                     "correggere gli errori di chi parla: servono per "
-                     "l'analisi."},
-            {"inline_data": {"mime_type": mime,
-                             "data": base64.b64encode(audio).decode()}}]}]},
-        timeout=180)
+    corpo = {"contents": [{"parts": [
+        {"text": "Trascrivi fedelmente in italiano quello che senti. "
+                 "Scrivi solo la trascrizione, senza commenti e senza "
+                 "virgolette. Metti la punteggiatura dove serve, ma non "
+                 "correggere gli errori di chi parla: servono per "
+                 "l'analisi."},
+        {"inline_data": {"mime_type": mime,
+                         "data": base64.b64encode(audio).decode()}}]}]}
+
+    # Stessa logica del resto della dashboard: il 503 vuol dire «server pieno»
+    # e passa da solo in pochi secondi, quindi si riprova invece di arrendersi.
+    attese = [3, 6, 12]
+    r = None
+    for tentativo in range(len(attese) + 1):
+        r = requests.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{modello}"
+            f":generateContent",
+            params={"key": chiave}, json=corpo, timeout=240)
+        if r.status_code != 200 and r.status_code in (503, 429) \
+                and tentativo < len(attese):
+            if avvisa:
+                avvisa(f"Il servizio è occupato. Riprovo fra {attese[tentativo]} "
+                       f"secondi (tentativo {tentativo + 2} di {len(attese) + 1})…")
+            time.sleep(attese[tentativo])
+            continue
+        break
 
     if r.status_code != 200:
-        if r.status_code == 503:
+        if r.status_code in (503, 429):
             raise ErroreTrascrizione(
-                "Il servizio di trascrizione è occupato in questo momento. "
-                "Riprova fra un minuto: non è un problema della tua chiave.")
+                "Il servizio di trascrizione è occupato e non si è liberato "
+                "dopo quattro tentativi. Riprova fra qualche minuto: non è un "
+                "problema della tua chiave né della registrazione.")
         raise ErroreTrascrizione(f"Errore {r.status_code}: {r.text[:300]}")
 
     dati = r.json()
