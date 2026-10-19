@@ -77,10 +77,18 @@ una disperazione che non si muove da giorni: lascia perdere tutto il resto.
 Dì con poche parole che non vuoi che resti solo con questa cosa, e che
 parlarne con una persona vera — il medico di base, qualcuno di cui si fida,
 o il Telefono Amico al 02 2327 2327 — è la cosa che conta adesso. Niente
-consigli pratici, niente domande, niente analisi."""
+consigli pratici, niente domande, niente analisi.
+
+SUI FARMACI, una regola che non ha eccezioni. Se nomina un medicinale, una
+dose, un effetto che attribuisce a una terapia, o ti chiede se continuare,
+sospendere o cambiare qualcosa: non entrare nel merito. Nemmeno per
+rassicurare, nemmeno per dire che è normale. Rispondi a come sta — quello sì
+— e di' in una riga che su quel punto la persona da sentire è chi gliel'ha
+prescritto, e che quello che ha annotato qui serve proprio a farglielo
+vedere. Non commentare mai dosi, tempi, effetti o interazioni."""
 
 
-def prompt(testo_oggi, umore, storico_righe):
+def prompt(testo_oggi, umore, storico_righe, contesto=""):
     """Costruisce la richiesta, con un po' di memoria dei giorni scorsi."""
     passato = ""
     if storico_righe:
@@ -88,8 +96,14 @@ def prompt(testo_oggi, umore, storico_righe):
         for d, u, t in storico_righe[:5]:
             passato += f"- {d:%d/%m}: (umore {u}/10) {t[:260]}\n"
 
+    extra = f"\n\nAltro che può servirti:\n{contesto}" if contesto else ""
     return (f"{ISTRUZIONI}\n\nOggi ha messo l'umore a {umore} su 10 e ha "
-            f"scritto:\n\n{testo_oggi}{passato}\n\nRispondi a lui, adesso.")
+            f"scritto:\n\n{testo_oggi}{passato}{extra}"
+            f"\n\nRispondi a lui, adesso.")
+
+
+# le pratiche che si possono registrare nella scheda Benessere
+PRATICHE = ["Yoga", "Meditazione", "Respirazione", "Camminata", "Altro"]
 
 
 def riassunto_periodo(righe):

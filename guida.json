@@ -101,6 +101,10 @@
         {
           "domanda": "Come porto via tutto",
           "risposta": "In fondo alla Scrivania, dentro *Tutte le righe del diario*, trovi i pulsanti per scaricare in CSV, in Excel e in JSON. Il JSON è l'archivio completo.\n\nLo stesso vale per quasi ogni tabella e grafico della dashboard: sotto trovi sempre CSV ed Excel, e i grafici si salvano in immagine con l'icona della macchina fotografica in alto a destra."
+        },
+        {
+          "domanda": "I nuovi tipi di riga",
+          "risposta": "Oltre a quelli di prima, ora il diario contiene anche:\n\n- `abitudine` — la settimana chiusa su un'abitudine\n- `carta` — il giudizio su una carta di grammatica (1 la sai, 0 da ripassare)\n- `presenza` — un controllo di presenza, con la percentuale in Valore\n- `tensione` — la tensione prima e dopo un allenamento\n- `coach` — un canovaccio preparato\n- `dubbio` — una domanda fatta all'assistente su un modulo SENTINEL\n\nE nel file della Taratura, separato: `voce`, `pratica`, `seduta`, `medicinale`."
         }
       ]
     },
@@ -159,6 +163,30 @@
         {
           "domanda": "A cosa serve la checklist di presenza",
           "risposta": "Le spunte sono un promemoria mentre provi davanti allo specchio e si azzerano ogni volta. Quando hai finito premi **Registra il controllo**: finisce nel diario con il punteggio in percentuale, e dalla seconda volta compare il grafico di come sta andando."
+        },
+        {
+          "domanda": "Il pulsante «Aggiorna tutto da Drive»",
+          "risposta": "È nella barra a sinistra. Rilegge i registri delle lezioni, la cartella dei progetti **e** rifà la ricerca dei file `Quadro_Diario.xlsx` e `Quadro_Taratura.xlsx`.\n\nServe quando hai appena caricato o modificato qualcosa su Drive e qui non lo vedi ancora: Quadro tiene da parte quello che legge per qualche minuto, e questo pulsante glielo fa rileggere subito."
+        },
+        {
+          "domanda": "L'abitudine della settimana",
+          "risposta": "Le otto abitudini non si leggono più tutte insieme: ne compare **una per settimana**, in fondo alla sezione Scienza, e cambia da sola il lunedì seguendo il numero della settimana nell'anno — quindi è la stessa su tutti i tuoi dispositivi.\n\nA fine settimana scrivi una riga su dove l'hai usata e chiudi: finisce nel diario, e sotto trovi tutte le settimane passate. Le otto restano comunque consultabili tutte insieme nel riquadro sotto."
+        },
+        {
+          "domanda": "Il Coach: cosa fare dopo il canovaccio",
+          "risposta": "Il canovaccio è la scaletta, non l'intervento. Sotto trovi tre pulsanti:\n\n- **Trova i punti deboli** — dove un ascoltatore si perderebbe, dove manca un dato, cosa stai dando per scontato\n- **Fammi le domande cattive** — le cinque domande più scomode che ti farebbero in riunione, con l'impostazione della risposta\n- **Riducilo a 90 secondi** — la versione da 200 parole, e cosa è stato tolto\n\nQuello che esce si aggiunge al canovaccio quando lo scarichi, e con **Salva nel diario** resta lì: sotto trovi tutti i canovacci già preparati."
+        },
+        {
+          "domanda": "SENTINEL: chiedere e vedere l'andamento",
+          "risposta": "Sotto la pagina del corso ci sono due schede.\n\n**Chiedi su questo modulo** manda la domanda all'assistente insieme al titolo del modulo che stai leggendo, quindi non devi spiegargli il contesto. Domanda e risposta si salvano nel diario e restano consultabili.\n\n**Come stai andando** mostra i moduli completati nel tempo e, se hai tenuto un ritmo, stima quanti giorni mancano per finire."
+        },
+        {
+          "domanda": "La scheda Benessere nella Taratura",
+          "risposta": "Tre cose, tutte sotto la stessa password e nello stesso file separato `Quadro_Taratura.xlsx`:\n\n**Pratica** — yoga, meditazione, respirazione o camminata: minuti, com'è andata e quanto eri presente. Sotto, le ore di pratica mese per mese.\n\n**Appuntamento** — che c'è stato un incontro e come stavi prima e dopo. Il grafico mostra quanto cambia come stai, non cosa vi siete detti: quello, se ti va, va nella scheda Oggi.\n\n**Medicinali** — un promemoria di cosa hai preso e quando, da scaricare e portare allo specialista invece di ricordarlo a memoria."
+        },
+        {
+          "domanda": "Cosa l'assistente della Taratura non fa",
+          "risposta": "Non commenta medicinali: né dosi, né tempi, né effetti, né se continuare o cambiare. Nemmeno per rassicurare.\n\nÈ una regola scritta dentro `taratura.py` e non è prudenza di facciata: su quel terreno una risposta che suona ragionevole ed è sbagliata fa danni veri, e chi ti segue ha informazioni che un diario non ha. Se gli scrivi di un medicinale ti risponde su **come stai** — quello sì — e ti rimanda a chi te l'ha prescritto.\n\nPer il resto è quello che è sempre stato: un posto dove scaricare la giornata e rileggerla a mente fredda, non una terapia."
         }
       ]
     },

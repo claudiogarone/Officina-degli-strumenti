@@ -1137,9 +1137,24 @@ n_file = 0
 if modo.startswith("Google"):
     folder_id = st.sidebar.text_input("ID cartella Drive", value=default_folder,
                                       help="La parte dopo /folders/ nell'URL della cartella")
-    if st.sidebar.button("🔄 Aggiorna adesso", width='stretch', type="primary"):
+    if st.sidebar.button("🔄 Aggiorna tutto da Drive", width='stretch',
+                         type="primary",
+                         help="Rilegge i registri, la cartella dei progetti e "
+                              "ricerca i file del diario e della Taratura. "
+                              "Usalo quando hai appena modificato o caricato "
+                              "qualcosa su Drive e non lo vedi ancora qui."):
+        # Un solo pulsante per tutto. Oltre a svuotare la cache dei dati va
+        # mosso anche `cerca_archivio`: la ricerca di Quadro_Diario.xlsx e
+        # Quadro_Taratura.xlsx è tenuta da parte per un paio di minuti, e
+        # senza questo scatto resterebbe ferma sul risultato vecchio anche
+        # dopo aver svuotato il resto.
         st.session_state.cache_key = DIARIO.adesso().timestamp()
+        st.session_state["cerca_archivio"] = \
+            st.session_state.get("cerca_archivio", 0) + 1
         st.cache_data.clear()
+        st.session_state["ultima_conferma"] = (
+            "Riletti registri, progetti, diario e Taratura", DIARIO.adesso())
+        st.rerun()
     if not has_secrets:
         trovate = chiavi_secrets()
         if SECRETS_ERRORE:
@@ -2019,9 +2034,60 @@ try {{
                 scarica_tabella(tab_p, "problemi_aperti",
                                 "⬇️ Scarica la lista")
 
-        with st.expander("Le otto abitudini, per quando ti serve rileggerle"):
-            for ab in SCI.get("abitudini", []):
-                st.markdown(f"**{ab['titolo']}** — {ab['testo']}")
+        # ---- l'abitudine della settimana -----------------------------------
+        # Otto abitudini lette tutte insieme restano parole. Una alla volta,
+        # per sette giorni, diventa una cosa su cui fai caso davvero. La
+        # rotazione segue il numero della settimana nell'anno, quindi cambia
+        # da sola il lunedì e torna uguale su ogni dispositivo.
+        abitudini = SCI.get("abitudini", [])
+        if abitudini:
+            st.divider()
+            anno_s, sett_s, _ = DIARIO.oggi().isocalendar()
+            idx_ab = (sett_s - 1) % len(abitudini)
+            AB = abitudini[idx_ab]
+
+            with st.container(border=True):
+                a1, a2 = st.columns([4, 1])
+                a1.markdown(f"##### 🧭 L'abitudine di questa settimana — "
+                            f"{AB['titolo']}")
+                a2.caption(f"settimana {sett_s}")
+                st.markdown(AB["testo"])
+
+                chiave_ab = f"{anno_s}-W{sett_s:02d}"
+                gia = DIA[(DIA["Tipo"] == "abitudine")
+                          & (DIA["Attivita"] == chiave_ab)]
+                if gia.empty:
+                    nota_ab = st.text_input(
+                        "Dove l'hai usata questa settimana?",
+                        key="abitudine_nota",
+                        placeholder="anche una riga sola: quando ti è tornata utile")
+                    if st.button("💾 Chiudi la settimana", type="primary"):
+                        if nota_ab.strip():
+                            diario_scrivi(DIARIO.riga(
+                                "abitudine", chiave_ab, "Scienza", 0, None,
+                                f"{AB['titolo']} :: {nota_ab.strip()}"))
+                            conferma(f"Settimana {sett_s} chiusa su «{AB['titolo']}»")
+                            svuota_dopo("abitudine_nota")
+                            st.rerun()
+                        else:
+                            st.warning("Scrivi una riga prima di chiudere.")
+                else:
+                    st.success("Settimana già chiusa: "
+                               + gia.iloc[-1]["Nota"].split(" :: ", 1)[-1])
+
+            passate = DIA[DIA["Tipo"] == "abitudine"].sort_values(
+                "Data", ascending=False)
+            if not passate.empty:
+                with st.expander(f"Le settimane passate ({len(passate)})"):
+                    for _, r in passate.iterrows():
+                        titolo_ab = r["Nota"].split(" :: ")[0]
+                        resto_ab = r["Nota"].split(" :: ", 1)[-1]
+                        st.markdown(f"**{r['Attivita']} · {titolo_ab}** — {resto_ab}")
+
+        with st.expander("Tutte e otto le abitudini, per rileggerle"):
+            for i_ab, ab in enumerate(abitudini):
+                segno = " ← questa settimana" if i_ab == idx_ab else ""
+                st.markdown(f"**{ab['titolo']}**{segno} — {ab['testo']}")
 
     st.divider()
 
@@ -4139,10 +4205,84 @@ with TAB[5]:
                 if risposte.get(i, "").strip():
                     canovaccio += f"- *{dom}* {risposte[i].strip()}\n"
             st.markdown(canovaccio)
-            st.download_button("⬇️ Scarica il canovaccio",
+
+            # ---- e adesso? il canovaccio da solo non serve a niente -------
+            st.markdown("##### E adesso")
+            st.caption("Il canovaccio è la scaletta, non l'intervento. Da qui "
+                       "si fanno tre cose, in ordine.")
+
+            n1, n2, n3 = st.columns(3)
+            if n1.button("🔍 Trova i punti deboli", width='stretch'):
+                st.session_state["coach_azione"] = "critica"
+            if n2.button("🎤 Fammi le domande cattive", width='stretch'):
+                st.session_state["coach_azione"] = "domande"
+            if n3.button("✂️ Riducilo a 90 secondi", width='stretch'):
+                st.session_state["coach_azione"] = "taglia"
+
+            azione = st.session_state.pop("coach_azione", None)
+            if azione:
+                istruzioni = {
+                    "critica": "Fai le pulci a questo canovaccio: dimmi dove "
+                               "un ascoltatore si perderebbe, dove manca un "
+                               "dato, e dove sto dando per scontata una cosa "
+                               "che non lo è. Massimo cinque punti, ognuno con "
+                               "come lo sistemo.",
+                    "domande": "Fammi le cinque domande più scomode che mi "
+                               "farebbero in riunione su questo intervento, "
+                               "quelle che non vorrei sentirmi fare. Per "
+                               "ognuna, in una riga, come imposterei la "
+                               "risposta — non la risposta, l'impostazione.",
+                    "taglia": "Riscrivi questo intervento in modo che si legga "
+                              "in novanta secondi ad alta voce, circa 200 "
+                              "parole. Tieni il messaggio, il dato e la "
+                              "richiesta; butta via il resto. Poi dimmi in una "
+                              "riga cosa hai tolto e perché.",
+                }[azione]
+                stato_cv = st.empty()
+                try:
+                    with st.spinner("Sto leggendo il canovaccio…"):
+                        esito = AI.chiedi(
+                            "Sei un dirigente esperto che prepara interventi "
+                            "per riunioni aziendali.\n\n"
+                            f"Tema: {tema}\n\nIl canovaccio:\n{canovaccio}\n\n"
+                            + istruzioni + "\nRispondi in italiano, frasi brevi.",
+                            chiave_ai(), modello_ai(),
+                            al_tentativo=lambda m: stato_cv.info(m))
+                    stato_cv.empty()
+                    st.session_state["coach_esito"] = (azione, esito)
+                except AI.ErroreAI as e:
+                    stato_cv.empty()
+                    st.error(e.messaggio)
+                    if e.dettaglio:
+                        st.caption(e.dettaglio)
+
+            if st.session_state.get("coach_esito"):
+                quale, testo_e = st.session_state["coach_esito"]
+                st.divider()
+                st.markdown(testo_e)
+                canovaccio = canovaccio + "\n\n---\n\n" + testo_e
+
+            st.divider()
+            d1, d2 = st.columns(2)
+            d1.download_button("⬇️ Scarica il canovaccio",
                                canovaccio.encode("utf-8"),
                                f"canovaccio_{DIARIO.oggi():%Y%m%d}.md",
-                               "text/markdown")
+                               "text/markdown", width='stretch')
+            if d2.button("💾 Salva nel diario", type="primary", width='stretch'):
+                diario_scrivi(DIARIO.riga(
+                    "coach", tema[:60], "ParlaChiaro", 15, len(piene) * 100 // len(domande),
+                    canovaccio[:1200]))
+                conferma(f"Canovaccio salvato: «{tema[:40]}»")
+                st.session_state.pop("coach_esito", None)
+                st.rerun()
+
+            passati_cv = DIA[DIA["Tipo"] == "coach"].sort_values(
+                "Data", ascending=False)
+            if not passati_cv.empty:
+                with st.expander(f"I canovacci già preparati ({len(passati_cv)})"):
+                    for _, r in passati_cv.head(12).iterrows():
+                        st.markdown(f"**{r['Data']:%d/%m/%Y} · {r['Attivita']}**")
+                        st.caption(r["Nota"][:400])
         else:
             st.caption("Completa almeno quattro risposte per vedere il canovaccio.")
 
@@ -4374,6 +4514,117 @@ with TAB[6]:
                    "metti qui finiscono nel diario, quindi restano anche "
                    "cambiando dispositivo.")
 
+        st.divider()
+        SS1, SS2 = st.tabs(["🤖 Chiedi su questo modulo", "📈 Come stai andando"])
+
+        with SS1:
+            st.caption("La domanda arriva all'assistente insieme al titolo del "
+                       "modulo che stai leggendo, quindi non devi spiegargli "
+                       "di cosa stai parlando.")
+            dubbio = st.text_area(
+                "Cosa non ti torna", height=110, key="sent_dubbio",
+                placeholder="es. non capisco perché la ferrite aumenta il "
+                            "segnale invece di schermarlo")
+            q1, q2 = st.columns(2)
+            chiedi_s = q1.button("Chiedi", type="primary", width='stretch')
+            salva_s = q2.button("💾 Salva la domanda e la risposta",
+                                width='stretch',
+                                disabled=not st.session_state.get("sent_risposta"))
+
+            if chiedi_s:
+                if not dubbio.strip():
+                    st.warning("Scrivi la domanda prima.")
+                else:
+                    stato_s = st.empty()
+                    try:
+                        with st.spinner("Sto pensando…"):
+                            risp_s = AI.chiedi(
+                                "Sei un ingegnere che spiega a un collega "
+                                "preparato ma non specialista. Sta studiando "
+                                "un corso sulla sua stazione di misura dei "
+                                "campi elettromagnetici a bassissima "
+                                f"frequenza.\n\nModulo: {SENT.etichetta(M)} "
+                                f"({M['parte']})\n\nLa sua domanda:\n"
+                                f"{dubbio.strip()}\n\n"
+                                "Rispondi in italiano, concreto, con un "
+                                "esempio numerico se aiuta. Se la domanda "
+                                "nasce da un equivoco, dillo e spiega dove "
+                                "sta. Niente elenchi lunghi: tre o quattro "
+                                "capoversi.",
+                                chiave_ai(), modello_ai(),
+                                al_tentativo=lambda m: stato_s.info(m))
+                        stato_s.empty()
+                        st.session_state["sent_risposta"] = risp_s
+                        st.session_state["sent_domanda"] = dubbio.strip()
+                        st.rerun()
+                    except AI.ErroreAI as e:
+                        stato_s.empty()
+                        st.error(e.messaggio)
+                        if e.dettaglio:
+                            st.caption(e.dettaglio)
+
+            if st.session_state.get("sent_risposta"):
+                st.markdown(st.session_state["sent_risposta"])
+
+            if salva_s:
+                diario_scrivi(DIARIO.riga(
+                    "dubbio", SENT.etichetta(M), "SENTINEL", 5, None,
+                    f"{st.session_state.get('sent_domanda', '')} :: "
+                    f"{st.session_state.get('sent_risposta', '')[:900]}"))
+                conferma("Domanda e risposta salvate nel diario")
+                st.session_state.pop("sent_risposta", None)
+                svuota_dopo("sent_dubbio")
+                st.rerun()
+
+            dubbi = DIA[DIA["Tipo"] == "dubbio"].sort_values(
+                "Data", ascending=False)
+            if not dubbi.empty:
+                with st.expander(f"Le domande che hai già fatto ({len(dubbi)})"):
+                    for _, r in dubbi.head(15).iterrows():
+                        dom_d = r["Nota"].split(" :: ")[0]
+                        st.markdown(f"**{r['Data']:%d/%m/%Y} · {r['Attivita']}** "
+                                    f"— {dom_d}")
+                        st.caption(r["Nota"].split(" :: ", 1)[-1][:400])
+
+        with SS2:
+            tappe_s = DIA[(DIA["Tipo"] == "tappa")
+                          & (DIA["Attivita"] == PERCORSO_SENT)].sort_values("Data")
+            if tappe_s.empty:
+                st.info("Qui compare l'andamento appena segni il primo modulo "
+                        "come fatto.")
+            else:
+                v1, v2, v3 = st.columns(3)
+                v1.metric("Moduli fatti", f"{len(fatti_s)}/{len(MODULI_S)}")
+                giorni_s = (tappe_s["Data"].max() - tappe_s["Data"].min()).days + 1
+                v2.metric("Giorni dal primo", giorni_s)
+                v3.metric("Domande fatte",
+                          int((DIA["Tipo"] == "dubbio").sum()))
+
+                cumul = tappe_s.groupby(tappe_s["Data"].dt.normalize()).size().cumsum()
+                figs = go.Figure()
+                figs.add_scatter(x=cumul.index, y=cumul.values,
+                                 mode="lines+markers", line_shape="hv",
+                                 line=dict(color=PALETTE[0], width=2),
+                                 hovertemplate="%{x|%d/%m/%Y}<br>%{y} moduli<extra></extra>")
+                figs.add_hline(y=len(MODULI_S), line_dash="dot",
+                               line_color=VERDE_SCURO,
+                               annotation_text="tutti i moduli")
+                figs.update_yaxes(range=[0, len(MODULI_S) + 1])
+                st.plotly_chart(style(figs, 300, "Moduli completati nel tempo"),
+                                width='stretch')
+
+                if len(tappe_s) >= 2 and len(fatti_s) < len(MODULI_S):
+                    al_giorno = len(tappe_s) / max(1, giorni_s)
+                    mancano = len(MODULI_S) - len(fatti_s)
+                    st.caption(f"A questo ritmo — {al_giorno:.2f} moduli al "
+                               f"giorno — per finire gli altri {mancano} ci "
+                               f"vogliono circa {mancano / al_giorno:.0f} giorni.")
+
+                tab_s = tappe_s[["Data", "Nota"]].rename(columns={"Nota": "Modulo"})
+                tab_s = tab_s.copy()
+                scarica_tabella(tab_s, "sentinel_avanzamento",
+                                "⬇️ Scarica l'avanzamento")
+
 
 # ============================================================================
 # TAB 7 - TARATURA  (sezione riservata: vedi taratura.py per la password)
@@ -4478,7 +4729,8 @@ with TAB[7]:
 
         mostra_conferma()
         pannello_riepilogo('taratura')
-        TT = st.tabs(["✍️ Oggi", "📖 Quello che hai scritto", "📈 Andamento"])
+        TT = st.tabs(["✍️ Oggi", "🧘 Benessere", "📖 Quello che hai scritto",
+                      "📈 Andamento"])
 
         # ------------------------------ oggi --------------------------------
         with TT[0]:
@@ -4532,8 +4784,173 @@ with TAB[7]:
                            "una cosa pesa e non si muove, parlarne con una "
                            "persona vera vale più di qualsiasi schermo.")
 
-        # --------------------------- lo storico -----------------------------
+
+        # --------------------------- benessere ------------------------------
         with TT[1]:
+            st.caption("Pratica, appuntamenti e promemoria dei medicinali, in "
+                       "un posto solo e sotto la stessa password. Serve a te "
+                       "per vedere l'andamento nel tempo, e serve da portare a "
+                       "chi ti segue: sotto trovi come scaricarlo.")
+
+            BB = st.radio("Cosa registri", ["Pratica", "Appuntamento",
+                                            "Medicinali"],
+                          horizontal=True, label_visibility="collapsed",
+                          key="tar_benessere_sezione")
+
+            # ---------------------------- pratica ---------------------------
+            if BB == "Pratica":
+                with st.form("tar_pratica", clear_on_submit=True):
+                    p1, p2 = st.columns([2, 1])
+                    tipo_p = p1.selectbox("Cosa hai fatto", TAR.PRATICHE)
+                    min_p = p2.number_input("Minuti", 5, 300, 60, step=5)
+                    q1, q2 = st.columns(2)
+                    qual_p = q1.slider("Com'è andata", 1, 5, 3,
+                                       help="1 faticosa · 5 ottima")
+                    calma_p = q2.slider("Quanto eri presente", 1, 5, 3,
+                                        help="quanto sei riuscito a stare lì "
+                                             "invece che altrove con la testa")
+                    nota_p = st.text_input("Una riga (facoltativa)",
+                                           placeholder="com'era il corpo, cosa "
+                                                       "hai notato")
+                    if st.form_submit_button("💾 Registra la pratica",
+                                             type="primary"):
+                        taratura_scrivi(DIARIO.riga(
+                            "pratica", tipo_p, "", min_p, qual_p,
+                            f"[presenza {calma_p}/5] {nota_p.strip()}"))
+                        conferma(f"{tipo_p}: {min_p} minuti registrati")
+                        st.rerun()
+
+                prat = TARD[TARD["Tipo"] == "pratica"].sort_values("Data")
+                if prat.empty:
+                    st.info("Nessuna pratica registrata finora.")
+                else:
+                    w1, w2, w3 = st.columns(3)
+                    w1.metric("Sedute", len(prat))
+                    w2.metric("Ore in tutto", f"{prat['Minuti'].sum() / 60:.1f}")
+                    w3.metric("Qualità media", f"{prat['Valore'].mean():.1f}/5")
+
+                    per_mese = prat.groupby(
+                        prat["Data"].dt.to_period("M").dt.to_timestamp())["Minuti"].sum()
+                    figw = go.Figure()
+                    figw.add_bar(x=per_mese.index, y=per_mese.values / 60,
+                                 marker=dict(color=PALETTE[0], line=dict(width=0)),
+                                 hovertemplate="%{x|%m/%Y}<br>%{y:.1f} ore<extra></extra>")
+                    st.plotly_chart(style(figw, 280, "Ore di pratica al mese"),
+                                    width='stretch')
+
+                    tab_w = prat[["Data", "Attivita", "Minuti", "Valore", "Nota"]].copy()
+                    tab_w["Data"] = tab_w["Data"].dt.strftime("%d/%m/%Y")
+                    tab_w = tab_w.rename(columns={"Attivita": "Pratica",
+                                                  "Valore": "Qualità"})
+                    with st.expander("Tutte le sedute"):
+                        st.dataframe(tab_w, width='stretch', hide_index=True)
+                    scarica_tabella(tab_w, "pratica_benessere",
+                                    "⬇️ Scarica le pratiche")
+
+            # ------------------------- appuntamenti -------------------------
+            elif BB == "Appuntamento":
+                st.caption("Qui si annota **che** c'è stato un incontro e come "
+                           "ti sei sentito prima e dopo. Di cosa avete parlato "
+                           "scrivilo nella scheda Oggi, se ti va: questa serve "
+                           "a vedere l'andamento.")
+                with st.form("tar_seduta", clear_on_submit=True):
+                    s1, s2 = st.columns([2, 1])
+                    chi_s = s1.text_input("Con chi", placeholder="es. dott. ___")
+                    quando_s = s2.date_input("Quando", value=DIARIO.oggi(),
+                                             format="DD/MM/YYYY")
+                    u1, u2 = st.columns(2)
+                    prima_s = u1.slider("Come stavi prima", 1, 10, 5)
+                    dopo_s = u2.slider("Come stavi dopo", 1, 10, 6)
+                    nota_s = st.text_input("Una riga per ricordartene",
+                                           placeholder="facoltativa")
+                    if st.form_submit_button("💾 Registra l'incontro",
+                                             type="primary"):
+                        taratura_scrivi(DIARIO.riga(
+                            "seduta", (chi_s.strip() or "incontro"), "", 0,
+                            dopo_s - prima_s,
+                            f"prima {prima_s} · dopo {dopo_s} · {nota_s.strip()}",
+                            quando=dt.datetime.combine(quando_s,
+                                                       dt.time(12, 0))))
+                        conferma("Incontro registrato")
+                        st.rerun()
+
+                sed = TARD[TARD["Tipo"] == "seduta"].sort_values("Data")
+                if sed.empty:
+                    st.info("Nessun incontro registrato finora.")
+                else:
+                    y1, y2 = st.columns(2)
+                    y1.metric("Incontri", len(sed))
+                    y2.metric("Variazione media",
+                              f"{sed['Valore'].mean():+.1f}",
+                              help="quanto cambia come stai fra prima e dopo")
+                    figs2 = go.Figure()
+                    figs2.add_bar(x=sed["Data"], y=sed["Valore"],
+                                  marker=dict(color=[VERDE if v >= 0 else "#C0392B"
+                                                     for v in sed["Valore"]],
+                                              line=dict(width=0)),
+                                  hovertemplate="%{x|%d/%m/%Y}<br>%{y:+.0f}<extra></extra>")
+                    st.plotly_chart(
+                        style(figs2, 260, "Quanto cambia come stai, prima → dopo"),
+                        width='stretch')
+                    tab_s2 = sed[["Data", "Attivita", "Valore", "Nota"]].copy()
+                    tab_s2["Data"] = tab_s2["Data"].dt.strftime("%d/%m/%Y")
+                    tab_s2 = tab_s2.rename(columns={"Attivita": "Con chi",
+                                                    "Valore": "Differenza"})
+                    scarica_tabella(tab_s2, "incontri", "⬇️ Scarica gli incontri")
+
+            # --------------------------- medicinali -------------------------
+            else:
+                st.info("**Questo è un promemoria, non un consiglio.** Serve a "
+                        "segnare cosa hai preso e quando, così quando vai "
+                        "dallo specialista non devi ricordartelo a memoria. "
+                        "L'assistente di questa sezione non commenta "
+                        "medicinali, dosi o effetti: su quello la persona da "
+                        "sentire è chi te li ha prescritti.")
+                with st.form("tar_farmaco", clear_on_submit=True):
+                    f1, f2 = st.columns([2, 1])
+                    nome_f = f1.text_input(
+                        "Cosa",
+                        placeholder="il nome o anche solo «quella della sera»")
+                    quando_f = f2.date_input("Quando", value=DIARIO.oggi(),
+                                             format="DD/MM/YYYY")
+                    preso_f = st.radio("Preso?", ["Sì", "No", "In ritardo"],
+                                       horizontal=True)
+                    nota_f = st.text_input("Nota per lo specialista",
+                                           placeholder="facoltativa")
+                    if st.form_submit_button("💾 Segna", type="primary"):
+                        if nome_f.strip():
+                            taratura_scrivi(DIARIO.riga(
+                                "medicinale", nome_f.strip(), preso_f, 0,
+                                {"Sì": 1, "In ritardo": 0.5, "No": 0}[preso_f],
+                                nota_f.strip(),
+                                quando=dt.datetime.combine(quando_f,
+                                                           dt.time(12, 0))))
+                            conferma(f"Segnato: {nome_f.strip()} — {preso_f}")
+                            st.rerun()
+                        else:
+                            st.warning("Scrivi almeno un nome.")
+
+                med = TARD[TARD["Tipo"] == "medicinale"].sort_values("Data")
+                if med.empty:
+                    st.info("Niente segnato finora.")
+                else:
+                    ultimi = med[med["Data"] >= pd.Timestamp(DIARIO.oggi())
+                                 - pd.Timedelta(days=29)]
+                    z1, z2 = st.columns(2)
+                    z1.metric("Segnati in 30 giorni", len(ultimi))
+                    if not ultimi.empty:
+                        z2.metric("Presi regolarmente",
+                                  f"{100 * ultimi['Valore'].mean():.0f}%")
+                    tab_m = med[["Data", "Attivita", "Strumento", "Nota"]].copy()
+                    tab_m["Data"] = tab_m["Data"].dt.strftime("%d/%m/%Y")
+                    tab_m = tab_m.rename(columns={"Attivita": "Cosa",
+                                                  "Strumento": "Preso"})
+                    with st.expander("Tutto quello che hai segnato"):
+                        st.dataframe(tab_m, width='stretch', hide_index=True)
+                    scarica_tabella(tab_m, "promemoria_medicinali",
+                                    "⬇️ Scarica da portare allo specialista")
+        # --------------------------- lo storico -----------------------------
+        with TT[2]:
             if voci_tar.empty:
                 st.info("Ancora niente. La prima volta è la più difficile.")
             else:
@@ -4550,7 +4967,7 @@ with TAB[7]:
                         st.markdown(r["Nota"])
 
         # --------------------------- andamento ------------------------------
-        with TT[2]:
+        with TT[3]:
             if len(voci_tar) < 2:
                 st.info("Servono almeno due voci per vedere un andamento.")
             else:
