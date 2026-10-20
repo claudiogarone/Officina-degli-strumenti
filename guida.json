@@ -12,7 +12,7 @@
         },
         {
           "domanda": "A cosa serve ogni tab",
-          "risposta": "- **Scrivania** — la sala di comando: la sessione di oggi, l'allenamento all'intuizione, i corsi, l'andamento, gli avvisi su consegne e pagamenti.\n- **Ripetizioni** — tutto sulle lezioni private, in cinque schede: Panoramica, Allievi, Economia, Didattica, Dettaglio. Prima erano cinque tab separati.\n- **Progetti** — consulenze: stato, consegne, margini, movimenti di pagamento.\n- **Cancelleria** — carta intestata, biglietti, preventivi, NDA, attestati, tessere QR.\n- **Studio** — Officina (i tuoi strumenti), percorsi con le tappe da spuntare e le fonti, prontuari di comandi, assistente AI, prompt pronti.\n- **Parla chiaro** — allenamento alla comunicazione con registrazione e analisi.\n- **SENTINEL** — il corso «SENTINEL da zero» sulla tua stazione ELF, con l'avanzamento salvato nel diario.\n- **Taratura** — sezione riservata, chiusa da password.\n- **Guida** — questa."
+          "risposta": "- **Scrivania** — la sala di comando: la sessione di oggi, l'allenamento all'intuizione, i corsi, l'andamento, gli avvisi su consegne e pagamenti.\n- **Ripetizioni** — tutto sulle lezioni private, in cinque schede: Panoramica, Allievi, Economia, Didattica, Dettaglio. Prima erano cinque tab separati.\n- **Progetti** — consulenze: stato, consegne, margini, movimenti di pagamento.\n- **Cancelleria** — carta intestata, biglietti, preventivi, NDA, attestati, tessere QR.\n- **Studio** — Officina (i tuoi strumenti), percorsi con le tappe da spuntare e le fonti, prontuari di comandi, assistente AI, prompt pronti.\n- **Parla chiaro** — allenamento alla comunicazione con registrazione e analisi.\n- **SENTINEL** — il corso «SENTINEL da zero» sulla tua stazione ELF, con l'avanzamento salvato nel diario.\n- **Radar** — cosa è uscito di nuovo sulle fonti che segui, già setacciato.\n- **Taratura** — sezione riservata, chiusa da password.\n- **Guida** — questa."
         },
         {
           "domanda": "Perché a volte i dati sembrano vecchi",
@@ -30,7 +30,7 @@
         },
         {
           "domanda": "Quale file contiene cosa",
-          "risposta": "- `scrivania.json` — le attività che puoi scegliere, le durate, le faccine da 1 a 5\n- `scienza.json` — l'esercizio di ogni giorno della settimana, le otto abitudini, il taccuino\n- `studio.json` — i percorsi con le tappe e le fonti, i prontuari, i prompt, l'Officina\n- `parlachiaro.json` — i sei esercizi, gli scenari, le domande del coach, le 18 carte, le lezioni\n- `marchi.json` — i tuoi marchi con colori e loghi, per la cancelleria\n- `collegamenti.json` — i collegamenti rapidi della Scrivania\n- `guida.json` — questa guida"
+          "risposta": "- `scrivania.json` — le attività che puoi scegliere, le durate, le faccine da 1 a 5\n- `scienza.json` — l'esercizio di ogni giorno della settimana, le otto abitudini, il taccuino\n- `studio.json` — i percorsi con le tappe e le fonti, i prontuari, i prompt, l'Officina\n- `parlachiaro.json` — i sei esercizi, gli scenari, le domande del coach, le 18 carte, le lezioni\n- `marchi.json` — i tuoi marchi con colori e loghi, per la cancelleria\n- `collegamenti.json` — i collegamenti rapidi della Scrivania\n- `guida.json` — questa guida\n- `radar.json` — le fonti del Radar, le parole che cerca e quelle che butta via"
         },
         {
           "domanda": "Le tre regole per non rompere un file .json",
@@ -187,6 +187,26 @@
         {
           "domanda": "Cosa l'assistente della Taratura non fa",
           "risposta": "Non commenta medicinali: né dosi, né tempi, né effetti, né se continuare o cambiare. Nemmeno per rassicurare.\n\nÈ una regola scritta dentro `taratura.py` e non è prudenza di facciata: su quel terreno una risposta che suona ragionevole ed è sbagliata fa danni veri, e chi ti segue ha informazioni che un diario non ha. Se gli scrivi di un medicinale ti risponde su **come stai** — quello sì — e ti rimanda a chi te l'ha prescritto.\n\nPer il resto è quello che è sempre stato: un posto dove scaricare la giornata e rileggerla a mente fredda, non una terapia."
+        },
+        {
+          "domanda": "Il tab Radar",
+          "risposta": "Raccoglie quello che esce di nuovo su una ventina di fonti — Hackaday, Arduino, Adafruit, IEEE Spectrum, Phys.org, Wired, Precision Ag e altre — lo mette in un elenco solo, toglie i doppioni e mette davanti quello che parla delle cose che segui.\n\nSi aggiorna da solo ogni ora; il pulsante **🔄 Aggiorna** lo rifà subito. I filtri in alto cambiano il periodo e gli ambiti, e la riga di ricerca serve quando cerchi un argomento preciso.\n\nIl pulsante **⭐ Dopo** mette una voce da parte: la ritrovi nella scheda omonima, e resta nel diario.\n\n**🤖 Dimmi tu le tre che varrebbe la pena leggere** passa i titoli all'assistente e gli fa scegliere le tre che c'entrano davvero con i tuoi campi, spiegando perché."
+        },
+        {
+          "domanda": "Come si aggiunge o si toglie una fonte al Radar",
+          "risposta": "Serve l'indirizzo del suo **feed RSS**: quasi tutti i siti di notizie ne hanno uno, lo trovi cercando «nome del sito rss». Poi è una riga in `radar.json`, dentro `fonti`:\n\n```\n{ \"nome\": \"Come si chiama\", \"url\": \"https://.../feed/\", \"tipo\": \"maker\" }\n```\n\nIl `tipo` serve solo al filtro per ambiti: usa uno di quelli già presenti o inventane uno nuovo.\n\nNella scheda **Le fonti** vedi quali hanno risposto e quali no. Se una resta in errore per giorni ha tolto o cambiato il feed: levala."
+        },
+        {
+          "domanda": "Cosa il Radar cerca e cosa butta via",
+          "risposta": "In `radar.json` ci sono due elenchi di parole.\n\n`interessi` fa **salire** una voce: una parola trovata nel titolo vale due punti, nel riassunto uno. Sotto il punteggio minimo la voce non compare proprio.\n\n`esclusioni` la fa **buttare via** comunque, qualunque sia il punteggio. Dentro ci sono già anime, manga, cartoni animati, cosplay, videogiochi, calcio, gossip e le pagine di offerte e sconti.\n\nSono liste tue: aggiungi e togli parole liberamente, sono solo testo fra virgolette."
+        },
+        {
+          "domanda": "Eventi e seminari: cosa si può e cosa no",
+          "risposta": "**Gli atenei di Salerno e della Basilicata non pubblicano un feed.** Ho provato gli indirizzi soliti e non esistono. Senza feed non c'è niente da leggere in automatico: o la fonte pubblica un elenco in formato standard, o la pagina va aperta a mano. Non è una cosa aggirabile.\n\nQuindi nella scheda **Eventi e seminari** ci sono i collegamenti diretti alle loro pagine, così almeno non li cerchi ogni volta, più Eventbrite filtrato su scienza e tecnologia per Salerno e Potenza.\n\nSotto puoi segnarti un evento in agenda con data e collegamento: compare in «In arrivo» con quanti giorni mancano, e finisce nel diario.\n\nSe un giorno trovi su quei siti un indirizzo che finisce per `/rss` o `/feed`, aggiungilo alle fonti e entra nel giro automatico."
+        },
+        {
+          "domanda": "La pausa nell'allenamento",
+          "risposta": "Accanto al cronometro c'è **⏸️ Pausa**. Non ferma l'orologio: tiene il conto dei secondi passati in pausa e li toglie dal tempo trascorso, quindi puoi fermarti quante volte vuoi senza falsare i minuti.\n\nQuando chiudi la sessione, i minuti proposti sono già al netto delle pause."
         }
       ]
     },

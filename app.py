@@ -1512,7 +1512,7 @@ else:
 
 TAB = st.tabs(["🧭 Scrivania", "🎓 Ripetizioni", "🗂️ Progetti",
                "🖋️ Cancelleria", "📚 Studio", "🎙️ Parla chiaro",
-               "📡 SENTINEL", "⚙️ Taratura", "❓ Guida"])
+               "📡 SENTINEL", "🛰️ Radar", "⚙️ Taratura", "❓ Guida"])
 
 
 # ============================================================================
@@ -1688,16 +1688,48 @@ with TAB[0]:
         avvio = st.session_state["ses_avvio"]
         durata = st.session_state["ses_durata"]
 
+        # La pausa non ferma l'orologio: tiene il conto dei secondi stati in
+        # pausa e li toglie dal tempo trascorso. Così si può mettere in pausa
+        # quante volte si vuole senza falsare i minuti registrati.
+        in_pausa = st.session_state.get("ses_pausa_da") is not None
+        fermi = st.session_state.get("ses_fermi", 0.0)
+
+        pz1, pz2 = st.columns(2)
+        if not in_pausa:
+            if pz1.button("⏸️ Pausa", width='stretch'):
+                st.session_state["ses_pausa_da"] = DIARIO.adesso()
+                st.rerun()
+        else:
+            if pz1.button("▶️ Riprendi", width='stretch', type="primary"):
+                st.session_state["ses_fermi"] = fermi + (
+                    DIARIO.adesso() - st.session_state["ses_pausa_da"]).total_seconds()
+                st.session_state["ses_pausa_da"] = None
+                st.rerun()
+        pz2.caption(f"In pausa da {int((DIARIO.adesso() - st.session_state['ses_pausa_da']).total_seconds() // 60)} min"
+                    if in_pausa else
+                    (f"Pausa usata: {int(fermi // 60)} min" if fermi >= 60 else ""))
+
         suono_on = st.toggle("Suono negli ultimi 10 secondi", value=True,
                              key="ses_suono",
                              help="Un bip al secondo nell'ultimo tratto e un "
                                   "segnale più lungo alla fine. Il volume è "
                                   "quello del dispositivo.")
 
-        @st.fragment(run_every="1s")
+        @st.fragment(run_every="1s" if not in_pausa else None)
         def _cronometro():
-            passati = (DIARIO.adesso() - avvio).total_seconds()
+            fermo_ora = st.session_state.get("ses_pausa_da")
+            sospesi = st.session_state.get("ses_fermi", 0.0)
+            if fermo_ora:
+                sospesi += (DIARIO.adesso() - fermo_ora).total_seconds()
+            passati = (DIARIO.adesso() - avvio).total_seconds() - sospesi
             restano = max(0, durata * 60 - passati)
+            if fermo_ora:
+                st.markdown(
+                    f"<div style='font-size:46px;font-weight:700;opacity:.45;"
+                    f"letter-spacing:2px'>{int(restano // 60):02d}:"
+                    f"{int(restano % 60):02d} ⏸</div>", unsafe_allow_html=True)
+                st.caption(f"**{st.session_state['ses_attivita']}** · in pausa")
+                return
             mm, ss = int(restano // 60), int(restano % 60)
             fatti = int(passati // 60)
             if restano > 0:
@@ -1749,9 +1781,15 @@ try {{
         with st.form("chiudi_sessione"):
             st.markdown("**Quando hai finito**")
             f1, f2 = st.columns([1, 2])
+            _sosp = st.session_state.get("ses_fermi", 0.0)
+            if st.session_state.get("ses_pausa_da"):
+                _sosp += (DIARIO.adesso()
+                          - st.session_state["ses_pausa_da"]).total_seconds()
             minuti_reali = f1.number_input(
                 "Minuti davvero fatti", min_value=1, max_value=600,
-                value=max(1, int((DIARIO.adesso() - avvio).total_seconds() // 60)) or durata)
+                value=max(1, int(((DIARIO.adesso() - avvio).total_seconds()
+                                  - _sosp) // 60)) or durata,
+                help="Le pause sono già state tolte.")
             sens = CFG.get("sensazioni", {})
             voto = f2.select_slider(
                 "Com'è andata", options=[1, 2, 3, 4, 5], value=3,
@@ -1767,7 +1805,8 @@ try {{
                 "sessione", st.session_state["ses_attivita"],
                 st.session_state["ses_strumento"], minuti_reali, voto, nota))
             for chiave_s in ("ses_avvio", "ses_durata", "ses_attivita",
-                             "ses_strumento", "ses_url"):
+                             "ses_strumento", "ses_url", "ses_pausa_da",
+                             "ses_fermi", "ses_ultimo_bip"):
                 st.session_state.pop(chiave_s, None)
             conferma(f"Sessione salvata: {minuti_reali} minuti di "
                      f"{st.session_state.get('ses_attivita', 'lavoro')}"
@@ -1775,7 +1814,8 @@ try {{
             st.rerun()
         if annulla:
             for chiave_s in ("ses_avvio", "ses_durata", "ses_attivita",
-                             "ses_strumento", "ses_url"):
+                             "ses_strumento", "ses_url", "ses_pausa_da",
+                             "ses_fermi", "ses_ultimo_bip"):
                 st.session_state.pop(chiave_s, None)
             st.rerun()
 
@@ -4626,10 +4666,262 @@ with TAB[6]:
                                 "⬇️ Scarica l'avanzamento")
 
 
+
 # ============================================================================
-# TAB 7 - TARATURA  (sezione riservata: vedi taratura.py per la password)
+# TAB 7 - RADAR  (cosa esce di nuovo sulle cose che segui — vedi radar.py)
 # ============================================================================
 with TAB[7]:
+    import radar as RAD
+
+    pannello_riepilogo('radar')
+    mostra_conferma()
+
+    RCFG = _carica_json("radar.json", _mtime("radar.json"))
+    if "_errore" in RCFG:
+        st.error(f"Non riesco a leggere `radar.json`: {RCFG['_errore']}")
+        st.stop()
+
+    st.markdown("#### 🛰️ Radar")
+    st.caption("Quello che è uscito di nuovo sulle fonti che segui, già "
+               "setacciato sulle cose che ti interessano e senza i doppioni. "
+               "Si aggiorna da solo ogni ora.")
+
+    @st.cache_data(ttl=3600, show_spinner=False)
+    def _raccogli_radar(_segno, giorni, minimo):
+        return RAD.raccogli(RCFG.get("fonti", []), RCFG.get("interessi", []),
+                            RCFG.get("esclusioni", []), giorni, minimo)
+
+    f1, f2, f3 = st.columns([2, 2, 1])
+    giorni_r = f1.select_slider("Ultimi", [3, 7, 14, 30, 60],
+                                value=RCFG.get("giorni", 14),
+                                format_func=lambda g: f"{g} giorni")
+    tipi_r = sorted({f.get("tipo", "altro") for f in RCFG.get("fonti", [])})
+    scelti_r = f2.multiselect("Ambiti", tipi_r, default=[],
+                              placeholder="tutti gli ambiti")
+    if f3.button("🔄 Aggiorna", width='stretch'):
+        st.session_state["radar_segno"] = st.session_state.get("radar_segno", 0) + 1
+        st.rerun()
+
+    with st.spinner("Sto guardando le fonti…"):
+        voci_r, problemi_r = _raccogli_radar(
+            st.session_state.get("radar_segno", 0), giorni_r,
+            RCFG.get("punteggio_minimo", 1))
+
+    if scelti_r:
+        per_tipo = {f["nome"]: f.get("tipo", "altro") for f in RCFG.get("fonti", [])}
+        voci_r = [v for v in voci_r if per_tipo.get(v["fonte"]) in scelti_r]
+
+    cerca_r = st.text_input("Cerca un argomento preciso",
+                            placeholder="es. ferrite, idroponica, congiuntivo",
+                            key="radar_cerca")
+    if cerca_r.strip():
+        q = cerca_r.strip().lower()
+        voci_r = [v for v in voci_r
+                  if q in (v["titolo"] + " " + v["testo"]).lower()]
+        st.caption(f"{len(voci_r)} voci contengono «{cerca_r.strip()}».")
+
+    k1, k2, k3 = st.columns(3)
+    k1.markdown('<span class="kpi-mark"></span>', unsafe_allow_html=True)
+    k1.metric("Cose nuove", len(voci_r))
+    k2.metric("Fonti lette", len(RCFG.get("fonti", [])) - len(problemi_r))
+    salvate_r = DIA[DIA["Tipo"] == "radar"] if "DIA" in globals() else pd.DataFrame()
+    k3.metric("Messe da parte", len(salvate_r))
+
+    RT = st.tabs(["📰 Le novità", "🎓 Eventi e seminari", "⭐ Messe da parte",
+                  "⚙️ Le fonti"])
+
+    # ------------------------------- le novità ------------------------------
+    with RT[0]:
+        if not voci_r:
+            st.info("Niente di nuovo con questi filtri. Allarga il periodo "
+                    "oppure togli qualche ambito.")
+        else:
+            if st.button("🤖 Dimmi tu le tre che varrebbe la pena leggere",
+                         type="primary"):
+                elenco = "\n".join(
+                    f"- [{v['fonte']}] {v['titolo']} — {v['testo'][:150]}"
+                    for v in voci_r[:40])
+                stato_r = st.empty()
+                try:
+                    with st.spinner("Sto leggendo i titoli…"):
+                        st.session_state["radar_consiglio"] = AI.chiedi(
+                            "Questa persona è un ingegnere industriale, maker "
+                            "e formatore: elettronica, schede a microcontrollore, "
+                            "energia, agritech, misure di campi elettromagnetici, "
+                            "didattica tecnica.\n\nEcco cosa è uscito di nuovo "
+                            f"sulle sue fonti:\n{elenco}\n\n"
+                            "Scegline TRE che varrebbe davvero la pena aprire e "
+                            "per ognuna dì in due righe perché proprio a lui. "
+                            "Se una si collega a un suo campo (stazione di "
+                            "misura ELF, vertical farming, lezioni private), "
+                            "dillo. Niente riassunti generici: il motivo per "
+                            "cui vale il suo tempo. Italiano, frasi brevi.",
+                            chiave_ai(), modello_ai(),
+                            al_tentativo=lambda m: stato_r.info(m))
+                    stato_r.empty()
+                except AI.ErroreAI as e:
+                    stato_r.empty()
+                    st.error(e.messaggio)
+                    if e.dettaglio:
+                        st.caption(e.dettaglio)
+
+            if st.session_state.get("radar_consiglio"):
+                with st.container(border=True):
+                    st.markdown(st.session_state["radar_consiglio"])
+                    if st.button("Nascondi il consiglio"):
+                        st.session_state.pop("radar_consiglio", None)
+                        st.rerun()
+
+            st.divider()
+            gia_salvati = set(salvate_r["Nota"].str.split(" :: ").str[0]) \
+                if not salvate_r.empty else set()
+
+            for i_v, v in enumerate(voci_r[:60]):
+                with st.container(border=True):
+                    c1, c2 = st.columns([5, 1])
+                    quando_v = f"{v['data']:%d/%m}" if v["data"] else "—"
+                    c1.markdown(f"**{v['titolo']}**")
+                    c1.caption(f"{v['fonte']} · {quando_v}"
+                               + (f" · {', '.join(v['parole'])}" if v["parole"] else ""))
+                    if v["testo"]:
+                        c1.markdown(f"<span style='opacity:.78'>{v['testo'][:300]}…</span>",
+                                    unsafe_allow_html=True)
+                    if v["link"]:
+                        c2.link_button("Apri ↗", v["link"], width='stretch')
+                    if v["titolo"] in gia_salvati:
+                        c2.caption("⭐ salvata")
+                    elif c2.button("⭐ Dopo", key=f"rad_{i_v}", width='stretch'):
+                        diario_scrivi(DIARIO.riga(
+                            "radar", v["fonte"], "Radar", 0, v["punti"],
+                            f"{v['titolo']} :: {v['link']}"))
+                        conferma("Messa da parte")
+                        st.rerun()
+
+            if len(voci_r) > 60:
+                st.caption(f"…e altre {len(voci_r) - 60}. Restringi il periodo "
+                           "o cerca un argomento preciso.")
+
+            tab_r = pd.DataFrame([{"Data": v["data"], "Fonte": v["fonte"],
+                                   "Titolo": v["titolo"], "Link": v["link"],
+                                   "Pertinenza": v["punti"]} for v in voci_r])
+            scarica_tabella(tab_r, "radar", "⬇️ Scarica l'elenco")
+
+    # --------------------------- eventi e seminari --------------------------
+    with RT[1]:
+        st.warning("**Qui c'è un limite che devo dirti.** Gli atenei di "
+                   "Salerno e della Basilicata non pubblicano un feed: ho "
+                   "provato gli indirizzi soliti e non esistono. Senza feed "
+                   "non c'è niente da leggere in automatico, quindi le loro "
+                   "pagine restano da aprire a mano. Non è una cosa che si "
+                   "aggira: o la fonte pubblica un elenco in formato "
+                   "standard, o va guardata.")
+        st.caption("Qui sotto i collegamenti diretti, così almeno non devi "
+                   "cercarli ogni volta. Se un giorno trovi un indirizzo che "
+                   "finisce per `/rss` o `/feed` su uno di questi siti, "
+                   "aggiungilo alle fonti in `radar.json` e entra nel giro "
+                   "automatico.")
+        for p in RCFG.get("pagine_da_guardare", []):
+            with st.container(border=True):
+                e1, e2 = st.columns([4, 1])
+                e1.markdown(f"**{p['nome']}**")
+                if p.get("nota"):
+                    e1.caption(p["nota"])
+                e2.link_button("Apri ↗", p["url"], width='stretch')
+
+        st.divider()
+        st.markdown("##### Segna un evento a cui vuoi andare")
+        with st.form("radar_evento", clear_on_submit=True):
+            ev1, ev2 = st.columns([3, 1])
+            nome_ev = ev1.text_input("Cosa",
+                                     placeholder="es. seminario su agritech, UNISA")
+            data_ev = ev2.date_input("Quando", value=DIARIO.oggi(),
+                                     format="DD/MM/YYYY")
+            link_ev = st.text_input("Collegamento (facoltativo)")
+            if st.form_submit_button("💾 Segna in agenda", type="primary"):
+                if nome_ev.strip():
+                    diario_scrivi(DIARIO.riga(
+                        "evento", nome_ev.strip()[:60], "Radar", 0, None,
+                        f"{nome_ev.strip()} :: {link_ev.strip()}",
+                        quando=dt.datetime.combine(data_ev, dt.time(9, 0))))
+                    conferma(f"Segnato: {nome_ev.strip()[:40]}")
+                    st.rerun()
+
+        eventi = DIA[DIA["Tipo"] == "evento"].sort_values("Data")
+        if not eventi.empty:
+            futuri = eventi[eventi["Data"] >= pd.Timestamp(DIARIO.oggi())]
+            passati = eventi[eventi["Data"] < pd.Timestamp(DIARIO.oggi())]
+            if not futuri.empty:
+                st.markdown("##### In arrivo")
+                for _, r in futuri.iterrows():
+                    gg = (r["Data"] - pd.Timestamp(DIARIO.oggi())).days
+                    quando_e = "oggi" if gg == 0 else (
+                        "domani" if gg == 1 else f"fra {gg} giorni")
+                    titolo_e, _, link_e = r["Nota"].partition(" :: ")
+                    v1, v2 = st.columns([4, 1])
+                    v1.markdown(f"**{r['Data']:%d/%m/%Y}** — {titolo_e}  "
+                                f"<small style='opacity:.6'>({quando_e})</small>",
+                                unsafe_allow_html=True)
+                    if link_e.strip():
+                        v2.link_button("Apri ↗", link_e.strip(), width='stretch')
+            if not passati.empty:
+                with st.expander(f"Già passati ({len(passati)})"):
+                    for _, r in passati.sort_values("Data", ascending=False).iterrows():
+                        st.markdown(f"**{r['Data']:%d/%m/%Y}** — "
+                                    f"{r['Nota'].split(' :: ')[0]}")
+
+    # --------------------------- messe da parte -----------------------------
+    with RT[2]:
+        if salvate_r.empty:
+            st.info("Niente messo da parte. Il pulsante ⭐ Dopo, accanto a "
+                    "ogni novità, le raccoglie qui.")
+        else:
+            for _, r in salvate_r.sort_values("Data", ascending=False).iterrows():
+                titolo_s, _, link_s = r["Nota"].partition(" :: ")
+                with st.container(border=True):
+                    s1, s2 = st.columns([5, 1])
+                    s1.markdown(f"**{titolo_s}**")
+                    s1.caption(f"{r['Attivita']} · messa da parte il "
+                               f"{r['Data']:%d/%m/%Y}")
+                    if link_s.strip():
+                        s2.link_button("Apri ↗", link_s.strip(), width='stretch')
+            tab_s3 = salvate_r[["Data", "Attivita", "Nota"]].copy()
+            tab_s3["Data"] = tab_s3["Data"].dt.strftime("%d/%m/%Y")
+            tab_s3 = tab_s3.rename(columns={"Attivita": "Fonte", "Nota": "Titolo"})
+            scarica_tabella(tab_s3, "radar_salvate", "⬇️ Scarica")
+
+    # ------------------------------- le fonti -------------------------------
+    with RT[3]:
+        st.caption("Per aggiungere una fonte ti serve l'indirizzo del suo "
+                   "feed RSS: di solito si trova cercando «nome del sito "
+                   "rss». Poi è una riga in `radar.json`, dentro `fonti`, "
+                   "con nome, url e tipo.")
+        tab_f = pd.DataFrame(RCFG.get("fonti", []))
+        st.dataframe(tab_f, width='stretch', hide_index=True,
+                     column_config={"url": st.column_config.LinkColumn(
+                         "Feed", display_text="apri")})
+        if problemi_r:
+            st.markdown("##### Fonti che non hanno risposto")
+            for nome_p, errore_p in problemi_r:
+                st.markdown(f"🔴 **{nome_p}** — {errore_p}")
+            st.caption("Se una resta in errore per giorni, molto probabilmente "
+                       "ha cambiato o tolto il feed: toglila da `radar.json`.")
+        else:
+            st.success("Tutte le fonti hanno risposto.")
+
+        st.markdown("##### Cosa cerca e cosa butta via")
+        g1, g2 = st.columns(2)
+        g1.markdown("**Parole che fanno salire una voce**")
+        g1.caption(", ".join(RCFG.get("interessi", [])))
+        g2.markdown("**Parole che la fanno buttare via**")
+        g2.caption(", ".join(RCFG.get("esclusioni", [])))
+        st.caption("Si cambiano in `radar.json`, campi `interessi` ed "
+                   "`esclusioni`. Le parole nel titolo contano il doppio di "
+                   "quelle nel riassunto.")
+
+# ============================================================================
+# TAB 8 - TARATURA  (sezione riservata: vedi taratura.py per la password)
+# ============================================================================
+with TAB[8]:
     import taratura as TAR
 
     SBLOCCO = "tar_aperta_alle"
@@ -5006,9 +5298,9 @@ with TAB[7]:
                             unsafe_allow_html=True)
 
 # ============================================================================
-# TAB 8 - GUIDA  (come si usa e come si modifica: il testo sta in guida.json)
+# TAB 9 - GUIDA  (come si usa e come si modifica: il testo sta in guida.json)
 # ============================================================================
-with TAB[8]:
+with TAB[9]:
     pannello_riepilogo('guida')
     G = _carica_json("guida.json", _mtime("guida.json"))
     if "_errore" in G:

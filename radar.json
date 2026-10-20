@@ -1,0 +1,237 @@
+{
+  "_nota": "Le fonti del Radar. Per aggiungerne una servono due cose: il nome e l'indirizzo del suo feed RSS — di solito lo trovi cercando «nome del sito rss». Se una fonte dà errore per giorni, toglila: non ha più il feed.",
+  "giorni": 14,
+  "punteggio_minimo": 1,
+  "interessi": [
+    "maker",
+    "fai da te",
+    "stampa 3d",
+    "3d print",
+    "arduino",
+    "esp32",
+    "raspberry",
+    "microcontroller",
+    "elettronica",
+    "electronics",
+    "sensore",
+    "sensor",
+    "pcb",
+    "open source",
+    "open hardware",
+    "iot",
+    "domotica",
+    "automazione",
+    "robot",
+    "energia",
+    "fotovoltaico",
+    "solare",
+    "batteria",
+    "accumulo",
+    "rete elettrica",
+    "smart grid",
+    "efficienza energetica",
+    "biotecnologie",
+    "biotech",
+    "biologia",
+    "agritech",
+    "agricoltura",
+    "vertical farming",
+    "idroponica",
+    "serra",
+    "suolo",
+    "oliv",
+    "pastific",
+    "alimentare",
+    "python",
+    "database",
+    "sql",
+    "linux",
+    "informatica",
+    "software",
+    "algoritmo",
+    "intelligenza artificiale",
+    "machine learning",
+    "scienza",
+    "ricerca",
+    "fisica",
+    "campo magnetico",
+    "elettromagnetic",
+    "terremot",
+    "sismic",
+    "spettro",
+    "frequenza",
+    "antenna",
+    "brevett",
+    "patent",
+    "innovazione",
+    "startup",
+    "didattica",
+    "formazione",
+    "laboratorio",
+    "fab lab",
+    "università",
+    "seminario",
+    "conferenza",
+    "workshop"
+  ],
+  "esclusioni": [
+    "anime",
+    "manga",
+    "cartoon",
+    "cartoni animati",
+    "animazione giapponese",
+    "cosplay",
+    "videogame",
+    "videogioco",
+    "gaming",
+    "console",
+    "playstation",
+    "xbox",
+    "nintendo",
+    "calcio",
+    "serie a",
+    "gossip",
+    "oroscopo",
+    "offerta",
+    "sconto",
+    "black friday",
+    "coupon",
+    "prezzo più basso",
+    "recensione smartphone",
+    "miglior smartphone"
+  ],
+  "fonti": [
+    {
+      "nome": "Hackaday",
+      "url": "https://hackaday.com/feed/",
+      "tipo": "maker"
+    },
+    {
+      "nome": "Make: Magazine",
+      "url": "https://makezine.com/feed/",
+      "tipo": "maker"
+    },
+    {
+      "nome": "Adafruit",
+      "url": "https://blog.adafruit.com/feed/",
+      "tipo": "maker"
+    },
+    {
+      "nome": "Arduino Blog",
+      "url": "https://blog.arduino.cc/feed/",
+      "tipo": "maker"
+    },
+    {
+      "nome": "Raspberry Pi",
+      "url": "https://www.raspberrypi.com/news/feed/",
+      "tipo": "maker"
+    },
+    {
+      "nome": "Hackster.io",
+      "url": "https://www.hackster.io/projects.atom",
+      "tipo": "maker"
+    },
+    {
+      "nome": "IEEE Spectrum",
+      "url": "https://spectrum.ieee.org/feeds/feed.rss",
+      "tipo": "tecnologia"
+    },
+    {
+      "nome": "Ars Technica",
+      "url": "https://feeds.arstechnica.com/arstechnica/technology-lab",
+      "tipo": "tecnologia"
+    },
+    {
+      "nome": "MIT Technology Review",
+      "url": "https://www.technologyreview.com/feed/",
+      "tipo": "tecnologia"
+    },
+    {
+      "nome": "Hacker News",
+      "url": "https://news.ycombinator.com/rss",
+      "tipo": "informatica"
+    },
+    {
+      "nome": "Tom's Hardware Italia",
+      "url": "https://www.tomshw.it/feed/",
+      "tipo": "tecnologia"
+    },
+    {
+      "nome": "Wired Italia",
+      "url": "https://www.wired.it/feed/rss",
+      "tipo": "tecnologia"
+    },
+    {
+      "nome": "Italian Tech",
+      "url": "https://www.repubblica.it/rss/tecnologia/rss2.0.xml",
+      "tipo": "tecnologia"
+    },
+    {
+      "nome": "HDblog",
+      "url": "https://www.hdblog.it/feed/",
+      "tipo": "tecnologia"
+    },
+    {
+      "nome": "Phys.org",
+      "url": "https://phys.org/rss-feed/",
+      "tipo": "scienza"
+    },
+    {
+      "nome": "ScienceDaily",
+      "url": "https://www.sciencedaily.com/rss/all.xml",
+      "tipo": "scienza"
+    },
+    {
+      "nome": "Science News",
+      "url": "https://www.sciencenews.org/feed",
+      "tipo": "scienza"
+    },
+    {
+      "nome": "Quanta Magazine",
+      "url": "https://api.quantamagazine.org/feed/",
+      "tipo": "scienza"
+    },
+    {
+      "nome": "Media INAF",
+      "url": "https://www.media.inaf.it/feed/",
+      "tipo": "scienza"
+    },
+    {
+      "nome": "Precision Ag",
+      "url": "https://www.precisionag.com/feed/",
+      "tipo": "agritech"
+    },
+    {
+      "nome": "Open Access Government",
+      "url": "https://www.openaccessgovernment.org/feed/",
+      "tipo": "ricerca"
+    }
+  ],
+  "pagine_da_guardare": [
+    {
+      "nome": "UNISA — Eventi e seminari",
+      "url": "https://www.unisa.it/eventi",
+      "nota": "L'ateneo di Salerno non pubblica un feed: questa pagina va aperta a mano."
+    },
+    {
+      "nome": "UNISA — Notizie di ateneo",
+      "url": "https://www.unisa.it/ateneo/notizie",
+      "nota": ""
+    },
+    {
+      "nome": "UNIBAS Potenza — Eventi",
+      "url": "https://portale.unibas.it/site/home/eventi.html",
+      "nota": "Stessa cosa per la Basilicata: nessun feed disponibile."
+    },
+    {
+      "nome": "Eventbrite — Salerno",
+      "url": "https://www.eventbrite.it/d/italy--salerno/science-and-tech--events/",
+      "nota": "Eventi in zona, filtrati su scienza e tecnologia."
+    },
+    {
+      "nome": "Eventbrite — Potenza",
+      "url": "https://www.eventbrite.it/d/italy--potenza/science-and-tech--events/",
+      "nota": ""
+    }
+  ]
+}
