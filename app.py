@@ -4682,109 +4682,197 @@ with TAB[7]:
         st.stop()
 
     st.markdown("#### 🛰️ Radar")
-    st.caption("Quello che è uscito di nuovo sulle fonti che segui, già "
-               "setacciato sulle cose che ti interessano e senza i doppioni. "
-               "Si aggiorna da solo ogni ora.")
+    st.caption("Quello che è uscito di nuovo sulle fonti che segui, setacciato "
+               "sulle cose che ti interessano, senza doppioni e con l'italiano "
+               "davanti. Si aggiorna da solo ogni ora.")
 
     @st.cache_data(ttl=3600, show_spinner=False)
     def _raccogli_radar(_segno, giorni, minimo):
         return RAD.raccogli(RCFG.get("fonti", []), RCFG.get("interessi", []),
-                            RCFG.get("esclusioni", []), giorni, minimo)
-
-    f1, f2, f3 = st.columns([2, 2, 1])
-    giorni_r = f1.select_slider("Ultimi", [3, 7, 14, 30, 60],
-                                value=RCFG.get("giorni", 14),
-                                format_func=lambda g: f"{g} giorni")
-    tipi_r = sorted({f.get("tipo", "altro") for f in RCFG.get("fonti", [])})
-    scelti_r = f2.multiselect("Ambiti", tipi_r, default=[],
-                              placeholder="tutti gli ambiti")
-    if f3.button("🔄 Aggiorna", width='stretch'):
-        st.session_state["radar_segno"] = st.session_state.get("radar_segno", 0) + 1
-        st.rerun()
+                            RCFG.get("esclusioni", []), giorni, minimo,
+                            RCFG.get("bonus_lingua", {}))
 
     with st.spinner("Sto guardando le fonti…"):
-        voci_r, problemi_r = _raccogli_radar(
-            st.session_state.get("radar_segno", 0), giorni_r,
+        tutte_r, problemi_r = _raccogli_radar(
+            st.session_state.get("radar_segno", 0), 60,
             RCFG.get("punteggio_minimo", 1))
 
-    if scelti_r:
-        per_tipo = {f["nome"]: f.get("tipo", "altro") for f in RCFG.get("fonti", [])}
-        voci_r = [v for v in voci_r if per_tipo.get(v["fonte"]) in scelti_r]
+    # ------------------------------------------------------- l'archivio ----
+    # Lo storico non può partire da giugno: i feed pubblicano solo le ultime
+    # voci, fra le dieci e le sessanta, e quello che è uscito prima non è più
+    # scaricabile da nessuna parte. Quello che si può fare è cominciare ad
+    # archiviare da adesso, e da qui in avanti lo storico cresce da solo.
+    @st.cache_data(ttl=120, show_spinner=False)
+    def _cerca_file_radar(_segno):
+        if not SA:
+            return None
+        try:
+            return DIARIO.trova_file(
+                dict(SA), [secret("drive_folder_id_diario", ""),
+                           secret("drive_folder_id_progetti", ""),
+                           secret("drive_folder_id", "")],
+                "Quadro_Radar.xlsx")
+        except Exception:
+            return None
 
-    cerca_r = st.text_input("Cerca un argomento preciso",
-                            placeholder="es. ferrite, idroponica, congiuntivo",
-                            key="radar_cerca")
+    FILE_RAD = _cerca_file_radar(st.session_state.get("cerca_archivio", 0))
+
+    @st.cache_data(ttl=300, show_spinner=False)
+    def _leggi_archivio(_f, _segno):
+        return DIARIO.leggi_xlsx(dict(SA), _f)
+
+    def archivio_radar():
+        if not FILE_RAD:
+            return st.session_state.get("radar_locale", DIARIO.vuoto())
+        try:
+            return _leggi_archivio(FILE_RAD,
+                                   st.session_state.get("radar_arch_segno", 0))
+        except Exception:
+            return st.session_state.get("radar_locale", DIARIO.vuoto())
+
+    ARCH = archivio_radar()
+
+    def archivia(voci):
+        """Aggiunge all'archivio solo quello che non c'è già."""
+        gia = set(ARCH["Nota"].str.split(" :: ").str[0]) if not ARCH.empty else set()
+        nuove = [v for v in voci if v["titolo"] not in gia]
+        if not nuove:
+            return 0
+        righe = [DIARIO.riga("voce", v["fonte"],
+                             f"{v['tipologia']}/{v['lingua']}", 0, v["punti"],
+                             f"{v['titolo']} :: {v['link']}",
+                             quando=dt.datetime.combine(
+                                 v["data"] or DIARIO.oggi(), dt.time(12, 0)))
+                 for v in nuove[:300]]
+        if FILE_RAD:
+            DIARIO.aggiungi_xlsx(dict(SA), FILE_RAD, righe)
+            st.session_state["radar_arch_segno"] = \
+                st.session_state.get("radar_arch_segno", 0) + 1
+        else:
+            loc = st.session_state.get("radar_locale", DIARIO.vuoto())
+            st.session_state["radar_locale"] = DIARIO._sistema(
+                pd.concat([loc, pd.DataFrame(righe)], ignore_index=True))
+        return len(righe)
+
+    # ---------------------------------------------------------- i filtri ---
+    with st.container(border=True):
+        c1, c2, c3 = st.columns(3)
+        ambiti = sorted({f.get("tipo", "altro") for f in RCFG.get("fonti", [])})
+        sel_amb = c1.multiselect("Argomento", ambiti, default=[],
+                                 placeholder="tutti gli argomenti")
+        NOMI_L = {"it": "italiano", "es": "spagnolo", "en": "inglese",
+                  "?": "non riconosciuta"}
+        sel_ling = c2.multiselect(
+            "Lingua", list(NOMI_L.keys()), default=[],
+            format_func=lambda k: NOMI_L[k], placeholder="tutte le lingue")
+        sel_tipo = c3.multiselect(
+            "Tipo", ["articolo", "video", "podcast", "corso"], default=[],
+            placeholder="tutti i tipi")
+
+        d1, d2 = st.columns([2, 1])
+        giorni_r = d1.select_slider(
+            "Periodo", [3, 7, 14, 30, 60], value=RCFG.get("giorni", 14),
+            format_func=lambda g: f"ultimi {g} giorni")
+        if d2.button("🔄 Aggiorna ora", width='stretch'):
+            st.session_state["radar_segno"] = st.session_state.get("radar_segno", 0) + 1
+            st.cache_data.clear()
+            st.rerun()
+        cerca_r = st.text_input("Cerca nel testo",
+                                placeholder="es. ferrite, idroponica, ESP32",
+                                key="radar_cerca")
+
+    limite_r = DIARIO.oggi() - dt.timedelta(days=giorni_r)
+    voci_r = [v for v in tutte_r if not v["data"] or v["data"] >= limite_r]
+    if sel_amb:
+        voci_r = [v for v in voci_r if v["ambito"] in sel_amb]
+    if sel_ling:
+        voci_r = [v for v in voci_r if v["lingua"] in sel_ling]
+    if sel_tipo:
+        voci_r = [v for v in voci_r if v["tipologia"] in sel_tipo]
     if cerca_r.strip():
         q = cerca_r.strip().lower()
         voci_r = [v for v in voci_r
                   if q in (v["titolo"] + " " + v["testo"]).lower()]
-        st.caption(f"{len(voci_r)} voci contengono «{cerca_r.strip()}».")
 
-    k1, k2, k3 = st.columns(3)
-    k1.markdown('<span class="kpi-mark"></span>', unsafe_allow_html=True)
-    k1.metric("Cose nuove", len(voci_r))
-    k2.metric("Fonti lette", len(RCFG.get("fonti", [])) - len(problemi_r))
-    salvate_r = DIA[DIA["Tipo"] == "radar"] if "DIA" in globals() else pd.DataFrame()
-    k3.metric("Messe da parte", len(salvate_r))
+    k = st.columns(4)
+    k[0].markdown('<span class="kpi-mark"></span>', unsafe_allow_html=True)
+    k[0].metric("Con questi filtri", len(voci_r))
+    k[1].metric("In italiano", sum(1 for v in voci_r if v["lingua"] == "it"))
+    k[2].metric("Fonti lette", len(RCFG.get("fonti", [])) - len(problemi_r))
+    k[3].metric("In archivio", len(ARCH))
 
-    RT = st.tabs(["📰 Le novità", "🎓 Eventi e seminari", "⭐ Messe da parte",
+    RT = st.tabs(["📰 Le novità", "🤖 Assistente", "🎓 Eventi e seminari",
+                  "📚 Riviste", "⭐ Messe da parte", "🗄️ Archivio",
                   "⚙️ Le fonti"])
 
     # ------------------------------- le novità ------------------------------
     with RT[0]:
         if not voci_r:
-            st.info("Niente di nuovo con questi filtri. Allarga il periodo "
-                    "oppure togli qualche ambito.")
+            st.info("Niente con questi filtri. Allarga il periodo o togli "
+                    "qualche filtro.")
         else:
-            if st.button("🤖 Dimmi tu le tre che varrebbe la pena leggere",
+            b1, b2 = st.columns(2)
+            if b1.button("📝 Riassumimi tutto in dieci righe", width='stretch',
                          type="primary"):
-                elenco = "\n".join(
-                    f"- [{v['fonte']}] {v['titolo']} — {v['testo'][:150]}"
-                    for v in voci_r[:40])
+                elenco = "\n".join(f"- [{v['fonte']}] {v['titolo']}"
+                                   for v in voci_r[:60])
                 stato_r = st.empty()
                 try:
-                    with st.spinner("Sto leggendo i titoli…"):
-                        st.session_state["radar_consiglio"] = AI.chiedi(
-                            "Questa persona è un ingegnere industriale, maker "
-                            "e formatore: elettronica, schede a microcontrollore, "
-                            "energia, agritech, misure di campi elettromagnetici, "
-                            "didattica tecnica.\n\nEcco cosa è uscito di nuovo "
-                            f"sulle sue fonti:\n{elenco}\n\n"
-                            "Scegline TRE che varrebbe davvero la pena aprire e "
-                            "per ognuna dì in due righe perché proprio a lui. "
-                            "Se una si collega a un suo campo (stazione di "
-                            "misura ELF, vertical farming, lezioni private), "
-                            "dillo. Niente riassunti generici: il motivo per "
-                            "cui vale il suo tempo. Italiano, frasi brevi.",
+                    with st.spinner("Sto leggendo…"):
+                        st.session_state["radar_digest"] = AI.chiedi(
+                            "Questa persona è un ingegnere industriale, maker e "
+                            "formatore: elettronica, microcontrollori, energia, "
+                            "agritech, misure di campi elettromagnetici, "
+                            "didattica tecnica.\n\nEcco i titoli usciti di "
+                            f"recente sulle sue fonti:\n{elenco}\n\n"
+                            "Scrivi un riassunto di dieci righe che dica quali "
+                            "sono i due o tre filoni di cui si sta parlando in "
+                            "questo periodo e cosa, fra questi, tocca "
+                            "direttamente i suoi campi. Niente elenco dei "
+                            "titoli: una lettura d'insieme. Italiano, frasi brevi.",
                             chiave_ai(), modello_ai(),
                             al_tentativo=lambda m: stato_r.info(m))
                     stato_r.empty()
                 except AI.ErroreAI as e:
                     stato_r.empty()
                     st.error(e.messaggio)
-                    if e.dettaglio:
-                        st.caption(e.dettaglio)
 
-            if st.session_state.get("radar_consiglio"):
+            if b2.button(f"🗄️ Archivia queste {len(voci_r)} voci",
+                         width='stretch'):
+                try:
+                    n = archivia(voci_r)
+                    conferma(f"Archiviate {n} voci nuove"
+                             if n else "Erano già tutte in archivio")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Non sono riuscito a scrivere l'archivio: {e}")
+
+            if st.session_state.get("radar_digest"):
                 with st.container(border=True):
-                    st.markdown(st.session_state["radar_consiglio"])
-                    if st.button("Nascondi il consiglio"):
-                        st.session_state.pop("radar_consiglio", None)
+                    st.markdown("##### Di cosa si sta parlando")
+                    st.markdown(st.session_state["radar_digest"])
+                    if st.button("Nascondi"):
+                        st.session_state.pop("radar_digest", None)
                         st.rerun()
 
             st.divider()
-            gia_salvati = set(salvate_r["Nota"].str.split(" :: ").str[0]) \
-                if not salvate_r.empty else set()
+            gia_salvati = set(DIA[DIA["Tipo"] == "radar"]["Nota"]
+                              .str.split(" :: ").str[0]) \
+                if not DIA[DIA["Tipo"] == "radar"].empty else set()
+            BANDIERA = {"it": "🇮🇹", "es": "🇪🇸", "en": "🇬🇧", "?": "🏳️"}
+            SEGNO = {"articolo": "📄", "video": "▶️", "podcast": "🎧",
+                     "corso": "🎓"}
 
-            for i_v, v in enumerate(voci_r[:60]):
+            for i_v, v in enumerate(voci_r[:50]):
                 with st.container(border=True):
                     c1, c2 = st.columns([5, 1])
                     quando_v = f"{v['data']:%d/%m}" if v["data"] else "—"
-                    c1.markdown(f"**{v['titolo']}**")
-                    c1.caption(f"{v['fonte']} · {quando_v}"
+                    c1.markdown(f"{SEGNO.get(v['tipologia'], '📄')} "
+                                f"{BANDIERA.get(v['lingua'], '')} **{v['titolo']}**")
+                    c1.caption(f"{v['fonte']} · {v['ambito']} · {quando_v}"
                                + (f" · {', '.join(v['parole'])}" if v["parole"] else ""))
                     if v["testo"]:
-                        c1.markdown(f"<span style='opacity:.78'>{v['testo'][:300]}…</span>",
+                        c1.markdown(f"<span style='opacity:.78'>{v['testo'][:260]}…</span>",
                                     unsafe_allow_html=True)
                     if v["link"]:
                         c2.link_button("Apri ↗", v["link"], width='stretch')
@@ -4797,43 +4885,116 @@ with TAB[7]:
                         conferma("Messa da parte")
                         st.rerun()
 
-            if len(voci_r) > 60:
-                st.caption(f"…e altre {len(voci_r) - 60}. Restringi il periodo "
-                           "o cerca un argomento preciso.")
+                    if c2.button("💡 Di che parla", key=f"spieg_{i_v}",
+                                 width='stretch'):
+                        st.session_state["radar_spiega"] = i_v
+                    if st.session_state.get("radar_spiega") == i_v:
+                        stato_s = st.empty()
+                        try:
+                            with st.spinner("…"):
+                                st.info(AI.chiedi(
+                                    "Spiega in tre frasi, a un ingegnere, di "
+                                    "cosa parla questa notizia e perché "
+                                    "potrebbe interessargli. Se dal titolo e "
+                                    "dal riassunto non si capisce abbastanza, "
+                                    "dillo invece di inventare.\n\n"
+                                    f"Titolo: {v['titolo']}\n"
+                                    f"Riassunto: {v['testo']}\n"
+                                    f"Fonte: {v['fonte']}",
+                                    chiave_ai(), modello_ai(),
+                                    al_tentativo=lambda m: stato_s.info(m)))
+                            stato_s.empty()
+                        except AI.ErroreAI as e:
+                            stato_s.empty()
+                            st.error(e.messaggio)
 
-            tab_r = pd.DataFrame([{"Data": v["data"], "Fonte": v["fonte"],
-                                   "Titolo": v["titolo"], "Link": v["link"],
-                                   "Pertinenza": v["punti"]} for v in voci_r])
+            if len(voci_r) > 50:
+                st.caption(f"…e altre {len(voci_r) - 50}. Restringi i filtri.")
+
+            tab_r = pd.DataFrame([{"Data": v["data"], "Lingua": v["lingua"],
+                                   "Tipo": v["tipologia"], "Ambito": v["ambito"],
+                                   "Fonte": v["fonte"], "Titolo": v["titolo"],
+                                   "Link": v["link"]} for v in voci_r])
             scarica_tabella(tab_r, "radar", "⬇️ Scarica l'elenco")
 
-    # --------------------------- eventi e seminari --------------------------
+    # ------------------------------ assistente ------------------------------
     with RT[1]:
-        st.warning("**Qui c'è un limite che devo dirti.** Gli atenei di "
-                   "Salerno e della Basilicata non pubblicano un feed: ho "
-                   "provato gli indirizzi soliti e non esistono. Senza feed "
-                   "non c'è niente da leggere in automatico, quindi le loro "
-                   "pagine restano da aprire a mano. Non è una cosa che si "
-                   "aggira: o la fonte pubblica un elenco in formato "
-                   "standard, o va guardata.")
-        st.caption("Qui sotto i collegamenti diretti, così almeno non devi "
-                   "cercarli ogni volta. Se un giorno trovi un indirizzo che "
-                   "finisce per `/rss` o `/feed` su uno di questi siti, "
-                   "aggiungilo alle fonti in `radar.json` e entra nel giro "
-                   "automatico.")
-        for p in RCFG.get("pagine_da_guardare", []):
-            with st.container(border=True):
-                e1, e2 = st.columns([4, 1])
-                e1.markdown(f"**{p['nome']}**")
-                if p.get("nota"):
-                    e1.caption(p["nota"])
-                e2.link_button("Apri ↗", p["url"], width='stretch')
+        st.caption("Chiedi quello che vuoi su quello che è uscito: lui ha "
+                   "davanti i titoli e i riassunti di tutte le voci che "
+                   "passano i filtri che hai messo.")
+        esempi = ["C'è qualcosa sull'ESP32 che non so già?",
+                  "Cosa mi conviene leggere se ho venti minuti?",
+                  "Qualcosa di utile per le lezioni di questa settimana?",
+                  "Riassumimi solo quello che riguarda l'energia"]
+        st.caption("Per esempio: " + " · ".join(f"«{e}»" for e in esempi))
+
+        dom_r = st.chat_input("Chiedi al Radar…", key="radar_chat_input")
+        chat_r = st.session_state.setdefault("radar_chat", [])
+        if dom_r:
+            chat_r.append(("io", dom_r))
+            contesto = "\n".join(
+                f"- [{v['fonte']} · {v['lingua']} · {v['tipologia']} · "
+                f"{v['data'] or ''}] {v['titolo']} — {v['testo'][:140]}"
+                for v in voci_r[:70])
+            scambio = "\n".join(("Lui: " if r == "io" else "Tu: ") + t
+                                for r, t in chat_r[-6:])
+            stato_c = st.empty()
+            try:
+                with st.spinner("Sto guardando…"):
+                    risp_c = AI.chiedi(
+                        "Aiuti un ingegnere industriale, maker e formatore a "
+                        "orientarsi fra le novità che il suo radar ha "
+                        "raccolto. Rispondi SOLO su quello che trovi "
+                        "nell'elenco qui sotto: se una cosa non c'è, dillo "
+                        "invece di inventarla.\n\n"
+                        f"Le voci disponibili:\n{contesto}\n\n"
+                        f"La conversazione:\n{scambio}\n\n"
+                        "Rispondi in italiano, frasi brevi, citando i titoli "
+                        "di cui parli.",
+                        chiave_ai(), modello_ai(),
+                        al_tentativo=lambda m: stato_c.info(m))
+                stato_c.empty()
+                chat_r.append(("ai", risp_c))
+            except AI.ErroreAI as e:
+                stato_c.empty()
+                st.error(e.messaggio)
+            st.session_state["radar_chat"] = chat_r
+            st.rerun()
+
+        for ruolo, testo_c in chat_r:
+            with st.chat_message("user" if ruolo == "io" else "assistant"):
+                st.markdown(testo_c)
+        if chat_r and st.button("🗑️ Pulisci la conversazione"):
+            st.session_state.pop("radar_chat", None)
+            st.rerun()
+
+    # --------------------------- eventi e seminari --------------------------
+    with RT[2]:
+        st.warning("**Gli atenei non pubblicano un feed.** Ho ricontrollato: "
+                   "le pagine esistono — e gli indirizzi che ti avevo dato la "
+                   "volta scorsa erano sbagliati, quelli giusti stanno su "
+                   "`web.unisa.it`, non `www.unisa.it` — ma nessuna dichiara "
+                   "un elenco in formato leggibile. Senza quello non c'è "
+                   "niente da raccogliere in automatico: vanno aperte.")
+        zone = sorted({p.get("zona", "") for p in RCFG.get("pagine_da_guardare", [])})
+        for z in zone:
+            st.markdown(f"##### {z or 'Altro'}")
+            for p in RCFG.get("pagine_da_guardare", []):
+                if p.get("zona", "") != z:
+                    continue
+                with st.container(border=True):
+                    e1, e2 = st.columns([4, 1])
+                    e1.markdown(f"**{p['nome']}**")
+                    if p.get("nota"):
+                        e1.caption(p["nota"])
+                    e2.link_button("Apri ↗", p["url"], width='stretch')
 
         st.divider()
         st.markdown("##### Segna un evento a cui vuoi andare")
         with st.form("radar_evento", clear_on_submit=True):
             ev1, ev2 = st.columns([3, 1])
             nome_ev = ev1.text_input("Cosa",
-                                     placeholder="es. seminario su agritech, UNISA")
+                                     placeholder="es. seminario agritech, UNISA")
             data_ev = ev2.date_input("Quando", value=DIARIO.oggi(),
                                      format="DD/MM/YYYY")
             link_ev = st.text_input("Collegamento (facoltativo)")
@@ -4869,44 +5030,123 @@ with TAB[7]:
                         st.markdown(f"**{r['Data']:%d/%m/%Y}** — "
                                     f"{r['Nota'].split(' :: ')[0]}")
 
+    # -------------------------------- riviste -------------------------------
+    with RT[3]:
+        riv = RCFG.get("riviste", {})
+        st.warning(riv.get("_nota", ""))
+        coll = riv.get("collegamento")
+        if coll:
+            st.link_button(f"📰 {coll['nome']} ↗", coll["url"])
+        st.markdown("##### Come si fa, in pratica")
+        st.markdown(
+            "1. Prendi una rivista che segui su Readly.\n"
+            "2. Cerca su internet «*nome della rivista* rss»: quasi tutte le "
+            "testate hanno un feed del sito.\n"
+            "3. Aggiungila alle fonti in `radar.json` con `\"contenuto\": "
+            "\"articolo\"` e la lingua giusta.\n\n"
+            "Da quel momento il Radar ti dice quando escono articoli nuovi, e "
+            "il numero completo lo apri su Readly. Non è la stessa cosa che "
+            "sapere quando esce il fascicolo — quello Readly non lo dice a "
+            "nessuno — ma è il massimo ottenibile senza che te ne accorga a "
+            "mano.")
+
     # --------------------------- messe da parte -----------------------------
-    with RT[2]:
+    with RT[4]:
+        salvate_r = DIA[DIA["Tipo"] == "radar"]
         if salvate_r.empty:
-            st.info("Niente messo da parte. Il pulsante ⭐ Dopo, accanto a "
-                    "ogni novità, le raccoglie qui.")
+            st.info("Niente messo da parte. Il pulsante ⭐ Dopo le raccoglie qui.")
         else:
             for _, r in salvate_r.sort_values("Data", ascending=False).iterrows():
                 titolo_s, _, link_s = r["Nota"].partition(" :: ")
                 with st.container(border=True):
                     s1, s2 = st.columns([5, 1])
                     s1.markdown(f"**{titolo_s}**")
-                    s1.caption(f"{r['Attivita']} · messa da parte il "
-                               f"{r['Data']:%d/%m/%Y}")
+                    s1.caption(f"{r['Attivita']} · {r['Data']:%d/%m/%Y}")
                     if link_s.strip():
                         s2.link_button("Apri ↗", link_s.strip(), width='stretch')
             tab_s3 = salvate_r[["Data", "Attivita", "Nota"]].copy()
             tab_s3["Data"] = tab_s3["Data"].dt.strftime("%d/%m/%Y")
-            tab_s3 = tab_s3.rename(columns={"Attivita": "Fonte", "Nota": "Titolo"})
-            scarica_tabella(tab_s3, "radar_salvate", "⬇️ Scarica")
+            scarica_tabella(tab_s3.rename(columns={"Attivita": "Fonte",
+                                                   "Nota": "Titolo"}),
+                            "radar_salvate", "⬇️ Scarica")
+
+    # -------------------------------- archivio ------------------------------
+    with RT[5]:
+        st.info("**Lo storico non può partire da giugno, e il motivo è nelle "
+                "fonti, non in Quadro.** Un feed pubblica solo le ultime "
+                "voci — fra le dieci e le sessanta — e quello che è uscito "
+                "prima non è più scaricabile da nessuna parte. Quello che si "
+                "può fare è cominciare ad archiviare da oggi: ogni volta che "
+                "premi «Archivia» le voci nuove si aggiungono, e da qui in "
+                "avanti lo storico cresce.")
+
+        if not FILE_RAD:
+            with st.expander("Come collegare l'archivio"):
+                st.markdown(
+                    "Scarica il file qui sotto e caricalo in una cartella "
+                    "Drive che Quadro già conosce, condivisa come **Editor**. "
+                    "È un file a parte dal diario: le voci del Radar sono "
+                    "tante e non devono mescolarsi con le tue sessioni.")
+                st.download_button("⬇️ Scarica Quadro_Radar.xlsx",
+                                   DIARIO.modello_xlsx("Radar", guida=False),
+                                   "Quadro_Radar.xlsx",
+                                   "application/vnd.openxmlformats-officedocument."
+                                   "spreadsheetml.sheet", type="primary")
+            st.caption("Finché non lo colleghi, l'archivio vive solo in questa "
+                       "sessione.")
+
+        if ARCH.empty:
+            st.caption("Archivio ancora vuoto.")
+        else:
+            a1, a2, a3 = st.columns(3)
+            a1.metric("Voci archiviate", len(ARCH))
+            a2.metric("Dal", f"{ARCH['Data'].min():%d/%m/%Y}")
+            a3.metric("Fonti diverse", ARCH["Attivita"].nunique())
+
+            per_mese_a = ARCH.groupby(
+                ARCH["Data"].dt.to_period("M").dt.to_timestamp()).size()
+            figa = go.Figure()
+            figa.add_bar(x=per_mese_a.index, y=per_mese_a.values,
+                         marker=dict(color=PALETTE[0], line=dict(width=0)),
+                         hovertemplate="%{x|%m/%Y}<br>%{y} voci<extra></extra>")
+            st.plotly_chart(style(figa, 260, "Voci archiviate per mese"),
+                            width='stretch')
+
+            cerca_a = st.text_input("Cerca nell'archivio",
+                                    placeholder="una parola qualsiasi")
+            mostra_a = ARCH.sort_values("Data", ascending=False)
+            if cerca_a.strip():
+                mostra_a = mostra_a[mostra_a["Nota"].str.contains(
+                    cerca_a.strip(), case=False, na=False)]
+                st.caption(f"{len(mostra_a)} voci trovate.")
+            tab_a = mostra_a[["Data", "Attivita", "Strumento", "Nota"]].head(300).copy()
+            tab_a["Titolo"] = tab_a["Nota"].str.split(" :: ").str[0]
+            tab_a["Link"] = tab_a["Nota"].str.split(" :: ").str[-1]
+            tab_a["Data"] = tab_a["Data"].dt.strftime("%d/%m/%Y")
+            tab_a = tab_a.drop(columns="Nota").rename(
+                columns={"Attivita": "Fonte", "Strumento": "Tipo e lingua"})
+            st.dataframe(tab_a, width='stretch', hide_index=True, height=420,
+                         column_config={"Link": st.column_config.LinkColumn(
+                             "Link", display_text="apri")})
+            scarica_tabella(tab_a, "radar_archivio", "⬇️ Scarica l'archivio")
 
     # ------------------------------- le fonti -------------------------------
-    with RT[3]:
-        st.caption("Per aggiungere una fonte ti serve l'indirizzo del suo "
-                   "feed RSS: di solito si trova cercando «nome del sito "
-                   "rss». Poi è una riga in `radar.json`, dentro `fonti`, "
-                   "con nome, url e tipo.")
+    with RT[6]:
+        st.caption("Per aggiungerne una serve l'indirizzo del suo feed RSS: "
+                   "si trova cercando «nome del sito rss». Poi è una riga in "
+                   "`radar.json`, con nome, url, tipo, lingua e contenuto.")
         tab_f = pd.DataFrame(RCFG.get("fonti", []))
-        st.dataframe(tab_f, width='stretch', hide_index=True,
+        st.dataframe(tab_f, width='stretch', hide_index=True, height=380,
                      column_config={"url": st.column_config.LinkColumn(
                          "Feed", display_text="apri")})
         if problemi_r:
             st.markdown("##### Fonti che non hanno risposto")
             for nome_p, errore_p in problemi_r:
                 st.markdown(f"🔴 **{nome_p}** — {errore_p}")
-            st.caption("Se una resta in errore per giorni, molto probabilmente "
-                       "ha cambiato o tolto il feed: toglila da `radar.json`.")
+            st.caption("Se una resta in errore per giorni ha tolto il feed: "
+                       "levala da `radar.json`.")
         else:
-            st.success("Tutte le fonti hanno risposto.")
+            st.success(f"Tutte e {len(tab_f)} le fonti hanno risposto.")
 
         st.markdown("##### Cosa cerca e cosa butta via")
         g1, g2 = st.columns(2)
@@ -4914,9 +5154,10 @@ with TAB[7]:
         g1.caption(", ".join(RCFG.get("interessi", [])))
         g2.markdown("**Parole che la fanno buttare via**")
         g2.caption(", ".join(RCFG.get("esclusioni", [])))
-        st.caption("Si cambiano in `radar.json`, campi `interessi` ed "
-                   "`esclusioni`. Le parole nel titolo contano il doppio di "
-                   "quelle nel riassunto.")
+        bonus = RCFG.get("bonus_lingua", {})
+        st.caption("Punti in più per la lingua: "
+                   + ", ".join(f"{NOMI_L.get(k, k)} +{v}" for k, v in bonus.items() if v)
+                   + ". " + RCFG.get("_nota_lingua", ""))
 
 # ============================================================================
 # TAB 8 - TARATURA  (sezione riservata: vedi taratura.py per la password)

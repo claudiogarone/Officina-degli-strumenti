@@ -190,7 +190,7 @@
         },
         {
           "domanda": "Il tab Radar",
-          "risposta": "Raccoglie quello che esce di nuovo su una ventina di fonti — Hackaday, Arduino, Adafruit, IEEE Spectrum, Phys.org, Wired, Precision Ag e altre — lo mette in un elenco solo, toglie i doppioni e mette davanti quello che parla delle cose che segui.\n\nSi aggiorna da solo ogni ora; il pulsante **🔄 Aggiorna** lo rifà subito. I filtri in alto cambiano il periodo e gli ambiti, e la riga di ricerca serve quando cerchi un argomento preciso.\n\nIl pulsante **⭐ Dopo** mette una voce da parte: la ritrovi nella scheda omonima, e resta nel diario.\n\n**🤖 Dimmi tu le tre che varrebbe la pena leggere** passa i titoli all'assistente e gli fa scegliere le tre che c'entrano davvero con i tuoi campi, spiegando perché."
+          "risposta": "Raccoglie quello che esce di nuovo su trentadue fonti — maker, tecnologia, scienza, agritech, informatica — in italiano, spagnolo e inglese, toglie i doppioni e mette davanti quello che c'entra con i tuoi campi.\n\n**I filtri** in alto: argomento, lingua, tipo (articolo, video, podcast, corso), periodo da 3 a 60 giorni, più la ricerca nel testo. Ogni voce ha la bandierina della lingua e il segno del tipo, così si capisce a colpo d'occhio.\n\n**L'italiano viene prima.** A parità di argomento una voce in italiano guadagna 3 punti e una in spagnolo 2: non cambia quanto c'entra, cambia l'ordine in cui le vedi. Si regola in `radar.json`, campo `bonus_lingua`.\n\n**I pulsanti sulle voci:** ⭐ Dopo la mette da parte, 💡 Di che parla chiede all'assistente di spiegartela in tre frasi.\n\n**In cima:** 📝 Riassumimi tutto legge i titoli e ti dice quali sono i filoni del periodo; 🗄️ Archivia salva le voci nello storico."
         },
         {
           "domanda": "Come si aggiunge o si toglie una fonte al Radar",
@@ -207,6 +207,22 @@
         {
           "domanda": "La pausa nell'allenamento",
           "risposta": "Accanto al cronometro c'è **⏸️ Pausa**. Non ferma l'orologio: tiene il conto dei secondi passati in pausa e li toglie dal tempo trascorso, quindi puoi fermarti quante volte vuoi senza falsare i minuti.\n\nQuando chiudi la sessione, i minuti proposti sono già al netto delle pause."
+        },
+        {
+          "domanda": "L'assistente del Radar",
+          "risposta": "Scheda **🤖 Assistente**: gli chiedi quello che vuoi e lui ha davanti titoli e riassunti di tutte le voci che passano i filtri che hai messo in quel momento.\n\nEsempi che funzionano bene: «cosa mi conviene leggere se ho venti minuti?», «c'è qualcosa sull'ESP32 che non so già?», «qualcosa di utile per le lezioni di questa settimana?».\n\nÈ istruito a rispondere **solo** su quello che trova nell'elenco: se una cosa non c'è lo dice, invece di inventarla. Se cambi i filtri, cambia anche quello che vede."
+        },
+        {
+          "domanda": "L'archivio del Radar, e perché non parte da giugno",
+          "risposta": "**I feed pubblicano solo le ultime voci**, fra le dieci e le sessanta a seconda della fonte. Quello che è uscito a giugno non è più scaricabile da nessuna parte: non è un limite di Quadro, è come funziona il formato.\n\nQuello che si può fare è cominciare ad archiviare **da adesso**. Nella scheda Le novità premi **🗄️ Archivia**: le voci nuove si aggiungono allo storico, i doppioni no. Da lì in avanti lo storico cresce, con il grafico per mese e la ricerca su tutto.\n\nL'archivio sta in un file suo, `Quadro_Radar.xlsx`, separato dal diario — le voci del Radar sono tante e non devono mescolarsi con le tue sessioni. Si collega come gli altri: lo scarichi dalla scheda Archivio, lo metti in una cartella Drive condivisa come Editor, e il pulsante «Aggiorna tutto da Drive» lo trova."
+        },
+        {
+          "domanda": "Le riviste che leggi su Readly",
+          "risposta": "**Readly non pubblica niente che un programma possa leggere**: è un'app a pagamento con il catalogo chiuso, senza feed né interfaccia pubblica. Quindi il Radar non può sapere quando esce un numero nuovo di una rivista che segui lì dentro, e non c'è modo di aggirarlo.\n\nQuello che si può fare è seguire il **sito** della rivista, che quasi sempre un feed ce l'ha: cerchi «*nome della rivista* rss», aggiungi l'indirizzo alle fonti in `radar.json`, e da quel momento sai quando escono articoli nuovi. Il fascicolo completo lo leggi su Readly, il cui collegamento trovi nella scheda Riviste.\n\nNon è la stessa cosa che sapere quando esce il numero, ma è il massimo ottenibile senza controllare a mano."
+        },
+        {
+          "domanda": "Gli indirizzi delle università erano sbagliati",
+          "risposta": "Quelli che ti avevo dato puntavano a `www.unisa.it` e davano errore. Gli indirizzi giusti stanno su **`web.unisa.it`**: eventi, news, Focus on Research e dottorati. Per UNIBAS ho messo «Unibas oggi», la pagina dei dipartimenti — da cui si arriva ai seminari dei singoli — e la home.\n\nSono divisi per zona, Salerno e Potenza. Il feed continuano a non averlo: vanno aperti a mano, e questo non cambia finché non lo pubblicano loro."
         }
       ]
     },

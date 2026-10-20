@@ -104,134 +104,296 @@
     {
       "nome": "Hackaday",
       "url": "https://hackaday.com/feed/",
-      "tipo": "maker"
+      "tipo": "maker",
+      "lingua": "en",
+      "contenuto": "articolo"
     },
     {
       "nome": "Make: Magazine",
       "url": "https://makezine.com/feed/",
-      "tipo": "maker"
+      "tipo": "maker",
+      "lingua": "en",
+      "contenuto": "articolo"
     },
     {
       "nome": "Adafruit",
       "url": "https://blog.adafruit.com/feed/",
-      "tipo": "maker"
+      "tipo": "maker",
+      "lingua": "en",
+      "contenuto": "articolo"
     },
     {
       "nome": "Arduino Blog",
       "url": "https://blog.arduino.cc/feed/",
-      "tipo": "maker"
+      "tipo": "maker",
+      "lingua": "en",
+      "contenuto": "articolo"
     },
     {
       "nome": "Raspberry Pi",
       "url": "https://www.raspberrypi.com/news/feed/",
-      "tipo": "maker"
+      "tipo": "maker",
+      "lingua": "en",
+      "contenuto": "articolo"
     },
     {
       "nome": "Hackster.io",
       "url": "https://www.hackster.io/projects.atom",
-      "tipo": "maker"
+      "tipo": "maker",
+      "lingua": "en",
+      "contenuto": "articolo"
     },
     {
       "nome": "IEEE Spectrum",
       "url": "https://spectrum.ieee.org/feeds/feed.rss",
-      "tipo": "tecnologia"
+      "tipo": "tecnologia",
+      "lingua": "en",
+      "contenuto": "articolo"
     },
     {
       "nome": "Ars Technica",
       "url": "https://feeds.arstechnica.com/arstechnica/technology-lab",
-      "tipo": "tecnologia"
+      "tipo": "tecnologia",
+      "lingua": "en",
+      "contenuto": "articolo"
     },
     {
       "nome": "MIT Technology Review",
       "url": "https://www.technologyreview.com/feed/",
-      "tipo": "tecnologia"
+      "tipo": "tecnologia",
+      "lingua": "en",
+      "contenuto": "articolo"
     },
     {
       "nome": "Hacker News",
       "url": "https://news.ycombinator.com/rss",
-      "tipo": "informatica"
+      "tipo": "informatica",
+      "lingua": "en",
+      "contenuto": "articolo"
     },
     {
       "nome": "Tom's Hardware Italia",
       "url": "https://www.tomshw.it/feed/",
-      "tipo": "tecnologia"
+      "tipo": "tecnologia",
+      "lingua": "it",
+      "contenuto": "articolo"
     },
     {
       "nome": "Wired Italia",
       "url": "https://www.wired.it/feed/rss",
-      "tipo": "tecnologia"
+      "tipo": "tecnologia",
+      "lingua": "it",
+      "contenuto": "articolo"
     },
     {
       "nome": "Italian Tech",
       "url": "https://www.repubblica.it/rss/tecnologia/rss2.0.xml",
-      "tipo": "tecnologia"
+      "tipo": "tecnologia",
+      "lingua": "it",
+      "contenuto": "articolo"
     },
     {
       "nome": "HDblog",
       "url": "https://www.hdblog.it/feed/",
-      "tipo": "tecnologia"
+      "tipo": "tecnologia",
+      "lingua": "it",
+      "contenuto": "articolo"
     },
     {
       "nome": "Phys.org",
       "url": "https://phys.org/rss-feed/",
-      "tipo": "scienza"
+      "tipo": "scienza",
+      "lingua": "en",
+      "contenuto": "articolo"
     },
     {
       "nome": "ScienceDaily",
       "url": "https://www.sciencedaily.com/rss/all.xml",
-      "tipo": "scienza"
+      "tipo": "scienza",
+      "lingua": "en",
+      "contenuto": "articolo"
     },
     {
       "nome": "Science News",
       "url": "https://www.sciencenews.org/feed",
-      "tipo": "scienza"
+      "tipo": "scienza",
+      "lingua": "en",
+      "contenuto": "articolo"
     },
     {
       "nome": "Quanta Magazine",
       "url": "https://api.quantamagazine.org/feed/",
-      "tipo": "scienza"
+      "tipo": "scienza",
+      "lingua": "en",
+      "contenuto": "articolo"
     },
     {
       "nome": "Media INAF",
       "url": "https://www.media.inaf.it/feed/",
-      "tipo": "scienza"
+      "tipo": "scienza",
+      "lingua": "it",
+      "contenuto": "articolo"
     },
     {
       "nome": "Precision Ag",
       "url": "https://www.precisionag.com/feed/",
-      "tipo": "agritech"
+      "tipo": "agritech",
+      "lingua": "en",
+      "contenuto": "articolo"
     },
     {
       "nome": "Open Access Government",
       "url": "https://www.openaccessgovernment.org/feed/",
-      "tipo": "ricerca"
+      "tipo": "ricerca",
+      "lingua": "en",
+      "contenuto": "articolo"
+    },
+    {
+      "nome": "Il Post — Scienza",
+      "url": "https://www.ilpost.it/scienza/feed/",
+      "tipo": "scienza",
+      "lingua": "it",
+      "contenuto": "articolo"
+    },
+    {
+      "nome": "Focus",
+      "url": "https://www.focus.it/rss",
+      "tipo": "scienza",
+      "lingua": "it",
+      "contenuto": "articolo"
+    },
+    {
+      "nome": "INGV Terremoti",
+      "url": "https://ingvterremoti.com/feed/",
+      "tipo": "scienza",
+      "lingua": "it",
+      "contenuto": "articolo"
+    },
+    {
+      "nome": "Agenda Digitale",
+      "url": "https://www.agendadigitale.eu/feed/",
+      "tipo": "informatica",
+      "lingua": "it",
+      "contenuto": "articolo"
+    },
+    {
+      "nome": "Elettronica Open Source",
+      "url": "https://it.emcelettronica.com/feed",
+      "tipo": "maker",
+      "lingua": "it",
+      "contenuto": "articolo"
+    },
+    {
+      "nome": "Xataka",
+      "url": "https://www.xataka.com/feedburner.xml",
+      "tipo": "tecnologia",
+      "lingua": "es",
+      "contenuto": "articolo"
+    },
+    {
+      "nome": "Hipertextual",
+      "url": "https://hipertextual.com/feed",
+      "tipo": "tecnologia",
+      "lingua": "es",
+      "contenuto": "articolo"
+    },
+    {
+      "nome": "Microsiervos",
+      "url": "https://www.microsiervos.com/index.xml",
+      "tipo": "tecnologia",
+      "lingua": "es",
+      "contenuto": "articolo"
+    },
+    {
+      "nome": "Materia — El País",
+      "url": "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/ciencia/portada",
+      "tipo": "scienza",
+      "lingua": "es",
+      "contenuto": "articolo"
+    },
+    {
+      "nome": "YouTube — Hackaday",
+      "url": "https://www.youtube.com/feeds/videos.xml?user=hackaday",
+      "tipo": "maker",
+      "lingua": "en",
+      "contenuto": "video"
+    },
+    {
+      "nome": "Scientificast",
+      "url": "https://www.scientificast.it/feed/podcast/",
+      "tipo": "scienza",
+      "lingua": "it",
+      "contenuto": "podcast"
     }
   ],
   "pagine_da_guardare": [
     {
-      "nome": "UNISA — Eventi e seminari",
-      "url": "https://www.unisa.it/eventi",
-      "nota": "L'ateneo di Salerno non pubblica un feed: questa pagina va aperta a mano."
+      "nome": "UNISA — Eventi",
+      "url": "https://web.unisa.it/home/eventi",
+      "nota": "Gli indirizzi che ti avevo dato erano sbagliati: quelli giusti sono su web.unisa.it, non www.unisa.it. Feed però non ne hanno.",
+      "zona": "Salerno"
     },
     {
-      "nome": "UNISA — Notizie di ateneo",
-      "url": "https://www.unisa.it/ateneo/notizie",
-      "nota": ""
+      "nome": "UNISA — News di ateneo",
+      "url": "https://web.unisa.it/home/news",
+      "nota": "",
+      "zona": "Salerno"
     },
     {
-      "nome": "UNIBAS Potenza — Eventi",
-      "url": "https://portale.unibas.it/site/home/eventi.html",
-      "nota": "Stessa cosa per la Basilicata: nessun feed disponibile."
+      "nome": "UNISA — Ricerca e Focus on Research",
+      "url": "https://web.unisa.it/ricerca/focus-on-research",
+      "nota": "Quello che pubblicano i gruppi di ricerca.",
+      "zona": "Salerno"
     },
     {
-      "nome": "Eventbrite — Salerno",
+      "nome": "UNISA — Dottorati di ricerca",
+      "url": "https://web.unisa.it/home/bandi/corsi-di-studio/dottorati",
+      "nota": "",
+      "zona": "Salerno"
+    },
+    {
+      "nome": "UNIBAS — Unibas oggi",
+      "url": "https://portale.unibas.it/site/home/ateneo/unibas-oggi.html",
+      "nota": "La pagina delle novità dell'ateneo.",
+      "zona": "Potenza"
+    },
+    {
+      "nome": "UNIBAS — Dipartimenti",
+      "url": "https://portale.unibas.it/site/home/ateneo/dipartimenti.html",
+      "nota": "Da qui si arriva alle pagine dei singoli dipartimenti, ognuna con i suoi seminari.",
+      "zona": "Potenza"
+    },
+    {
+      "nome": "UNIBAS — In primo piano",
+      "url": "https://portale.unibas.it/site/home.html",
+      "nota": "",
+      "zona": "Potenza"
+    },
+    {
+      "nome": "Eventbrite — Salerno, scienza e tecnologia",
       "url": "https://www.eventbrite.it/d/italy--salerno/science-and-tech--events/",
-      "nota": "Eventi in zona, filtrati su scienza e tecnologia."
+      "nota": "",
+      "zona": "Salerno"
     },
     {
-      "nome": "Eventbrite — Potenza",
+      "nome": "Eventbrite — Potenza, scienza e tecnologia",
       "url": "https://www.eventbrite.it/d/italy--potenza/science-and-tech--events/",
-      "nota": ""
+      "nota": "",
+      "zona": "Potenza"
     }
-  ]
+  ],
+  "bonus_lingua": {
+    "it": 3,
+    "es": 2,
+    "en": 0,
+    "?": 0
+  },
+  "_nota_lingua": "Quanti punti in più vale una voce per la sua lingua. Non cambia quanto c'entra con i tuoi interessi: cambia l'ordine, così a parità di argomento vedi prima l'italiano, poi lo spagnolo.",
+  "riviste": {
+    "_nota": "Readly non pubblica nulla che un programma possa leggere: è un'app a pagamento con il suo catalogo chiuso, senza feed né interfaccia pubblica. Quindi il Radar non può sapere quando esce un numero nuovo di una rivista che leggi lì dentro. Quello che si può fare è seguire il sito della rivista, che quasi sempre un feed ce l'ha: scopri gli articoli quando escono, e il numero completo lo leggi su Readly.",
+    "collegamento": {
+      "nome": "Readly — la tua edicola",
+      "url": "https://it.readly.com/"
+    }
+  }
 }

@@ -116,6 +116,52 @@ def leggi_feed(xml, fonte=""):
     return voci
 
 
+# --------------------------------------------------------------- lingua ---
+# Riconoscere la lingua con una libreria sarebbe più preciso, ma vorrebbe
+# dire un pacchetto in più per una cosa che qui si fa benissimo contando le
+# parolette: articoli, preposizioni e congiunzioni sono diversissimi fra le
+# tre lingue e in un titolo ce n'è sempre qualcuna.
+SPIE = {
+ "it": {"il","lo","la","gli","le","dei","delle","degli","che","con","per",
+        "una","uno","del","della","nel","nella","sono","più","come","anche",
+        "non","alla","dai","sul","tra","fra","questo","questa","perché"},
+ "es": {"el","los","las","una","uno","del","que","con","por","para","más",
+        "como","pero","este","esta","son","desde","sobre","entre","hasta",
+        "sus","años","según","también","cómo","qué"},
+ "en": {"the","of","and","for","with","from","this","that","are","have",
+        "will","about","into","your","their","which","been","more","new",
+        "how","what","when"},
+}
+
+
+def lingua(voce):
+    """it, es, en oppure «?» quando non c'è abbastanza testo per decidere."""
+    parole = _parole(voce.get("titolo", "") + " " + voce.get("testo", ""))
+    punti = {k: len(parole & spie) for k, spie in SPIE.items()}
+    migliore = max(punti, key=punti.get)
+    return migliore if punti[migliore] >= 2 else "?"
+
+
+# ------------------------------------------------------------ tipologia ---
+def tipologia(voce, dichiarata=""):
+    """
+    Che cosa è: video, podcast, corso o articolo.
+
+    La fonte può dichiararlo in `radar.json`; se non lo fa si guarda
+    l'indirizzo, che quasi sempre basta.
+    """
+    if dichiarata:
+        return dichiarata
+    link = (voce.get("link") or "").lower()
+    if "youtube.com" in link or "youtu.be" in link:
+        return "video"
+    if any(k in link for k in ("podcast", "/episodi", "/episode", ".mp3")):
+        return "podcast"
+    if any(k in link for k in ("udemy.com", "coursera", "/corso", "/course")):
+        return "corso"
+    return "articolo"
+
+
 # ------------------------------------------------------------- setacciare --
 def _parole(testo):
     return set(re.findall(r"[a-zàèéìòóùü0-9]{3,}", (testo or "").lower()))
@@ -150,16 +196,21 @@ def pertinenza(voce, interessi, esclusioni):
     return punti
 
 
-def raccogli(fonti, interessi, esclusioni, giorni=14, minimo=1):
+def raccogli(fonti, interessi, esclusioni, giorni=14, minimo=1,
+             bonus_lingua=None):
     """
     Scarica tutte le fonti, unisce, toglie i doppioni e ordina.
 
     Restituisce (voci, problemi): i problemi sono le fonti che non hanno
     risposto, così si vede subito se una è da togliere dalla lista.
     """
+    bonus_lingua = bonus_lingua or {}
+    per_nome = {f["nome"]: f for f in fonti}
+
     def una(f):
         try:
-            return f["nome"], leggi_feed(_scarica(f["url"]), f["nome"]), None
+            voci = leggi_feed(_scarica(f["url"]), f["nome"])
+            return f["nome"], voci, None
         except Exception as e:
             return f["nome"], [], f"{type(e).__name__}: {str(e)[:80]}"
 
@@ -182,7 +233,14 @@ def raccogli(fonti, interessi, esclusioni, giorni=14, minimo=1):
         p = pertinenza(v, interessi, esclusioni)
         if p is None or p < minimo:
             continue
-        v["punti"] = p
+        conf = per_nome.get(v["fonte"], {})
+        v["ambito"] = conf.get("tipo", "altro")
+        v["tipologia"] = tipologia(v, conf.get("contenuto", ""))
+        v["lingua"] = conf.get("lingua") or lingua(v)
+        # la lingua non cambia la pertinenza, cambia l'ordine: a parità di
+        # argomento vedi prima quello che puoi leggere più in fretta
+        v["punti"] = p + bonus_lingua.get(v["lingua"], 0)
+        v["pertinenza"] = p
         buone.append(v)
 
     buone.sort(key=lambda v: (v["punti"], v["data"] or dt.date(1970, 1, 1)),
