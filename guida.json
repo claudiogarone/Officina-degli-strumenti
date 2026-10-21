@@ -96,7 +96,7 @@
         },
         {
           "domanda": "Cosa vuol dire la colonna Tipo",
-          "risposta": "- `sessione` — una sessione di lavoro o allenamento, con i minuti\n- `parlachiaro` — un allenamento di comunicazione, con il punteggio in Valore\n- `anomalia` — una riga del taccuino delle anomalie\n- `problema` — uno dei tuoi problemi aperti\n- `esercizio` — un esercizio del giorno completato\n- `tappa` — una tappa di studio segnata come fatta\n- `corso` — un avanzamento su un corso, con la percentuale in Valore"
+          "risposta": "- `sessione` — una sessione di lavoro o allenamento, con i minuti\n- `parlachiaro` — un allenamento di comunicazione, con il punteggio in Valore\n- `anomalia` — una riga del taccuino delle anomalie\n- `problema` — uno dei tuoi problemi aperti\n- `esercizio` — un esercizio del giorno completato\n- `tappa` — una tappa di studio segnata come fatta\n- `corso` — un avanzamento su un corso, con la percentuale in Valore\n- `previsione` — una previsione, con la confidenza in Valore\n- `priorita` — una delle tre cose di oggi\n- `interruzioni` — quante volte ti sei distratto in una sessione"
         },
         {
           "domanda": "Come porto via tutto",
@@ -223,6 +223,50 @@
         {
           "domanda": "Gli indirizzi delle università erano sbagliati",
           "risposta": "Quelli che ti avevo dato puntavano a `www.unisa.it` e davano errore. Gli indirizzi giusti stanno su **`web.unisa.it`**: eventi, news, Focus on Research e dottorati. Per UNIBAS ho messo «Unibas oggi», la pagina dei dipartimenti — da cui si arriva ai seminari dei singoli — e la home.\n\nSono divisi per zona, Salerno e Potenza. Il feed continuano a non averlo: vanno aperti a mano, e questo non cambia finché non lo pubblicano loro."
+        },
+        {
+          "domanda": "Dettare invece di scrivere, e la scrittura a mano",
+          "risposta": "Sotto le caselle di testo principali c'è **🎙️ Detta · ✍️ Scrivi a mano**.\n\n**Dettare**: premi il microfono, parli, premi Trascrivi. Il testo viene **aggiunto in fondo** a quello che c'è già, così puoi dettare un pezzo per volta e correggere in mezzo.\n\n**Scrittura a mano**: non c'è un foglio su cui scrivere col pennino dentro Quadro, e il motivo è tecnico — il componente che servirebbe (`streamlit-drawable-canvas`) non parte con questa versione di Streamlit, l'ho installato e provato. Quindi scrivi col pennino dove preferisci (l'app di note del tablet, o la carta), fai uno scatto e carichi l'immagine: la trascrizione la fa l'AI. Un foglio per volta viene meglio.\n\nPer i quaderni veri resta **Inchiostro**, che fa questo mestiere molto meglio: qui serve per le due righe al volo.\n\nPer ora è sulle caselle che contano: risposta all'esercizio, taccuino delle anomalie, dubbi su SENTINEL e il diario della Taratura."
+        },
+        {
+          "domanda": "La Taratura adesso è una conversazione",
+          "risposta": "Premendo **💬 Salva e parlane** la tua voce viene salvata e si apre uno scambio come in un'app di messaggi: lui risponde, tu replichi nella riga in basso, e così via.\n\nTiene conto di quello che vi siete già detti invece di ricominciare da capo, e vede anche le tue ultime cinque voci dei giorni scorsi.\n\nAlla fine: **Salva tutta la conversazione** la mette nell'archivio, **Scarta** butta solo lo scambio — la prima cosa che avevi scritto resta salvata comunque."
+        },
+        {
+          "domanda": "Le fonti del Radar adesso stanno su Drive",
+          "risposta": "In `Quadro_Fonti.xlsx`, accanto agli altri archivi. Il motivo: `radar.json` sta nella repository e Streamlit ricostruisce il disco a ogni riavvio, quindi una fonte aggiunta dall'interfaccia sarebbe sparita al primo Reboot.\n\nUna volta collegato il file, nella scheda **⚙️ Le fonti** puoi: spegnere una fonte senza cancellarla (la spunta On), modificare nome, ambito, lingua e contenuto direttamente in tabella, eliminarne una selezionando la riga e premendo il cestino, e riscrivere le parole chiave nella scheda accanto.\n\nFinché il file non c'è, Quadro usa le fonti di `radar.json` e la pagina resta in sola lettura — te lo dice con un riquadro giallo."
+        },
+        {
+          "domanda": "Aggiungere fonti: una, i canali YouTube, i podcast",
+          "risposta": "Scheda **➕ Aggiungi**.\n\n**Una alla volta**: nome, indirizzo del feed, ambito, lingua, contenuto. Il pulsante **Prova e aggiungi** scarica l'indirizzo prima di salvarlo e ti dice quante voci ha trovato: se non è un feed, lo scopri subito invece che fra tre giorni.\n\n**I canali YouTube**: su Google Takeout chiedi l'esportazione di YouTube limitata alle iscrizioni, ti arriva un `subscriptions.csv`. Lo carichi, scegli quali canali vuoi, e ognuno diventa una fonte di tipo video. **Non serve collegare l'account**: il feed dei video YouTube lo pubblica per tutti i canali, quindi niente accessi, niente password, niente token che scadono.\n\n**I podcast**: quasi tutte le app esportano un file OPML con gli abbonamenti, di solito sotto «esporta» nelle impostazioni. Stesso giro."
+        },
+        {
+          "domanda": "Le riviste: cosa è entrato e cosa no",
+          "risposta": "Entrate e funzionanti: **Computer Idea**, **Elettronica In**, **Il Sole 24 Ore Tecnologia**, **Corriere Innovazione**, **Punto Informatico**, **DDay.it**. Focus e Wired Italia c'erano già.\n\n**Le Scienze non ha feed**: ho provato quattro indirizzi e poi ho letto la loro home cercando un feed dichiarato, non ce n'è. Non è aggirabile.\n\n**Win Magazine** è dentro ma da verificare: dalla mia parte la connessione al loro sito viene rifiutata per un problema di certificato, che però potrebbe essere solo del mio collegamento. Guarda la scheda Le fonti: se resta in rosso per qualche giorno, spegnila."
+        },
+        {
+          "domanda": "I problemi aperti: rinomina, archivia, elimina",
+          "risposta": "Aprendo un problema, sotto il pulsante Aggiorna ce ne sono tre:\n\n**✏️ Rinomina** cambia il testo tenendo stato e nota.\n**📦 Archivia** lo toglie dalla lista ma lo lascia nello storico, e da lì si può **↩️ Riprendere**.\n**🗑️ Elimina** chiede conferma e lo toglie del tutto.\n\nNota su come funziona sotto: l'archivio è un registro a cui si aggiunge soltanto, quindi eliminare scrive una riga che annulla le precedenti. Per te il risultato è identico, e in più non si perde la storia di come ci avevi ragionato."
+        },
+        {
+          "domanda": "L'archivio del Radar si riempie da solo",
+          "risposta": "Non serve più premere Archivia: appena apri il Radar, le voci che non ci sono ancora entrano nell'archivio, una volta per sessione. Te lo scrive con una riga sotto i filtri.\n\nIl pulsante **🗄️ Archivia** resta per quando vuoi forzarlo. Si spegne mettendo `\"archivia_da_solo\": false` in `radar.json`."
+        },
+        {
+          "domanda": "Il registro delle previsioni",
+          "risposta": "Quarta sezione di Scienza, **🎲 Le previsioni**. È l'esercizio più scomodo e il più utile.\n\nScrivi cosa ti aspetti **prima** di saperlo e quanto sei sicuro, da 50 a 99. Vale per un esperimento al banco come per «questo cliente risponde entro venerdì». Quando sai com'è andata, premi Giusta o Sbagliata.\n\nDopo una decina di previsioni chiuse compare **la taratura**: un grafico che confronta quanto eri sicuro con quante volte è andata davvero così. I punti sotto la riga vogliono dire che sei più sicuro di quanto i fatti giustifichino — è l'errore più comune e il più utile da correggere.\n\nIl **punteggio di Brier** riassume tutto in un numero: 0 è perfetto, 0,25 è come tirare a indovinare. Più è basso, meglio sei tarato.\n\nNon misura quanto sai. Misura quanto conosci i tuoi limiti, che è la cosa che separa chi fa ricerca da chi ha opinioni."
+        },
+        {
+          "domanda": "Le tre cose di oggi",
+          "risposta": "In cima alla Scrivania, sopra la sessione. Scrivi le tre che contano; oltre le tre non te ne fa aggiungere, e il motivo è semplice: se ne scrivi dieci, domani ne avrai dieci rimandate.\n\nQuelle non fatte tornano il giorno dopo con un contatore. A due rinvii te lo segna sottovoce; **a cinque te lo dice in rosso** — non per farti sentire in colpa, ma perché a quel punto quasi sempre la cosa è posta male: troppo grande, o non tua. Spezzala o toglila."
+        },
+        {
+          "domanda": "Il contatore delle interruzioni",
+          "risposta": "Durante una sessione, accanto a Pausa, c'è **🔔 Mi sono distratto**. Premilo ogni volta che qualcosa ti stacca. Non interrompe niente e non ferma il cronometro: conta e basta, e ti mostra una interruzione ogni quanti minuti.\n\nQuando chiudi la sessione il numero finisce nel diario insieme ai minuti. Dopo due settimane serve a vedere quali attività e quali orari ti frammentano davvero — che di solito non sono quelli che pensavi."
+        },
+        {
+          "domanda": "Comincia ti porta dove devi lavorare",
+          "risposta": "Scegliendo un'attività che vive dentro Quadro, **Comincia** oltre a far partire il cronometro ti sposta nella scheda giusta: Comunicazione va in Parla chiaro, Python e Database in Studio, Cancelleria nel suo tab, Scienza resta nella Scrivania ma apre direttamente l'esercizio del giorno.\n\nSi configura in `scrivania.json`, campo `vai_a` di ogni attività: `tab` è il nome esatto della scheda in alto, e `chiave`/`valore` servono se vuoi aprire anche una sezione precisa dentro quella scheda. Le attività che aprono strumenti esterni non hanno `vai_a` e si comportano come prima."
         }
       ]
     },

@@ -239,6 +239,41 @@ def aggiungi_xlsx(info, file_id, righe):
     return len(righe)
 
 
+def sostituisci_xlsx(info, file_id, righe, titolo="Dati"):
+    """
+    Riscrive il file da capo con le righe date.
+
+    Serve per i file che si MODIFICANO — l'elenco delle fonti del Radar, per
+    esempio — a differenza del diario, dove si aggiunge soltanto in fondo.
+    Attenzione: quello che c'era prima viene sostituito, non unito.
+    """
+    from googleapiclient.http import MediaIoBaseUpload
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = titolo
+    ws.append(COLONNE)
+    for c in ws[1]:
+        c.font = Font(bold=True, color="FFFFFF")
+        c.fill = PatternFill("solid", fgColor="0E7A54")
+    ws.freeze_panes = "A2"
+    for larghezza, col in zip((12, 8, 12, 34, 24, 9, 9, 70), "ABCDEFGH"):
+        ws.column_dimensions[col].width = larghezza
+    for r in righe:
+        ws.append([r.get(c, "") for c in COLONNE])
+
+    fuori = io.BytesIO()
+    wb.save(fuori)
+    fuori.seek(0)
+    _servizio_drive(info).files().update(
+        fileId=file_id, supportsAllDrives=True,
+        media_body=MediaIoBaseUpload(fuori, mimetype=MIME_XLSX,
+                                     resumable=False)).execute()
+    return len(righe)
+
+
 # ==================================================== 2) foglio di Google ====
 def _servizio_fogli(info):
     from google.oauth2 import service_account
@@ -410,13 +445,122 @@ def problemi(df):
         fuori[testo].update({"Stato": (r["Attivita"] or "aperto"),
                              "Nota": nota, "Aggiornato": r["Data"]})
     ordine = {"aperto": 0, "in corso": 1, "risolto": 2}
-    d = pd.DataFrame(list(fuori.values()))
+    vivi = [v for v in fuori.values() if v["Stato"] not in FUORI_LISTA]
+    if not vivi:
+        return pd.DataFrame(columns=["Problema", "Stato", "Nota", "Aperto",
+                                     "Aggiornato"])
+    d = pd.DataFrame(vivi)
     d["_o"] = d["Stato"].map(lambda x: ordine.get(x, 0))
     return (d.sort_values(["_o", "Aperto"]).drop(columns="_o")
             .reset_index(drop=True))
 
 
 STATI_PROBLEMA = ["aperto", "in corso", "risolto"]
+
+# «archiviato» non è uno stato che scegli: ci finisce un problema quando lo
+# togli dalla lista. «cancellato» quando lo elimini davvero. In un registro a
+# cui si aggiunge soltanto, eliminare vuol dire scrivere una riga che annulla
+# le precedenti — così la storia di come ci hai ragionato non si perde.
+FUORI_LISTA = ("archiviato", "cancellato")
+
+
+# =========================== il registro delle previsioni ==================
+# Una previsione è una riga con lo stato in Attivita, la confidenza in
+# Valore e «testo :: entro quando» nella Nota. Come per i problemi, per
+# cambiare stato si scrive una riga nuova con lo stesso testo: vince
+# l'ultima e la storia non si perde.
+STATI_PREVISIONE = ["aperta", "avverata", "smentita", "annullata"]
+
+
+def previsioni(df):
+    """Tutte le previsioni con il loro stato più recente."""
+    p = df[df["Tipo"] == "previsione"].sort_values("Data")
+    vuoto_p = pd.DataFrame(columns=["Previsione", "Stato", "Confidenza",
+                                    "Entro", "Fatta", "Chiusa"])
+    if p.empty:
+        return vuoto_p
+    fuori = {}
+    for _, r in p.iterrows():
+        pezzi = r["Nota"].split(" :: ")
+        testo = pezzi[0].strip()
+        if not testo:
+            continue
+        entro = pezzi[1].strip() if len(pezzi) > 1 else ""
+        if testo not in fuori:
+            fuori[testo] = {"Previsione": testo, "Fatta": r["Data"]}
+        fuori[testo].update({
+            "Stato": r["Attivita"] or "aperta",
+            "Confidenza": float(r["Valore"]) if pd.notna(r["Valore"]) else 50.0,
+            "Entro": entro, "Chiusa": r["Data"]})
+    d = pd.DataFrame(list(fuori.values()))
+    if d.empty:
+        return vuoto_p
+    ordine = {"aperta": 0, "avverata": 1, "smentita": 1, "annullata": 2}
+    d["_o"] = d["Stato"].map(lambda x: ordine.get(x, 0))
+    return d.sort_values(["_o", "Fatta"]).drop(columns="_o").reset_index(drop=True)
+
+
+FASCE = [(50, 60), (60, 70), (70, 80), (80, 90), (90, 100)]
+
+
+def calibrazione(df):
+    """
+    Quanto sei tarato: per ogni fascia di confidenza, quante volte ci hai
+    azzeccato davvero.
+
+    Se quando dici «sono sicuro al 90%» ci prendi nove volte su dieci sei
+    tarato bene. Se ci prendi sette volte su dieci, sei troppo sicuro di te
+    — ed è la cosa più utile che questi numeri possano dirti.
+    """
+    p = previsioni(df)
+    chiuse = p[p["Stato"].isin(["avverata", "smentita"])]
+    if chiuse.empty:
+        return pd.DataFrame(columns=["Fascia", "Dichiarata", "Reale",
+                                     "Quante"]), None
+    righe = []
+    for basso, alto in FASCE:
+        dentro = chiuse[(chiuse["Confidenza"] >= basso)
+                        & (chiuse["Confidenza"] < (alto + (1 if alto == 100 else 0)))]
+        if dentro.empty:
+            continue
+        azzeccate = (dentro["Stato"] == "avverata").sum()
+        righe.append({"Fascia": f"{basso}–{alto}%",
+                      "Dichiarata": dentro["Confidenza"].mean(),
+                      "Reale": 100.0 * azzeccate / len(dentro),
+                      "Quante": len(dentro)})
+    # Brier: la distanza media al quadrato fra quanto eri sicuro e com'è
+    # andata. Zero è perfetto, 0,25 è come tirare a indovinare.
+    brier = float((((chiuse["Confidenza"] / 100)
+                    - (chiuse["Stato"] == "avverata").astype(float)) ** 2).mean())
+    return pd.DataFrame(righe), brier
+
+
+# ============================ le tre cose di oggi ==========================
+def priorita(df, giorni=14):
+    """
+    Le cose che ti eri messo in testa di fare, con quante volte le hai
+    rimandate. Una riga nuova con lo stesso testo aggiorna lo stato.
+    """
+    vuoto_pr = pd.DataFrame(columns=["Cosa", "Stato", "Messa", "Aggiornata",
+                                     "Rinvii"])
+    p = df[df["Tipo"] == "priorita"].sort_values("Data")
+    if p.empty:
+        return vuoto_pr
+    limite = pd.Timestamp(oggi()) - pd.Timedelta(days=giorni)
+    fuori = {}
+    for _, r in p.iterrows():
+        testo = r["Nota"].strip()
+        if not testo:
+            continue
+        if testo not in fuori:
+            fuori[testo] = {"Cosa": testo, "Messa": r["Data"], "Rinvii": 0}
+        if r["Attivita"] == "rinviata":
+            fuori[testo]["Rinvii"] += 1
+        fuori[testo].update({"Stato": r["Attivita"] or "aperta",
+                             "Aggiornata": r["Data"]})
+    d = pd.DataFrame([v for v in fuori.values()
+                      if v["Stato"] != "fatta" or v["Aggiornata"] >= limite])
+    return d.reset_index(drop=True) if not d.empty else vuoto_pr
 
 
 def tappe_fatte(df, percorso=None):

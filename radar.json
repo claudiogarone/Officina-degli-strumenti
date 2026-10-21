@@ -324,6 +324,55 @@
       "tipo": "scienza",
       "lingua": "it",
       "contenuto": "podcast"
+    },
+    {
+      "nome": "Computer Idea",
+      "url": "https://www.computer-idea.it/feed/",
+      "tipo": "informatica",
+      "lingua": "it",
+      "contenuto": "articolo"
+    },
+    {
+      "nome": "Elettronica In",
+      "url": "https://www.elettronicain.it/feed/",
+      "tipo": "maker",
+      "lingua": "it",
+      "contenuto": "articolo"
+    },
+    {
+      "nome": "Il Sole 24 Ore — Tecnologia",
+      "url": "https://www.ilsole24ore.com/rss/tecnologia.xml",
+      "tipo": "tecnologia",
+      "lingua": "it",
+      "contenuto": "articolo"
+    },
+    {
+      "nome": "Corriere Innovazione",
+      "url": "https://www.corriere.it/rss/tecnologia.xml",
+      "tipo": "tecnologia",
+      "lingua": "it",
+      "contenuto": "articolo"
+    },
+    {
+      "nome": "Punto Informatico",
+      "url": "https://www.punto-informatico.it/feed/",
+      "tipo": "informatica",
+      "lingua": "it",
+      "contenuto": "articolo"
+    },
+    {
+      "nome": "DDay.it",
+      "url": "https://www.dday.it/rss",
+      "tipo": "tecnologia",
+      "lingua": "it",
+      "contenuto": "articolo"
+    },
+    {
+      "nome": "Win Magazine",
+      "url": "https://www.winmagazine.it/feed/",
+      "tipo": "informatica",
+      "lingua": "it",
+      "contenuto": "articolo"
     }
   ],
   "pagine_da_guardare": [
@@ -390,10 +439,11 @@
   },
   "_nota_lingua": "Quanti punti in più vale una voce per la sua lingua. Non cambia quanto c'entra con i tuoi interessi: cambia l'ordine, così a parità di argomento vedi prima l'italiano, poi lo spagnolo.",
   "riviste": {
-    "_nota": "Readly non pubblica nulla che un programma possa leggere: è un'app a pagamento con il suo catalogo chiuso, senza feed né interfaccia pubblica. Quindi il Radar non può sapere quando esce un numero nuovo di una rivista che leggi lì dentro. Quello che si può fare è seguire il sito della rivista, che quasi sempre un feed ce l'ha: scopri gli articoli quando escono, e il numero completo lo leggi su Readly.",
+    "_nota": "Readly non pubblica nulla che un programma possa leggere: è un'app a pagamento con il catalogo chiuso, senza feed né interfaccia pubblica. Quindi il Radar non può sapere quando esce un numero nuovo di una rivista che leggi lì dentro. Quello che si può fare è seguire il sito della rivista, e infatti Focus, Wired, Computer Idea e Win Magazine sono già fra le fonti: scopri gli articoli quando escono, e il fascicolo lo leggi su Readly. LE SCIENZE non ha feed: ho controllato quattro indirizzi e poi la loro home cercando un feed dichiarato, non ce n'è.",
     "collegamento": {
       "nome": "Readly — la tua edicola",
       "url": "https://it.readly.com/"
     }
-  }
+  },
+  "archivia_da_solo": true
 }

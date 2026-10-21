@@ -102,6 +102,7 @@ def style(fig, height=380, title=None, showlegend=None):
 
 
 import diario as DIARIO          # anche per l'ora italiana: DIARIO.adesso()
+import voce as VOCE              # caselle che si possono dettare o scrivere a mano
 
 
 def svuota_dopo(chiave):
@@ -1510,9 +1511,13 @@ else:
     dfp, dfm, contatti, esiti, diag_p = (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(),
                                          pd.DataFrame(), pd.DataFrame())
 
-TAB = st.tabs(["🧭 Scrivania", "🎓 Ripetizioni", "🗂️ Progetti",
-               "🖋️ Cancelleria", "📚 Studio", "🎙️ Parla chiaro",
-               "📡 SENTINEL", "🛰️ Radar", "⚙️ Taratura", "❓ Guida"])
+# La `key` serve a poter cambiare scheda dal codice: scrivendo in
+# st.session_state["tab_aperto"] il nome di una scheda e ricaricando, Quadro
+# si sposta lì. È quello che fa «Comincia» nella sessione di oggi.
+ETICHETTE_TAB = ["🧭 Scrivania", "🎓 Ripetizioni", "🗂️ Progetti",
+                 "🖋️ Cancelleria", "📚 Studio", "🎙️ Parla chiaro",
+                 "📡 SENTINEL", "🛰️ Radar", "⚙️ Taratura", "❓ Guida"]
+TAB = st.tabs(ETICHETTE_TAB, key="tab_aperto", default=ETICHETTE_TAB[0])
 
 
 # ============================================================================
@@ -1656,6 +1661,73 @@ with TAB[0]:
 
     st.divider()
 
+    # =================== LE TRE COSE DI OGGI ================================
+    # Quelle non fatte tornano domani con un contatore. Non è per farti
+    # sentire in colpa: quando una cosa arriva a cinque rinvii di solito vuol
+    # dire che è posta male — troppo grande, o non tua — non che sei pigro.
+    PRIOR = DIARIO.priorita(DIA)
+    aperte_pr = PRIOR[PRIOR["Stato"] != "fatta"] if not PRIOR.empty else PRIOR
+
+    with st.container(border=True):
+        t1, t2 = st.columns([3, 1])
+        t1.markdown("##### 🎯 Le tre cose di oggi")
+        fatte_oggi = (DIA[(DIA["Tipo"] == "priorita")
+                          & (DIA["Attivita"] == "fatta")
+                          & (DIA["Data"] >= pd.Timestamp(DIARIO.oggi()))]
+                      if not DIA.empty else DIA)
+        t2.metric("Fatte oggi", len(fatte_oggi))
+
+        if aperte_pr.empty:
+            st.caption("Niente in lista. Scrivi le tre che contano: se ne "
+                       "scrivi dieci, domani ne avrai dieci rimandate.")
+        else:
+            for i_pr, r in aperte_pr.iterrows():
+                p1, p2, p3 = st.columns([5, 1, 1])
+                avviso = ""
+                if r["Rinvii"] >= 5:
+                    avviso = (f"  \n<small style='color:#C0392B'>rimandata "
+                              f"{r['Rinvii']} volte — forse è posta male, non "
+                              f"è che sei pigro</small>")
+                elif r["Rinvii"] >= 2:
+                    avviso = (f"  \n<small style='opacity:.6'>rimandata "
+                              f"{r['Rinvii']} volte</small>")
+                p1.markdown(f"**{r['Cosa']}**{avviso}", unsafe_allow_html=True)
+                if p2.button("✓ Fatta", key=f"pr_ok_{i_pr}", width='stretch'):
+                    diario_scrivi(DIARIO.riga("priorita", "fatta", "", 0, None,
+                                              r["Cosa"]))
+                    conferma(f"Fatta: {r['Cosa'][:40]}")
+                    st.rerun()
+                if p3.button("↷ Rinvia", key=f"pr_no_{i_pr}", width='stretch'):
+                    diario_scrivi(DIARIO.riga("priorita", "rinviata", "", 0,
+                                              None, r["Cosa"]))
+                    conferma("Rinviata a domani")
+                    st.rerun()
+
+        if len(aperte_pr) < 3:
+            with st.form("nuova_priorita", clear_on_submit=True):
+                q1, q2 = st.columns([4, 1])
+                nuova_pr = q1.text_input(
+                    "Aggiungi", label_visibility="collapsed",
+                    placeholder="una cosa che oggi conta davvero")
+                if q2.form_submit_button("➕ Aggiungi", width='stretch') \
+                        and nuova_pr.strip():
+                    diario_scrivi(DIARIO.riga("priorita", "aperta", "", 0,
+                                              None, nuova_pr.strip()))
+                    conferma("Aggiunta")
+                    st.rerun()
+        else:
+            st.caption("Tre bastano. Chiudine una per farne entrare un'altra.")
+
+        storiche = DIA[(DIA["Tipo"] == "priorita")
+                       & (DIA["Attivita"] == "fatta")] if not DIA.empty else DIA
+        if len(storiche) >= 5:
+            with st.expander(f"Quelle già chiuse ({len(storiche)})"):
+                for _, r in storiche.sort_values(
+                        "Data", ascending=False).head(30).iterrows():
+                    st.markdown(f"✓ **{r['Data']:%d/%m}** — {r['Nota']}")
+
+    st.divider()
+
     # =================== LA SESSIONE DI OGGI ================================
     st.markdown("### 🎯 La sessione di oggi")
 
@@ -1674,6 +1746,12 @@ with TAB[0]:
             st.caption(a["nota"])
         b1, b2 = st.columns([1, 3])
         if b1.button("▶️ Comincia", type="primary", width='stretch'):
+            # se l'attività vive dentro Quadro, ci si sposta direttamente
+            meta = a.get("vai_a") or {}
+            if meta.get("tab") in ETICHETTE_TAB:
+                st.session_state["tab_aperto"] = meta["tab"]
+                if meta.get("chiave") and meta.get("valore"):
+                    st.session_state[meta["chiave"]] = meta["valore"]
             st.session_state["ses_avvio"] = DIARIO.adesso()
             st.session_state["ses_durata"] = durata
             st.session_state["ses_attivita"] = a["nome"]
@@ -1708,6 +1786,21 @@ with TAB[0]:
         pz2.caption(f"In pausa da {int((DIARIO.adesso() - st.session_state['ses_pausa_da']).total_seconds() // 60)} min"
                     if in_pausa else
                     (f"Pausa usata: {int(fermi // 60)} min" if fermi >= 60 else ""))
+
+        # Il contatore delle interruzioni non fa niente: conta e basta. Dopo
+        # qualche settimana è il numero che dice quali attività e quali orari
+        # ti frammentano davvero — che di solito non sono quelli che pensi.
+        n_int = st.session_state.get("ses_interruzioni", 0)
+        i1, i2 = st.columns([1, 2])
+        if i1.button(f"🔔 Mi sono distratto  ({n_int})", width='stretch',
+                     help="Premilo ogni volta che qualcosa ti stacca da "
+                          "quello che stai facendo. Non interrompe niente."):
+            st.session_state["ses_interruzioni"] = n_int + 1
+            st.rerun()
+        if n_int:
+            minuti_finora = max(1, (DIARIO.adesso() - avvio).total_seconds() / 60)
+            i2.caption(f"{n_int} interruzioni · una ogni "
+                       f"{minuti_finora / n_int:.0f} minuti")
 
         suono_on = st.toggle("Suono negli ultimi 10 secondi", value=True,
                              key="ses_suono",
@@ -1801,12 +1894,21 @@ try {{
             annulla = cc2.form_submit_button("Annulla", width='stretch')
 
         if salva:
-            dove = diario_scrivi(DIARIO.riga(
+            righe_ses = [DIARIO.riga(
                 "sessione", st.session_state["ses_attivita"],
-                st.session_state["ses_strumento"], minuti_reali, voto, nota))
+                st.session_state["ses_strumento"], minuti_reali, voto, nota)]
+            if st.session_state.get("ses_interruzioni"):
+                righe_ses.append(DIARIO.riga(
+                    "interruzioni", st.session_state["ses_attivita"],
+                    st.session_state["ses_strumento"], minuti_reali,
+                    st.session_state["ses_interruzioni"],
+                    f"{st.session_state['ses_interruzioni']} interruzioni in "
+                    f"{minuti_reali} minuti"))
+            dove = diario_scrivi(righe_ses)
             for chiave_s in ("ses_avvio", "ses_durata", "ses_attivita",
                              "ses_strumento", "ses_url", "ses_pausa_da",
-                             "ses_fermi", "ses_ultimo_bip"):
+                             "ses_fermi", "ses_ultimo_bip",
+                             "ses_interruzioni"):
                 st.session_state.pop(chiave_s, None)
             conferma(f"Sessione salvata: {minuti_reali} minuti di "
                      f"{st.session_state.get('ses_attivita', 'lavoro')}"
@@ -1815,7 +1917,8 @@ try {{
         if annulla:
             for chiave_s in ("ses_avvio", "ses_durata", "ses_attivita",
                              "ses_strumento", "ses_url", "ses_pausa_da",
-                             "ses_fermi", "ses_ultimo_bip"):
+                             "ses_fermi", "ses_ultimo_bip",
+                             "ses_interruzioni"):
                 st.session_state.pop(chiave_s, None)
             st.rerun()
 
@@ -1839,7 +1942,7 @@ try {{
         # sezioni non funzionassero. Con una scelta che vive in session_state
         # il problema non esiste.
         SEZIONI_SC = ["🎯 Esercizio del giorno", "📓 Taccuino delle anomalie",
-                      "🧩 I problemi aperti"]
+                      "🧩 I problemi aperti", "🎲 Le previsioni"]
         scelta_sc = st.radio("Sezione", SEZIONI_SC, horizontal=True,
                              label_visibility="collapsed", key="scienza_sezione")
 
@@ -1864,18 +1967,18 @@ try {{
             if voce.get("domanda"):
                 st.info(f"**La domanda a cui rispondere** — {voce['domanda']}")
 
-            pulisci_se_segnata("scienza_risposta")
-            risp = st.text_area("La tua risposta", height=160,
-                                key="scienza_risposta",
-                                placeholder="Scrivi qui. Non deve venire bene: "
-                                            "deve venire scritto.")
+            risp = VOCE.campo("La tua risposta", "scienza_risposta",
+                              chiave_ai(), modello_ai(), altezza=160,
+                              suggerimento="Scrivi, detta o carica la pagina "
+                                           "scritta a mano. Non deve venire "
+                                           "bene: deve venire scritto.")
             e1, e2 = st.columns(2)
             if e1.button("💾 Salva l'esercizio", type="primary", width='stretch'):
                 if risp.strip():
                     diario_scrivi(DIARIO.riga("esercizio", voce["abilita"],
                                               "Scienza", 15, None, risp.strip()))
                     conferma("Esercizio del giorno salvato")
-                    svuota_dopo("scienza_risposta")
+                    VOCE.svuota("scienza_risposta")
                     st.session_state.pop("scienza_chat", None)
                     st.rerun()
                 else:
@@ -1940,7 +2043,7 @@ try {{
                                               "Scienza", 15, None, testo_tot))
                     conferma("Conversazione salvata nell'esercizio di oggi")
                     st.session_state.pop("scienza_chat", None)
-                    svuota_dopo("scienza_risposta")
+                    VOCE.svuota("scienza_risposta")
                     st.rerun()
                 if c2.button("🗑️ Ricomincia", width='stretch'):
                     st.session_state.pop("scienza_chat", None)
@@ -1959,15 +2062,15 @@ try {{
             tac = SCI.get("taccuino", {})
             st.markdown(f"**{tac.get('domanda', 'Che cosa ti ha sorpreso oggi?')}**")
             st.caption(tac.get("istruzioni", ""))
-            pulisci_se_segnata("scienza_anomalia")
-            an = st.text_area("L'anomalia, le tre ipotesi e il test più economico",
-                              height=130, key="scienza_anomalia")
+            an = VOCE.campo("L'anomalia, le tre ipotesi e il test più economico",
+                            "scienza_anomalia", chiave_ai(), modello_ai(),
+                            altezza=130)
             if st.button("💾 Salva nel taccuino", type="primary"):
                 if an.strip():
                     diario_scrivi(DIARIO.riga("anomalia", "Taccuino", "Scienza",
                                               5, None, an.strip()))
                     conferma("Anomalia annotata nel taccuino")
-                    svuota_dopo("scienza_anomalia")
+                    VOCE.svuota("scienza_anomalia")
                     st.rerun()
                 else:
                     st.warning("Scrivi qualcosa prima di salvare.")
@@ -2042,6 +2145,74 @@ try {{
                             conferma(f"«{r['Problema'][:40]}» → {nuovo_stato}")
                             st.rerun()
 
+                        # ---- rinomina, archivia, elimina ------------------
+                        m1, m2, m3 = st.columns(3)
+                        if m1.button("✏️ Rinomina", key=f"ren_{chiave_p}",
+                                     width='stretch'):
+                            st.session_state["prob_rinomina"] = r["Problema"]
+                        if m2.button("📦 Archivia", key=f"arc_{chiave_p}",
+                                     width='stretch',
+                                     help="Sparisce dalla lista ma resta "
+                                          "nello storico."):
+                            diario_scrivi(DIARIO.riga(
+                                "problema", "archiviato", "Scienza", 0, None,
+                                r["Problema"] + (f" :: {r['Nota']}"
+                                                 if r["Nota"] else "")))
+                            conferma(f"Archiviato: {r['Problema'][:40]}")
+                            st.rerun()
+                        if m3.button("🗑️ Elimina", key=f"del_{chiave_p}",
+                                     width='stretch'):
+                            st.session_state["prob_elimina"] = r["Problema"]
+
+                        if st.session_state.get("prob_rinomina") == r["Problema"]:
+                            with st.form(f"ren_form_{chiave_p}"):
+                                nome_nuovo = st.text_input(
+                                    "Come si chiama adesso", value=r["Problema"])
+                                r1, r2 = st.columns(2)
+                                ok_r = r1.form_submit_button("Conferma",
+                                                             type="primary")
+                                no_r = r2.form_submit_button("Annulla")
+                            if ok_r and nome_nuovo.strip() and \
+                                    nome_nuovo.strip() != r["Problema"]:
+                                # il vecchio esce di lista, il nuovo entra
+                                # con lo stesso stato e la stessa nota
+                                diario_scrivi([
+                                    DIARIO.riga("problema", "cancellato",
+                                                "Scienza", 0, None,
+                                                r["Problema"]),
+                                    DIARIO.riga("problema", r["Stato"],
+                                                "Scienza", 0, None,
+                                                nome_nuovo.strip()
+                                                + (f" :: {r['Nota']}"
+                                                   if r["Nota"] else "")),
+                                ])
+                                conferma("Rinominato")
+                                st.session_state.pop("prob_rinomina", None)
+                                st.rerun()
+                            if no_r:
+                                st.session_state.pop("prob_rinomina", None)
+                                st.rerun()
+
+                        if st.session_state.get("prob_elimina") == r["Problema"]:
+                            st.warning(f"Elimino «{r['Problema'][:60]}»? "
+                                       "Sparisce dalla lista e dallo storico "
+                                       "visibile. Se vuoi solo toglierlo di "
+                                       "mezzo, usa Archivia.")
+                            e1, e2 = st.columns(2)
+                            if e1.button("Sì, elimina", key=f"del2_{chiave_p}",
+                                         type="primary", width='stretch'):
+                                diario_scrivi(DIARIO.riga(
+                                    "problema", "cancellato", "Scienza", 0,
+                                    None, r["Problema"]))
+                                conferma("Eliminato")
+                                st.session_state.pop("prob_elimina", None)
+                                st.rerun()
+                            if e2.button("No, lascia stare",
+                                         key=f"del3_{chiave_p}",
+                                         width='stretch'):
+                                st.session_state.pop("prob_elimina", None)
+                                st.rerun()
+
                         if st.button("🤖 Come lo affronterei", key=f"ai_{chiave_p}"):
                             stato_p = st.empty()
                             try:
@@ -2073,6 +2244,168 @@ try {{
                     tab_p[c] = tab_p[c].dt.strftime("%d/%m/%Y")
                 scarica_tabella(tab_p, "problemi_aperti",
                                 "⬇️ Scarica la lista")
+
+            archiviati = DIA[(DIA["Tipo"] == "problema")
+                             & (DIA["Attivita"] == "archiviato")]
+            if not archiviati.empty:
+                with st.expander(f"Problemi archiviati ({len(archiviati)})"):
+                    for _, r in archiviati.sort_values(
+                            "Data", ascending=False).iterrows():
+                        testo_a = r["Nota"].split(" :: ")[0]
+                        a1, a2c = st.columns([4, 1])
+                        a1.markdown(f"**{testo_a}**  \n"
+                                    f"<small style='opacity:.6'>archiviato il "
+                                    f"{r['Data']:%d/%m/%Y}</small>",
+                                    unsafe_allow_html=True)
+                        if a2c.button("↩️ Riprendi",
+                                      key=f"ripr_{testo_a[:24]}",
+                                      width='stretch'):
+                            diario_scrivi(DIARIO.riga(
+                                "problema", "aperto", "Scienza", 0, None,
+                                r["Nota"]))
+                            conferma(f"Ripreso: {testo_a[:40]}")
+                            st.rerun()
+
+        # ------------------------------------------- le previsioni ---------
+        # L'esercizio più scomodo e più utile: scrivi cosa ti aspetti PRIMA
+        # di sapere com'è andata, e quanto sei sicuro. Dopo un po' di
+        # previsioni chiuse si vede se quando dici «sono sicuro al 90%» ci
+        # azzecchi davvero nove volte su dieci. Non misura quanto sai:
+        # misura quanto conosci i tuoi limiti.
+        elif scelta_sc == SEZIONI_SC[3]:
+            st.caption("Scrivi cosa ti aspetti **prima** di saperlo, e quanto "
+                       "sei sicuro. Vale per un esperimento al banco come per "
+                       "«questo cliente risponde entro venerdì». Quando sai "
+                       "com'è andata, segni l'esito.")
+
+            with st.form("nuova_previsione", clear_on_submit=True):
+                testo_pv = st.text_input(
+                    "Cosa prevedi",
+                    placeholder="es. la bobina con nucleo di ferrite dà "
+                                "almeno il doppio del segnale")
+                v1, v2 = st.columns([3, 2])
+                conf_pv = v1.slider(
+                    "Quanto sei sicuro", 50, 99, 70, step=5,
+                    help="50 vuol dire «è come tirare a indovinare». Sopra "
+                         "il 95 mettilo solo se lo diresti a voce alta "
+                         "davanti a qualcuno.")
+                entro_pv = v2.date_input(
+                    "Lo saprai entro", value=DIARIO.oggi() + dt.timedelta(days=7),
+                    format="DD/MM/YYYY")
+                if st.form_submit_button("💾 Registra la previsione",
+                                         type="primary") and testo_pv.strip():
+                    diario_scrivi(DIARIO.riga(
+                        "previsione", "aperta", "Scienza", 0, conf_pv,
+                        f"{testo_pv.strip()} :: {entro_pv:%Y-%m-%d}"))
+                    conferma(f"Previsione registrata al {conf_pv}%")
+                    st.rerun()
+
+            tutte_pv = DIARIO.previsioni(DIA)
+            aperte_pv = tutte_pv[tutte_pv["Stato"] == "aperta"] \
+                if not tutte_pv.empty else tutte_pv
+            chiuse_pv = tutte_pv[tutte_pv["Stato"].isin(["avverata", "smentita"])] \
+                if not tutte_pv.empty else tutte_pv
+
+            if not aperte_pv.empty:
+                st.markdown(f"##### In attesa di esito ({len(aperte_pv)})")
+                for i_pv, r in aperte_pv.iterrows():
+                    scaduta_pv = (r["Entro"] and r["Entro"]
+                                  < f"{DIARIO.oggi():%Y-%m-%d}")
+                    with st.container(border=True):
+                        w1, w2, w3 = st.columns([4, 1, 1])
+                        quando_pv = ""
+                        if r["Entro"]:
+                            try:
+                                d_pv = dt.date.fromisoformat(r["Entro"])
+                                quando_pv = f" · entro il {d_pv:%d/%m/%Y}"
+                            except ValueError:
+                                pass
+                        w1.markdown(f"**{r['Previsione']}**")
+                        w1.caption(f"sicuro al {r['Confidenza']:.0f}%"
+                                   + quando_pv
+                                   + (" · **scaduta**" if scaduta_pv else ""))
+                        if w2.button("✓ Giusta", key=f"pv_ok_{i_pv}",
+                                     width='stretch'):
+                            diario_scrivi(DIARIO.riga(
+                                "previsione", "avverata", "Scienza", 0,
+                                r["Confidenza"],
+                                f"{r['Previsione']} :: {r['Entro']}"))
+                            conferma("Segnata come avverata")
+                            st.rerun()
+                        if w3.button("✗ Sbagliata", key=f"pv_no_{i_pv}",
+                                     width='stretch'):
+                            diario_scrivi(DIARIO.riga(
+                                "previsione", "smentita", "Scienza", 0,
+                                r["Confidenza"],
+                                f"{r['Previsione']} :: {r['Entro']}"))
+                            conferma("Segnata come smentita")
+                            st.rerun()
+
+            if chiuse_pv.empty:
+                st.info("La taratura compare quando avrai chiuso qualche "
+                        "previsione. Ne servono una decina perché i numeri "
+                        "dicano qualcosa, una cinquantina perché dicano "
+                        "qualcosa di solido.")
+            else:
+                cal_pv, brier_pv = DIARIO.calibrazione(DIA)
+                z1, z2, z3 = st.columns(3)
+                z1.markdown('<span class="kpi-mark"></span>',
+                            unsafe_allow_html=True)
+                z1.metric("Previsioni chiuse", len(chiuse_pv))
+                giuste_pv = (chiuse_pv["Stato"] == "avverata").sum()
+                z2.metric("Azzeccate",
+                          f"{100 * giuste_pv / len(chiuse_pv):.0f}%")
+                z3.metric("Punteggio di Brier", f"{brier_pv:.3f}",
+                          help="La distanza fra quanto eri sicuro e com'è "
+                               "andata: 0 è perfetto, 0,25 è come tirare a "
+                               "indovinare. Più è basso, meglio sei tarato.")
+
+                if not cal_pv.empty:
+                    figpv = go.Figure()
+                    figpv.add_scatter(x=[50, 100], y=[50, 100], mode="lines",
+                                      name="taratura perfetta",
+                                      line=dict(color="#999", width=1,
+                                                dash="dot"))
+                    figpv.add_scatter(
+                        x=cal_pv["Dichiarata"], y=cal_pv["Reale"],
+                        mode="markers+text", name="tu",
+                        text=cal_pv["Quante"].map(lambda n: f"{n}"),
+                        textposition="top center",
+                        marker=dict(size=cal_pv["Quante"] * 3 + 9,
+                                    color=PALETTE[0]),
+                        hovertemplate="dicevi %{x:.0f}%<br>"
+                                      "in realtà %{y:.0f}%<extra></extra>")
+                    figpv.update_xaxes(range=[45, 105], title="quanto eri sicuro")
+                    figpv.update_yaxes(range=[0, 105], title="quante volte è andata così")
+                    st.plotly_chart(
+                        style(figpv, 320, "La tua taratura", showlegend=False),
+                        width='stretch')
+                    st.caption("I punti sopra la riga: eri più prudente di "
+                               "quanto servisse. Sotto la riga: eri troppo "
+                               "sicuro di te. Il numero dentro il punto dice "
+                               "su quante previsioni è calcolato — con meno "
+                               "di cinque non ci fare caso.")
+
+                    sotto = cal_pv[cal_pv["Reale"] < cal_pv["Dichiarata"] - 10]
+                    if not sotto.empty and sotto["Quante"].sum() >= 5:
+                        st.markdown(
+                            "🟡 &nbsp;Nelle fasce **"
+                            + "**, **".join(sotto["Fascia"])
+                            + "** sei più sicuro di quanto i fatti "
+                              "giustifichino. È l'errore più comune e il più "
+                              "utile da correggere: prova ad abbassare di "
+                              "dieci punti quando stai per scrivere 90.",
+                            unsafe_allow_html=True)
+
+                    scarica_tabella(cal_pv, "taratura_previsioni",
+                                    "⬇️ I dati della taratura")
+
+                with st.expander(f"Le previsioni chiuse ({len(chiuse_pv)})"):
+                    for _, r in chiuse_pv.sort_values(
+                            "Chiusa", ascending=False).iterrows():
+                        segno_pv = "✓" if r["Stato"] == "avverata" else "✗"
+                        st.markdown(f"{segno_pv} **{r['Previsione']}** — "
+                                    f"eri sicuro al {r['Confidenza']:.0f}%")
 
         # ---- l'abitudine della settimana -----------------------------------
         # Otto abitudini lette tutte insieme restano parole. Una alla volta,
@@ -4561,10 +4894,11 @@ with TAB[6]:
             st.caption("La domanda arriva all'assistente insieme al titolo del "
                        "modulo che stai leggendo, quindi non devi spiegargli "
                        "di cosa stai parlando.")
-            dubbio = st.text_area(
-                "Cosa non ti torna", height=110, key="sent_dubbio",
-                placeholder="es. non capisco perché la ferrite aumenta il "
-                            "segnale invece di schermarlo")
+            dubbio = VOCE.campo(
+                "Cosa non ti torna", "sent_dubbio", chiave_ai(), modello_ai(),
+                altezza=110,
+                suggerimento="es. non capisco perché la ferrite aumenta il "
+                             "segnale invece di schermarlo")
             q1, q2 = st.columns(2)
             chiedi_s = q1.button("Chiedi", type="primary", width='stretch')
             salva_s = q2.button("💾 Salva la domanda e la risposta",
@@ -4613,7 +4947,7 @@ with TAB[6]:
                     f"{st.session_state.get('sent_risposta', '')[:900]}"))
                 conferma("Domanda e risposta salvate nel diario")
                 st.session_state.pop("sent_risposta", None)
-                svuota_dopo("sent_dubbio")
+                VOCE.svuota("sent_dubbio")
                 st.rerun()
 
             dubbi = DIA[DIA["Tipo"] == "dubbio"].sort_values(
@@ -4686,16 +5020,101 @@ with TAB[7]:
                "sulle cose che ti interessano, senza doppioni e con l'italiano "
                "davanti. Si aggiorna da solo ogni ora.")
 
+    # ======================= le fonti, su Drive =============================
+    # Perché non restano in `radar.json`: quel file sta nella repository, e
+    # Streamlit ricostruisce il disco a ogni riavvio. Una fonte aggiunta
+    # dall'interfaccia sparirebbe al primo Reboot. Su Drive invece resta.
+    #
+    # Il formato è lo stesso degli altri archivi, otto colonne, così si
+    # riusano le funzioni già scritte:
+    #   Tipo=fonte      Attivita=nome   Strumento=ambito|lingua|contenuto
+    #                   Nota=indirizzo  Valore=1 accesa / 0 spenta
+    #   Tipo=interesse  Nota=parola che fa salire una voce
+    #   Tipo=esclusione Nota=parola che la fa buttare via
+    @st.cache_data(ttl=120, show_spinner=False)
+    def _cerca_file_fonti(_segno):
+        if not SA:
+            return None
+        try:
+            return DIARIO.trova_file(
+                dict(SA), [secret("drive_folder_id_diario", ""),
+                           secret("drive_folder_id_progetti", ""),
+                           secret("drive_folder_id", "")],
+                "Quadro_Fonti.xlsx")
+        except Exception:
+            return None
+
+    FILE_FONTI = _cerca_file_fonti(st.session_state.get("cerca_archivio", 0))
+
+    @st.cache_data(ttl=60, show_spinner=False)
+    def _leggi_fonti(_f, _segno):
+        return DIARIO.leggi_xlsx(dict(SA), _f)
+
+    def _da_drive():
+        """(fonti, interessi, esclusioni) dal file su Drive, o None."""
+        if not FILE_FONTI:
+            return None
+        try:
+            d = _leggi_fonti(FILE_FONTI, st.session_state.get("fonti_segno", 0))
+        except Exception:
+            return None
+        if d.empty:
+            return None
+        fonti, inter, escl = [], [], []
+        for _, r in d.iterrows():
+            if r["Tipo"] == "fonte" and r["Nota"].strip():
+                if str(r["Valore"]) in ("0", "0.0"):
+                    continue
+                pezzi = (r["Strumento"] or "altro|en|articolo").split("|")
+                pezzi += ["altro", "en", "articolo"][len(pezzi):]
+                fonti.append({"nome": r["Attivita"], "url": r["Nota"].strip(),
+                              "tipo": pezzi[0], "lingua": pezzi[1],
+                              "contenuto": pezzi[2]})
+            elif r["Tipo"] == "interesse" and r["Nota"].strip():
+                inter.append(r["Nota"].strip())
+            elif r["Tipo"] == "esclusione" and r["Nota"].strip():
+                escl.append(r["Nota"].strip())
+        if not fonti:
+            return None
+        return fonti, inter or RCFG.get("interessi", []), \
+            escl or RCFG.get("esclusioni", [])
+
+    DA_DRIVE = _da_drive()
+    if DA_DRIVE:
+        FONTI, INTERESSI, ESCLUSIONI = DA_DRIVE
+        DOVE_FONTI = "drive"
+    else:
+        FONTI = RCFG.get("fonti", [])
+        INTERESSI = RCFG.get("interessi", [])
+        ESCLUSIONI = RCFG.get("esclusioni", [])
+        DOVE_FONTI = "file"
+
+    def salva_fonti(fonti, interessi, esclusioni):
+        righe = []
+        for f in fonti:
+            righe.append(DIARIO.riga(
+                "fonte", f.get("nome", ""),
+                f"{f.get('tipo', 'altro')}|{f.get('lingua', 'en')}|"
+                f"{f.get('contenuto', 'articolo')}",
+                0, 1 if f.get("attiva", True) else 0, f.get("url", "")))
+        for p in interessi:
+            righe.append(DIARIO.riga("interesse", "", "", 0, None, p))
+        for p in esclusioni:
+            righe.append(DIARIO.riga("esclusione", "", "", 0, None, p))
+        DIARIO.sostituisci_xlsx(dict(SA), FILE_FONTI, righe, "Fonti")
+        st.session_state["fonti_segno"] = \
+            st.session_state.get("fonti_segno", 0) + 1
+        st.cache_data.clear()
+
     @st.cache_data(ttl=3600, show_spinner=False)
-    def _raccogli_radar(_segno, giorni, minimo):
-        return RAD.raccogli(RCFG.get("fonti", []), RCFG.get("interessi", []),
-                            RCFG.get("esclusioni", []), giorni, minimo,
+    def _raccogli_radar(_segno, giorni, minimo, _n_fonti):
+        return RAD.raccogli(FONTI, INTERESSI, ESCLUSIONI, giorni, minimo,
                             RCFG.get("bonus_lingua", {}))
 
     with st.spinner("Sto guardando le fonti…"):
         tutte_r, problemi_r = _raccogli_radar(
             st.session_state.get("radar_segno", 0), 60,
-            RCFG.get("punteggio_minimo", 1))
+            RCFG.get("punteggio_minimo", 1), len(FONTI))
 
     # ------------------------------------------------------- l'archivio ----
     # Lo storico non può partire da giugno: i feed pubblicano solo le ultime
@@ -4732,6 +5151,11 @@ with TAB[7]:
 
     ARCH = archivio_radar()
 
+    # Archiviazione automatica: appena il Radar carica, quello che non c'è
+    # ancora entra nell'archivio. Si fa una volta per sessione per non
+    # riscrivere il file a ogni clic, e solo se l'archivio è collegato.
+    AUTO_ARCH = st.session_state.get("radar_auto_fatto")
+
     def archivia(voci):
         """Aggiunge all'archivio solo quello che non c'è già."""
         gia = set(ARCH["Nota"].str.split(" :: ").str[0]) if not ARCH.empty else set()
@@ -4754,10 +5178,20 @@ with TAB[7]:
                 pd.concat([loc, pd.DataFrame(righe)], ignore_index=True))
         return len(righe)
 
+    if (FILE_RAD and not AUTO_ARCH and tutte_r
+            and RCFG.get("archivia_da_solo", True)):
+        try:
+            n_auto = archivia(tutte_r)
+            st.session_state["radar_auto_fatto"] = True
+            if n_auto:
+                st.caption(f"✓ {n_auto} voci nuove aggiunte all'archivio.")
+        except Exception:
+            st.session_state["radar_auto_fatto"] = True   # non riprovare
+
     # ---------------------------------------------------------- i filtri ---
     with st.container(border=True):
         c1, c2, c3 = st.columns(3)
-        ambiti = sorted({f.get("tipo", "altro") for f in RCFG.get("fonti", [])})
+        ambiti = sorted({f.get("tipo", "altro") for f in FONTI})
         sel_amb = c1.multiselect("Argomento", ambiti, default=[],
                                  placeholder="tutti gli argomenti")
         NOMI_L = {"it": "italiano", "es": "spagnolo", "en": "inglese",
@@ -4798,7 +5232,7 @@ with TAB[7]:
     k[0].markdown('<span class="kpi-mark"></span>', unsafe_allow_html=True)
     k[0].metric("Con questi filtri", len(voci_r))
     k[1].metric("In italiano", sum(1 for v in voci_r if v["lingua"] == "it"))
-    k[2].metric("Fonti lette", len(RCFG.get("fonti", [])) - len(problemi_r))
+    k[2].metric("Fonti lette", len(FONTI) - len(problemi_r))
     k[3].metric("In archivio", len(ARCH))
 
     RT = st.tabs(["📰 Le novità", "🤖 Assistente", "🎓 Eventi e seminari",
@@ -5132,32 +5566,293 @@ with TAB[7]:
 
     # ------------------------------- le fonti -------------------------------
     with RT[6]:
-        st.caption("Per aggiungerne una serve l'indirizzo del suo feed RSS: "
-                   "si trova cercando «nome del sito rss». Poi è una riga in "
-                   "`radar.json`, con nome, url, tipo, lingua e contenuto.")
-        tab_f = pd.DataFrame(RCFG.get("fonti", []))
-        st.dataframe(tab_f, width='stretch', hide_index=True, height=380,
-                     column_config={"url": st.column_config.LinkColumn(
-                         "Feed", display_text="apri")})
-        if problemi_r:
-            st.markdown("##### Fonti che non hanno risposto")
-            for nome_p, errore_p in problemi_r:
-                st.markdown(f"🔴 **{nome_p}** — {errore_p}")
-            st.caption("Se una resta in errore per giorni ha tolto il feed: "
-                       "levala da `radar.json`.")
+        if DOVE_FONTI == "file":
+            st.warning("**Le fonti stanno ancora dentro `radar.json`, nella "
+                       "repository.** Da lì si leggono ma non si modificano: "
+                       "Streamlit ricostruisce il disco a ogni riavvio, "
+                       "quindi quello che cambi qui sparirebbe al primo "
+                       "Reboot.")
+            with st.expander("Come spostarle su Drive, una volta sola",
+                             expanded=True):
+                st.markdown(
+                    "Scarica `Quadro_Fonti.xlsx` qui sotto, caricalo in una "
+                    "cartella Drive condivisa come **Editor** (quella dei "
+                    "progetti va bene), poi premi **Aggiorna tutto da Drive** "
+                    "nella barra a sinistra.\n\nQuando Quadro lo trova, "
+                    "questa pagina diventa modificabile e il pulsante qui "
+                    "sotto ci copia dentro le fonti di partenza.")
+                st.download_button(
+                    "⬇️ Scarica Quadro_Fonti.xlsx",
+                    DIARIO.modello_xlsx("Fonti", guida=False),
+                    "Quadro_Fonti.xlsx",
+                    "application/vnd.openxmlformats-officedocument."
+                    "spreadsheetml.sheet", type="primary")
         else:
-            st.success(f"Tutte e {len(tab_f)} le fonti hanno risposto.")
+            st.success(f"Fonti e parole chiave su Drive, in "
+                       f"**Quadro_Fonti.xlsx** · {len(FONTI)} fonti attive. "
+                       "Quello che cambi qui resta.")
 
-        st.markdown("##### Cosa cerca e cosa butta via")
-        g1, g2 = st.columns(2)
-        g1.markdown("**Parole che fanno salire una voce**")
-        g1.caption(", ".join(RCFG.get("interessi", [])))
-        g2.markdown("**Parole che la fanno buttare via**")
-        g2.caption(", ".join(RCFG.get("esclusioni", [])))
-        bonus = RCFG.get("bonus_lingua", {})
-        st.caption("Punti in più per la lingua: "
-                   + ", ".join(f"{NOMI_L.get(k, k)} +{v}" for k, v in bonus.items() if v)
-                   + ". " + RCFG.get("_nota_lingua", ""))
+        if FILE_FONTI and DOVE_FONTI == "file":
+            if st.button("📥 Copia le fonti di partenza nel file su Drive",
+                         type="primary"):
+                try:
+                    salva_fonti(
+                        [dict(f, attiva=True) for f in RCFG.get("fonti", [])],
+                        RCFG.get("interessi", []), RCFG.get("esclusioni", []))
+                    conferma("Fonti copiate su Drive")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Non sono riuscito a scrivere: {e}")
+
+        modificabile = (DOVE_FONTI == "drive")
+
+        FT = st.tabs(["📡 Le fonti", "🔤 Parole chiave", "➕ Aggiungi"])
+
+        # ------------------------------- elenco ---------------------------
+        with FT[0]:
+            in_errore = {n for n, _ in problemi_r}
+            righe_f = [{"Attiva": True, "Nome": f["nome"],
+                        "Ambito": f.get("tipo", "altro"),
+                        "Lingua": f.get("lingua", "en"),
+                        "Contenuto": f.get("contenuto", "articolo"),
+                        "Indirizzo": f["url"],
+                        "Stato": "🔴 non risponde" if f["nome"] in in_errore
+                                 else "🟢 ok"} for f in FONTI]
+            df_f = pd.DataFrame(righe_f)
+
+            c1, c2 = st.columns([2, 1])
+            filtro_f = c1.text_input("Cerca fra le fonti",
+                                     placeholder="nome o indirizzo")
+            solo_rotte = c2.toggle("Solo quelle che non rispondono")
+            vista = df_f
+            if filtro_f.strip():
+                q = filtro_f.strip().lower()
+                vista = vista[vista.apply(
+                    lambda r: q in (r["Nome"] + r["Indirizzo"]).lower(), axis=1)]
+            if solo_rotte:
+                vista = vista[vista["Stato"].str.startswith("🔴")]
+
+            if modificabile:
+                st.caption("Togli la spunta per spegnere una fonte senza "
+                           "cancellarla. Per eliminarla davvero, seleziona la "
+                           "riga col quadratino a sinistra e premi il cestino "
+                           "che compare in alto nella tabella.")
+                nuova_f = st.data_editor(
+                    vista, width='stretch', hide_index=True, num_rows="dynamic",
+                    key="editor_fonti", height=430,
+                    column_config={
+                        "Attiva": st.column_config.CheckboxColumn("On"),
+                        "Ambito": st.column_config.SelectboxColumn(
+                            options=sorted({f.get("tipo", "altro") for f in FONTI}
+                                           | {"maker", "tecnologia", "scienza",
+                                              "informatica", "agritech",
+                                              "ricerca", "notizie"})),
+                        "Lingua": st.column_config.SelectboxColumn(
+                            options=["it", "es", "en"]),
+                        "Contenuto": st.column_config.SelectboxColumn(
+                            options=["articolo", "video", "podcast", "corso"]),
+                        "Indirizzo": st.column_config.LinkColumn(),
+                        "Stato": st.column_config.TextColumn(disabled=True),
+                    })
+                if st.button("💾 Salva le fonti", type="primary"):
+                    try:
+                        salva_fonti(
+                            [{"nome": r["Nome"], "url": r["Indirizzo"],
+                              "tipo": r["Ambito"], "lingua": r["Lingua"],
+                              "contenuto": r["Contenuto"],
+                              "attiva": bool(r["Attiva"])}
+                             for _, r in nuova_f.iterrows()
+                             if str(r["Nome"]).strip() and str(r["Indirizzo"]).strip()],
+                            INTERESSI, ESCLUSIONI)
+                        conferma("Fonti salvate su Drive")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Non sono riuscito a salvare: {e}")
+            else:
+                st.dataframe(vista, width='stretch', hide_index=True,
+                             height=430,
+                             column_config={"Indirizzo":
+                                            st.column_config.LinkColumn(
+                                                display_text="apri")})
+
+            if problemi_r:
+                st.markdown("##### Fonti che non hanno risposto")
+                for nome_p, errore_p in problemi_r:
+                    st.markdown(f"🔴 **{nome_p}** — {errore_p}")
+                st.caption("Un errore isolato capita. Se una resta in rosso "
+                           "per giorni ha tolto il feed: spegnila o eliminala.")
+            else:
+                st.success(f"Tutte e {len(FONTI)} le fonti hanno risposto.")
+
+        # ---------------------------- parole chiave ------------------------
+        with FT[1]:
+            st.caption("Le parole di sinistra fanno **salire** una voce: nel "
+                       "titolo valgono due punti, nel riassunto uno. Quelle "
+                       "di destra la fanno **buttare via** comunque. Una per "
+                       "riga.")
+            p1, p2 = st.columns(2)
+            testo_int = p1.text_area("Parole che ti interessano",
+                                     "\n".join(INTERESSI), height=360,
+                                     disabled=not modificabile)
+            testo_esc = p2.text_area("Parole da escludere",
+                                     "\n".join(ESCLUSIONI), height=360,
+                                     disabled=not modificabile)
+            if modificabile and st.button("💾 Salva le parole chiave",
+                                          type="primary"):
+                try:
+                    salva_fonti(
+                        [dict(f, attiva=True) for f in FONTI],
+                        [x.strip() for x in testo_int.splitlines() if x.strip()],
+                        [x.strip() for x in testo_esc.splitlines() if x.strip()])
+                    conferma("Parole chiave salvate")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Non sono riuscito a salvare: {e}")
+
+            bonus = RCFG.get("bonus_lingua", {})
+            st.caption("Punti in più per la lingua: "
+                       + ", ".join(f"{NOMI_L.get(k, k)} +{v}"
+                                   for k, v in bonus.items() if v)
+                       + ". Si cambiano in `radar.json`, campo `bonus_lingua`.")
+
+        # ------------------------------ aggiungi ---------------------------
+        with FT[2]:
+            if not modificabile:
+                st.info("Per aggiungere fonti dall'interfaccia serve prima il "
+                        "file su Drive: le istruzioni sono in cima a questa "
+                        "pagina.")
+            else:
+                st.markdown("##### Una fonte alla volta")
+                with st.form("nuova_fonte"):
+                    n1, n2 = st.columns([2, 3])
+                    nome_nf = n1.text_input("Come si chiama")
+                    url_nf = n2.text_input("Indirizzo del feed RSS",
+                                           placeholder="https://.../feed/")
+                    n3, n4, n5 = st.columns(3)
+                    amb_nf = n3.selectbox("Ambito",
+                                          ["maker", "tecnologia", "scienza",
+                                           "informatica", "agritech",
+                                           "ricerca", "notizie"])
+                    lin_nf = n4.selectbox("Lingua", ["it", "es", "en"])
+                    con_nf = n5.selectbox("Contenuto",
+                                          ["articolo", "video", "podcast",
+                                           "corso"])
+                    prova_nf = st.form_submit_button("🔎 Prova e aggiungi",
+                                                     type="primary")
+                if prova_nf:
+                    if not (nome_nf.strip() and url_nf.strip()):
+                        st.warning("Servono nome e indirizzo.")
+                    else:
+                        try:
+                            with st.spinner("Provo l'indirizzo…"):
+                                prova_voci = RAD.leggi_feed(
+                                    RAD._scarica(url_nf.strip()), nome_nf.strip())
+                            if not prova_voci:
+                                st.error("L'indirizzo risponde ma non contiene "
+                                         "un elenco leggibile: probabilmente "
+                                         "non è un feed RSS.")
+                            else:
+                                salva_fonti(
+                                    [dict(f, attiva=True) for f in FONTI]
+                                    + [{"nome": nome_nf.strip(),
+                                        "url": url_nf.strip(), "tipo": amb_nf,
+                                        "lingua": lin_nf, "contenuto": con_nf,
+                                        "attiva": True}],
+                                    INTERESSI, ESCLUSIONI)
+                                conferma(f"«{nome_nf.strip()}» aggiunta "
+                                         f"({len(prova_voci)} voci trovate)")
+                                st.rerun()
+                        except Exception as e:
+                            st.error(f"L'indirizzo non risponde: {e}")
+
+                st.divider()
+                st.markdown("##### I canali YouTube che segui, tutti insieme")
+                st.caption("Su **Google Takeout** chiedi l'esportazione di "
+                           "YouTube limitata alle iscrizioni: ti arriva un "
+                           "file `subscriptions.csv`. Caricalo qui e ogni "
+                           "canale diventa una fonte. Niente accessi, niente "
+                           "password: il collegamento al feed dei video "
+                           "YouTube lo pubblica per tutti i canali.")
+                csv_yt = st.file_uploader("subscriptions.csv", type=["csv"])
+                if csv_yt is not None:
+                    import csv as _csv
+                    import io as _io
+                    testo_csv = csv_yt.getvalue().decode("utf-8", "replace")
+                    lettore = _csv.reader(_io.StringIO(testo_csv))
+                    canali = []
+                    for riga_c in lettore:
+                        if len(riga_c) < 3 or not riga_c[0].startswith("UC"):
+                            continue
+                        canali.append((riga_c[2].strip() or riga_c[0],
+                                       riga_c[0].strip()))
+                    if not canali:
+                        st.error("Non ho trovato canali in questo file. "
+                                 "Dev'essere il `subscriptions.csv` di "
+                                 "Takeout, con l'identificativo del canale "
+                                 "nella prima colonna.")
+                    else:
+                        st.success(f"Trovati {len(canali)} canali.")
+                        scelti_yt = st.multiselect(
+                            "Quali aggiungere", [c[0] for c in canali],
+                            default=[c[0] for c in canali[:20]])
+                        amb_yt = st.selectbox(
+                            "Che ambito dare a questi canali",
+                            ["maker", "tecnologia", "scienza", "informatica",
+                             "agritech", "ricerca"], key="amb_yt")
+                        if st.button("➕ Aggiungi i canali scelti",
+                                     type="primary"):
+                            nuovi = [
+                                {"nome": f"YouTube — {nome_c}",
+                                 "url": "https://www.youtube.com/feeds/"
+                                        f"videos.xml?channel_id={id_c}",
+                                 "tipo": amb_yt, "lingua": "?",
+                                 "contenuto": "video", "attiva": True}
+                                for nome_c, id_c in canali
+                                if nome_c in scelti_yt]
+                            try:
+                                salva_fonti(
+                                    [dict(f, attiva=True) for f in FONTI] + nuovi,
+                                    INTERESSI, ESCLUSIONI)
+                                conferma(f"Aggiunti {len(nuovi)} canali")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Non sono riuscito a salvare: {e}")
+
+                st.divider()
+                st.markdown("##### I podcast che segui")
+                st.caption("Quasi tutte le app di podcast esportano un file "
+                           "**OPML** con gli abbonamenti: cercalo nelle loro "
+                           "impostazioni, di solito sotto «esporta».")
+                opml = st.file_uploader("Il file OPML", type=["opml", "xml"])
+                if opml is not None:
+                    import re as _re
+                    testo_o = opml.getvalue().decode("utf-8", "replace")
+                    trovati = _re.findall(
+                        r'<outline[^>]*text="([^"]*)"[^>]*xmlUrl="([^"]*)"',
+                        testo_o) or _re.findall(
+                        r'<outline[^>]*xmlUrl="([^"]*)"[^>]*text="([^"]*)"',
+                        testo_o)
+                    if not trovati:
+                        st.error("Non ho trovato abbonamenti in questo file.")
+                    else:
+                        st.success(f"Trovati {len(trovati)} podcast.")
+                        scelti_po = st.multiselect(
+                            "Quali aggiungere", [t[0] for t in trovati],
+                            default=[t[0] for t in trovati[:20]])
+                        if st.button("➕ Aggiungi i podcast scelti",
+                                     type="primary"):
+                            nuovi = [{"nome": f"Podcast — {n}", "url": u,
+                                      "tipo": "scienza", "lingua": "?",
+                                      "contenuto": "podcast", "attiva": True}
+                                     for n, u in trovati if n in scelti_po]
+                            try:
+                                salva_fonti(
+                                    [dict(f, attiva=True) for f in FONTI] + nuovi,
+                                    INTERESSI, ESCLUSIONI)
+                                conferma(f"Aggiunti {len(nuovi)} podcast")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Non sono riuscito a salvare: {e}")
 
 # ============================================================================
 # TAB 8 - TARATURA  (sezione riservata: vedi taratura.py per la password)
@@ -5267,56 +5962,110 @@ with TAB[8]:
 
         # ------------------------------ oggi --------------------------------
         with TT[0]:
-            umore = st.slider("Come stai oggi, da 1 a 10", 1, 10, 6,
-                              help="1 = giornata pessima · 10 = giornata ottima")
-            testo_tar = st.text_area(
-                "Scrivi quello che vuoi", height=220,
-                placeholder="Cosa è successo, cosa ti è rimasto addosso, cosa "
-                            "è andato meglio di quanto pensassi. Non deve "
-                            "essere ordinato.")
+            chat_t = st.session_state.setdefault("tar_chat", [])
 
-            b1, b2 = st.columns(2)
-            if b1.button("💾 Salva e basta", width='stretch'):
-                if testo_tar.strip():
-                    dove_ok = taratura_scrivi(DIARIO.riga(
-                        "voce", "diario", "", 0, umore, testo_tar.strip()))
-                    conferma("Voce salvata nel tuo archivio" if dove_ok
-                             else "Voce salvata solo in questa sessione")
+            if not chat_t:
+                umore = st.slider("Come stai oggi, da 1 a 10", 1, 10, 6,
+                                  help="1 = giornata pessima · 10 = ottima")
+                st.session_state["tar_umore"] = umore
+                testo_tar = VOCE.campo(
+                    "Scrivi quello che vuoi", "tar_testo",
+                    chiave_ai(), modello_ai(), altezza=220,
+                    suggerimento="Cosa è successo, cosa ti è rimasto addosso, "
+                                 "cosa è andato meglio di quanto pensassi. "
+                                 "Non deve essere ordinato.")
+
+                b1, b2 = st.columns(2)
+                if b1.button("💾 Salva e basta", width='stretch'):
+                    if testo_tar.strip():
+                        dove_ok = taratura_scrivi(DIARIO.riga(
+                            "voce", "diario", "", 0, umore, testo_tar.strip()))
+                        conferma("Voce salvata nel tuo archivio" if dove_ok
+                                 else "Voce salvata solo in questa sessione")
+                        VOCE.svuota("tar_testo")
+                        st.rerun()
+                    else:
+                        st.warning("Scrivi qualcosa prima di salvare.")
+
+                if b2.button("💬 Salva e parlane", width='stretch',
+                             type="primary"):
+                    if not testo_tar.strip():
+                        st.warning("Scrivi qualcosa prima.")
+                    else:
+                        taratura_scrivi(DIARIO.riga(
+                            "voce", "diario", "", 0, umore, testo_tar.strip()))
+                        st.session_state["tar_chat"] = [("io", testo_tar.strip())]
+                        st.session_state["tar_rispondi"] = True
+                        VOCE.svuota("tar_testo")
+                        st.rerun()
+            else:
+                umore = st.session_state.get("tar_umore", 6)
+                c1, c2 = st.columns([3, 1])
+                c1.caption(f"Conversazione di oggi · umore {umore}/10")
+                if c2.button("✖️ Chiudi", width='stretch'):
+                    st.session_state.pop("tar_chat", None)
                     st.rerun()
-                else:
-                    st.warning("Scrivi qualcosa prima di salvare.")
 
-            if b2.button("💬 Salva e parlane", width='stretch', type="primary"):
-                if not testo_tar.strip():
-                    st.warning("Scrivi qualcosa prima.")
-                else:
-                    taratura_scrivi(DIARIO.riga("voce", "diario", "", 0, umore,
-                                                testo_tar.strip()))
-                    storico = [(r["Data"], r["Valore"], r["Nota"])
-                               for _, r in voci_tar.head(5).iterrows()]
-                    import assistente as AI
-                    stato_t = st.empty()
-                    try:
-                        with st.spinner("Sto leggendo…"):
-                            risp_t = AI.chiedi(
-                                TAR.prompt(testo_tar.strip(), umore, storico),
-                                chiave_ai(), modello_ai(),
-                                al_tentativo=lambda m: stato_t.info(m))
-                        stato_t.empty()
-                        st.session_state["tar_risposta"] = risp_t
-                    except AI.ErroreAI as e:
-                        stato_t.empty()
-                        st.error(e.messaggio)
-                        if e.dettaglio:
-                            st.caption(e.dettaglio)
+            # ---- la risposta, quando è il suo turno -------------------------
+            if st.session_state.pop("tar_rispondi", False):
+                storico = [(r["Data"], r["Valore"], r["Nota"])
+                           for _, r in voci_tar.head(5).iterrows()]
+                scambio = "\n\n".join(
+                    ("Lui: " if r == "io" else "Tu: ") + t
+                    for r, t in st.session_state["tar_chat"][-8:])
+                stato_t = st.empty()
+                try:
+                    with st.spinner("Sto leggendo…"):
+                        risp_t = AI.chiedi(
+                            TAR.prompt(scambio, umore, storico,
+                                       contesto="Questa è una conversazione "
+                                                "che sta andando avanti: "
+                                                "rispondi all'ultima cosa che "
+                                                "ti ha detto, non "
+                                                "ricominciare da capo."),
+                            chiave_ai(), modello_ai(),
+                            al_tentativo=lambda m: stato_t.info(m))
+                    stato_t.empty()
+                    st.session_state["tar_chat"].append(("ai", risp_t))
+                except AI.ErroreAI as e:
+                    stato_t.empty()
+                    st.error(e.messaggio)
+                    if e.dettaglio:
+                        st.caption(e.dettaglio)
 
-            if st.session_state.get("tar_risposta"):
-                st.divider()
-                st.markdown(st.session_state["tar_risposta"])
+            # ---- la conversazione -------------------------------------------
+            if chat_t:
+                for ruolo, testo_c in chat_t:
+                    with st.chat_message("user" if ruolo == "io"
+                                         else "assistant"):
+                        st.markdown(testo_c)
+
+                segue_t = st.chat_input("Scrivi…", key="tar_chat_input")
+                if segue_t:
+                    chat_t.append(("io", segue_t))
+                    st.session_state["tar_chat"] = chat_t
+                    st.session_state["tar_rispondi"] = True
+                    st.rerun()
+
                 st.caption("Questo è un interlocutore, non uno psicologo. Se "
                            "una cosa pesa e non si muove, parlarne con una "
                            "persona vera vale più di qualsiasi schermo.")
 
+                s1, s2 = st.columns(2)
+                if s1.button("💾 Salva tutta la conversazione",
+                             width='stretch', type="primary"):
+                    testo_tot = "\n\n".join(
+                        ("IO: " if r == "io" else "AI: ") + t for r, t in chat_t)
+                    taratura_scrivi(DIARIO.riga(
+                        "conversazione", "diario", "", 0, umore, testo_tot))
+                    conferma("Conversazione salvata")
+                    st.session_state.pop("tar_chat", None)
+                    st.rerun()
+                if s2.button("🗑️ Scarta la conversazione", width='stretch',
+                             help="La prima cosa che hai scritto resta "
+                                  "salvata: si butta solo lo scambio."):
+                    st.session_state.pop("tar_chat", None)
+                    st.rerun()
 
         # --------------------------- benessere ------------------------------
         with TT[1]:
