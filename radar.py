@@ -112,8 +112,99 @@ def leggi_feed(xml, fonte=""):
             "testo": re.sub(r"\s+", " ", testo)[:420],
             "data": _data(b),
             "fonte": fonte,
+            # l'autore: i feed lo mettono in tag diversi, o non lo mettono
+            "autore": _testo(b, "dc:creator", "author", "itunes:author")[:80],
         })
     return voci
+
+
+# ------------------------------------------------------------- bandi -------
+# Le notizie sui bandi si prendono da Google News, che ha un feed pubblico
+# per ogni ricerca: si scrive la ricerca («bando Vallo di Diano») e Google
+# restituisce le notizie più recenti su quell'argomento. Si aggiorna da solo
+# ogni volta che lo chiedi, senza chiavi e senza scraping.
+PAROLE_BANDI = ("bando", "bandi", "avviso", "contribut", "finanziament",
+                "incentiv", "agevolazion", "voucher", "sovvenzion", "fondo",
+                "fondi")
+
+
+def url_notizie(ricerca):
+    from urllib.parse import quote_plus
+    return ("https://news.google.com/rss/search?q=" + quote_plus(ricerca)
+            + "&hl=it&gl=IT&ceid=IT:it")
+
+
+def cerca_notizie(ricerche, giorni=30):
+    """Notizie su bandi e agevolazioni, senza doppioni, le più recenti prima."""
+    def una(q):
+        try:
+            voci = leggi_feed(_scarica(url_notizie(q)), "Google News")
+        except Exception:
+            return []
+        for v in voci:
+            # i titoli di Google News finiscono con «- Testata»
+            if " - " in v["titolo"]:
+                titolo, _, testata = v["titolo"].rpartition(" - ")
+                v["titolo"], v["fonte"] = titolo.strip(), testata.strip()
+            v["ricerca"] = q
+        return voci
+
+    tutte = []
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        for voci in ex.map(una, ricerche):
+            tutte.extend(voci)
+
+    limite = dt.date.today() - dt.timedelta(days=giorni)
+    viste, buone = set(), []
+    for v in tutte:
+        if v["data"] and v["data"] < limite:
+            continue
+        impronta = re.sub(r"[^a-z0-9]", "", v["titolo"].lower())[:70]
+        if impronta in viste:
+            continue
+        viste.add(impronta)
+        testo = (v["titolo"] + " " + v["testo"]).lower()
+        if not any(p in testo for p in PAROLE_BANDI):
+            continue           # una notizia che non parla di bandi, buttata
+        buone.append(v)
+    buone.sort(key=lambda v: v["data"] or dt.date(1970, 1, 1), reverse=True)
+    return buone
+
+
+# ------------------------------------------------------- canali YouTube ----
+def id_canale_youtube(indirizzo):
+    """
+    Dal link di un canale ricava l'identificativo UC… che serve al feed.
+
+    Accetta tutte e tre le forme in uso: …/channel/UC…, …/@nome, …/c/nome.
+    Per le ultime due va letta la pagina del canale, e lì l'identificativo
+    sta nel codice. Se YouTube cambia la pagina, la funzione lo dice.
+    """
+    indirizzo = indirizzo.strip()
+    m = re.search(r"/channel/(UC[\w-]{22})", indirizzo)
+    if m:
+        return m.group(1)
+    if not indirizzo.startswith("http"):
+        indirizzo = "https://www.youtube.com/" + indirizzo.lstrip("/")
+    pagina = _scarica(indirizzo)
+    m = (re.search(r'"channelId":"(UC[\w-]{22})"', pagina)
+         or re.search(r'"externalId":"(UC[\w-]{22})"', pagina)
+         or re.search(r"channel_id=(UC[\w-]{22})", pagina))
+    if not m:
+        raise ValueError("non trovo l'identificativo del canale in quella "
+                         "pagina: prova con il link «/channel/UC…»")
+    return m.group(1)
+
+
+def canale_youtube(indirizzo):
+    """(nome del canale, indirizzo del feed, numero di video letti)."""
+    id_c = id_canale_youtube(indirizzo)
+    url = f"https://www.youtube.com/feeds/videos.xml?channel_id={id_c}"
+    xml = _scarica(url)
+    m = re.search(r"<author>\s*<name>(.*?)</name>", xml, re.S) \
+        or re.search(r"<title>(.*?)</title>", xml, re.S)
+    nome = html.unescape(m.group(1)).strip() if m else id_c
+    return nome, url, len(leggi_feed(xml, nome))
 
 
 # --------------------------------------------------------------- lingua ---
