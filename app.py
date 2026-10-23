@@ -188,6 +188,49 @@ def pagina_html(html, altezza=600):
     return components.html(html, height=altezza, scrolling=True)
 
 
+def pulsante_ascolta(testo, etichetta="🔊 Ascolta"):
+    """
+    Legge un testo ad alta voce con la voce del browser: gratis, nessuna
+    chiave. Il pulsante diventa «■ Ferma» mentre parla.
+    """
+    import json as _json
+    if not str(testo or "").strip():
+        return
+    dati = _json.dumps(str(testo)[:2500]).replace("</", "<\\/")
+    pagina_html(f"""
+<style>
+  body {{ margin: 0; font-family: sans-serif; }}
+  button {{ width: 100%; font-size: 14px; padding: 6px 10px; border-radius: 8px;
+           border: 1px solid #2a78d6; background: #2a78d6; color: #fff;
+           cursor: pointer; }}
+  button.ferma {{ background: #fff; color: #2a78d6; }}
+</style>
+<button id="b">{etichetta}</button>
+<script>
+  const T = {dati};
+  const b = document.getElementById('b');
+  const ETICHETTA = {_json.dumps(etichetta)};
+  function torna() {{ b.textContent = ETICHETTA; b.className = ''; }}
+  b.onclick = () => {{
+    if (!('speechSynthesis' in window)) {{
+      b.textContent = 'Questo browser non legge ad alta voce'; return;
+    }}
+    if (speechSynthesis.speaking) {{ speechSynthesis.cancel(); torna(); return; }}
+    const u = new SpeechSynthesisUtterance(T);
+    u.lang = 'it-IT';
+    const voci = speechSynthesis.getVoices().filter(
+      v => v.lang && v.lang.toLowerCase().startsWith('it'));
+    if (voci.length) u.voice = voci[0];
+    u.rate = 1;
+    u.onend = torna;
+    u.onerror = torna;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+    b.textContent = '■ Ferma'; b.className = 'ferma';
+  }};
+</script>""", altezza=44)
+
+
 def scarica_tabella(tab, nome_file, etichetta="⬇️ Scarica i dati"):
     """
     Due pulsanti sotto a una tabella o a un grafico: CSV ed Excel.
@@ -1516,7 +1559,8 @@ else:
 # si sposta lì. È quello che fa «Comincia» nella sessione di oggi.
 ETICHETTE_TAB = ["🧭 Scrivania", "🎓 Ripetizioni", "🗂️ Progetti",
                  "🖋️ Cancelleria", "📚 Studio", "🎙️ Parla chiaro",
-                 "📡 SENTINEL", "🛰️ Radar", "⚙️ Taratura", "❓ Guida"]
+                 "📡 SENTINEL", "🛰️ Radar", "⚙️ Taratura", "💼 Lavoro",
+                 "❓ Guida"]
 TAB = st.tabs(ETICHETTE_TAB, key="tab_aperto", default=ETICHETTE_TAB[0])
 
 
@@ -1942,7 +1986,8 @@ try {{
         # sezioni non funzionassero. Con una scelta che vive in session_state
         # il problema non esiste.
         SEZIONI_SC = ["🎯 Esercizio del giorno", "📓 Taccuino delle anomalie",
-                      "🧩 I problemi aperti", "🎲 Le previsioni"]
+                      "🧩 I problemi aperti", "🎲 Le previsioni",
+                      "💡 Sfide e idee"]
         scelta_sc = st.radio("Sezione", SEZIONI_SC, horizontal=True,
                              label_visibility="collapsed", key="scienza_sezione")
 
@@ -2406,6 +2451,69 @@ try {{
                         segno_pv = "✓" if r["Stato"] == "avverata" else "✗"
                         st.markdown(f"{segno_pv} **{r['Previsione']}** — "
                                     f"eri sicuro al {r['Confidenza']:.0f}%")
+
+        # ----------------------------------- sfide e idee da inventare ---
+        # Non è un esercizio: sono le cose difficili che aspettano qualcuno.
+        # Le sfide sono domande scientifiche ancora aperte; i bisogni sono
+        # problemi che vivono persone concrete. Da qui può nascere un'invenzione.
+        elif scelta_sc == SEZIONI_SC[4]:
+            IDEE = _carica_json("idee.json", _mtime("idee.json"))
+            if "_errore" in IDEE:
+                st.error(f"Non riesco a leggere `idee.json`: {IDEE['_errore']}")
+            else:
+                st.caption(IDEE.get("_nota", ""))
+                II1, II2, II3 = st.tabs(["🔭 Sfide scientifiche",
+                                         "🧰 Bisogni da risolvere",
+                                         "💭 Le mie idee"])
+                with II1:
+                    sfide = IDEE.get("sfide", [])
+                    if st.button("🎲 Estrai una sfida a caso", key="estrai_sfida") and sfide:
+                        import random as _rnd
+                        st.session_state["sfida_estratta"] = _rnd.choice(sfide)["titolo"]
+                    if st.session_state.get("sfida_estratta"):
+                        st.info(f"**Provaci con questa:** {st.session_state['sfida_estratta']}")
+                    for s in sfide:
+                        with st.expander(s["titolo"]):
+                            st.markdown(f"**Perché conta.** {s.get('perche', '')}")
+                            st.markdown(f"**Da dove partire.** {s.get('da_dove', '')}")
+                            st.caption(f"Somiglia a: {s.get('legame', '—')}")
+                with II2:
+                    for b_ in IDEE.get("bisogni", []):
+                        with st.container(border=True):
+                            st.markdown(f"**{b_.get('chi', '')}**")
+                            st.markdown(f"Problema: {b_.get('problema', '')}")
+                            st.markdown(f"Un'idea: {b_.get('idea', '')}")
+                            st.caption(f"Collegamento: {b_.get('legame', '—')}")
+                with II3:
+                    st.caption("Le idee che scrivi qui restano nel diario, "
+                               "così le ritrovi quando serve.")
+                    pulisci_se_segnata("idea_titolo")
+                    if st.session_state.get("__idea_ok__"):
+                        conferma("Idea salvata")
+                        st.session_state.pop("__idea_ok__", None)
+                    titolo_i = st.text_input("Il problema o l'idea, in breve",
+                                             key="idea_titolo",
+                                             placeholder="es. un modo per sapere quando un cliente dice il vero")
+                    dettaglio_i = VOCE.campo("Perché conta, da dove partire",
+                                             "idea_testo", chiave_ai(), modello_ai(),
+                                             altezza=110)
+                    if st.button("💾 Salva l'idea", type="primary", key="salva_idea"):
+                        if titolo_i.strip():
+                            diario_scrivi(DIARIO.riga(
+                                "idea", titolo_i.strip()[:80], "Scienza", 0, None,
+                                dettaglio_i.strip()[:600]))
+                            VOCE.svuota("idea_testo")
+                            svuota_dopo("idea_titolo")
+                            st.session_state["__idea_ok__"] = True
+                            st.rerun()
+                        else:
+                            st.warning("Serve almeno il titolo.")
+                    mie = DIA[DIA["Tipo"] == "idea"].sort_values("Data", ascending=False)
+                    if not mie.empty:
+                        st.markdown("##### Le idee che hai scritto")
+                        for _, r_i in mie.head(30).iterrows():
+                            with st.expander(f"{r_i['Data']:%d/%m/%Y} · {r_i['Attivita']}"):
+                                st.write(r_i["Nota"] or "—")
 
         # ---- l'abitudine della settimana -----------------------------------
         # Otto abitudini lette tutte insieme restano parole. Una alla volta,
@@ -3097,9 +3205,12 @@ with TAB[1]:
             st.plotly_chart(fig, width='stretch')
 
         with c4:
-            tar = df[df["Incassato"] > 0].groupby("Allievo").apply(
-                lambda g: g["Incassato"].sum() / g["OreLezione"].sum() if g["OreLezione"].sum() else 0,
-                include_groups=False).reset_index(name="TariffaOraria")
+            # aggregazione esplicita: groupby.apply cambiava forma a seconda dei dati
+            g_tar = df[df["Incassato"] > 0].groupby("Allievo")
+            tar = pd.DataFrame({
+                "TariffaOraria": (g_tar["Incassato"].sum() / g_tar["OreLezione"].sum())
+                .replace([np.inf, -np.inf], np.nan)
+            }).reset_index()
             tar = tar[tar["TariffaOraria"] > 0].sort_values("TariffaOraria")
             if not tar.empty:
                 fig = go.Figure(go.Bar(
@@ -3218,7 +3329,7 @@ with TAB[1]:
                  "CompitoSuperato", "Voto", "Pagato", "Importo", "DataPagamento", "Note",
                  "LinkRiunione", "LinkRegistrazione", "LinkDispense", "LinkMappe"]].copy()
         tab["Data"] = tab["Data"].dt.strftime("%d/%m/%Y")
-        tab["DataPagamento"] = tab["DataPagamento"].dt.strftime("%d/%m/%Y")
+        tab["DataPagamento"] = pd.to_datetime(tab["DataPagamento"], errors="coerce").dt.strftime("%d/%m/%Y")
         tab["OraInizio"] = tab["OraInizio"].map(lambda t: t.strftime("%H:%M") if t else "")
         tab["OraFine"] = tab["OraFine"].map(lambda t: t.strftime("%H:%M") if t else "")
 
@@ -5214,6 +5325,12 @@ with TAB[7]:
         cerca_r = st.text_input("Cerca nel testo",
                                 placeholder="es. ferrite, idroponica, ESP32",
                                 key="radar_cerca")
+        f_r1, f_r2 = st.columns(2)
+        sel_fonte_r = f_r1.multiselect(
+            "Fonte", sorted({v["fonte"] for v in tutte_r}), default=[],
+            placeholder="tutte le fonti", key="radar_fonte")
+        autore_r = f_r2.text_input("Autore", placeholder="nome dell'autore o del canale",
+                                   key="radar_autore")
 
     limite_r = DIARIO.oggi() - dt.timedelta(days=giorni_r)
     voci_r = [v for v in tutte_r if not v["data"] or v["data"] >= limite_r]
@@ -5227,6 +5344,12 @@ with TAB[7]:
         q = cerca_r.strip().lower()
         voci_r = [v for v in voci_r
                   if q in (v["titolo"] + " " + v["testo"]).lower()]
+    if sel_fonte_r:
+        voci_r = [v for v in voci_r if v["fonte"] in sel_fonte_r]
+    if autore_r.strip():
+        q_a = autore_r.strip().lower()
+        voci_r = [v for v in voci_r
+                  if q_a in ((v.get("autore") or "") + " " + v["fonte"]).lower()]
 
     k = st.columns(4)
     k[0].markdown('<span class="kpi-mark"></span>', unsafe_allow_html=True)
@@ -5237,7 +5360,7 @@ with TAB[7]:
 
     RT = st.tabs(["📰 Le novità", "🤖 Assistente", "🎓 Eventi e seminari",
                   "📚 Riviste", "⭐ Messe da parte", "🗄️ Archivio",
-                  "⚙️ Le fonti"])
+                  "⚙️ Le fonti", "🏛️ Bandi e agevolazioni"])
 
     # ------------------------------- le novità ------------------------------
     with RT[0]:
@@ -5285,11 +5408,16 @@ with TAB[7]:
                 with st.container(border=True):
                     st.markdown("##### Di cosa si sta parlando")
                     st.markdown(st.session_state["radar_digest"])
+                    pulsante_ascolta(re.sub(r"[*#_`]", "",
+                                            st.session_state["radar_digest"]),
+                                     "🔊 Ascolta il riassunto")
                     if st.button("Nascondi"):
                         st.session_state.pop("radar_digest", None)
                         st.rerun()
 
             st.divider()
+            pulsante_ascolta("Ecco le novità. " + ". ".join(
+                v["titolo"] for v in voci_r[:15]), "🔊 Leggi i primi 15 titoli")
             gia_salvati = set(DIA[DIA["Tipo"] == "radar"]["Nota"]
                               .str.split(" :: ").str[0]) \
                 if not DIA[DIA["Tipo"] == "radar"].empty else set()
@@ -5303,11 +5431,14 @@ with TAB[7]:
                     quando_v = f"{v['data']:%d/%m}" if v["data"] else "—"
                     c1.markdown(f"{SEGNO.get(v['tipologia'], '📄')} "
                                 f"{BANDIERA.get(v['lingua'], '')} **{v['titolo']}**")
-                    c1.caption(f"{v['fonte']} · {v['ambito']} · {quando_v}"
+                    c1.caption(f"{v['fonte']}"
+                               + (f" · {v['autore']}" if v.get("autore") else "")
+                               + f" · {v['ambito']} · {quando_v}"
                                + (f" · {', '.join(v['parole'])}" if v["parole"] else ""))
                     if v["testo"]:
                         c1.markdown(f"<span style='opacity:.78'>{v['testo'][:260]}…</span>",
                                     unsafe_allow_html=True)
+                    pulsante_ascolta(f"{v['titolo']}. {v['testo']}")
                     if v["link"]:
                         c2.link_button("Apri ↗", v["link"], width='stretch')
                     if v["titolo"] in gia_salvati:
@@ -5529,6 +5660,47 @@ with TAB[7]:
             st.caption("Finché non lo colleghi, l'archivio vive solo in questa "
                        "sessione.")
 
+        # Una sola funzione scrive l'archivio, in tutti e due i modi in cui
+        # può stare: nel file su Drive o, se non è collegato, in memoria.
+        def _scrivi_archivio(righe_nuove=None, sostituisci=None):
+            if FILE_RAD:
+                if sostituisci is not None:
+                    DIARIO.sostituisci_xlsx(dict(SA), FILE_RAD, sostituisci, "Radar")
+                else:
+                    DIARIO.aggiungi_xlsx(dict(SA), FILE_RAD, righe_nuove)
+                st.session_state["radar_arch_segno"] = \
+                    st.session_state.get("radar_arch_segno", 0) + 1
+            else:
+                if sostituisci is not None:
+                    st.session_state["radar_locale"] = DIARIO._sistema(
+                        pd.DataFrame(sostituisci, columns=DIARIO.COLONNE))
+                else:
+                    loc = st.session_state.get("radar_locale", DIARIO.vuoto())
+                    st.session_state["radar_locale"] = DIARIO._sistema(
+                        pd.concat([loc, pd.DataFrame(righe_nuove)], ignore_index=True))
+
+        with st.expander("➕ Aggiungi una voce a mano"):
+            with st.form("arch_nuova", clear_on_submit=True):
+                a1, a2 = st.columns([3, 1])
+                t_a = a1.text_input("Titolo")
+                d_a = a2.date_input("Data", value=DIARIO.oggi(), format="DD/MM/YYYY")
+                a3, a4 = st.columns(2)
+                f_a = a3.text_input("Fonte", placeholder="es. Canale YouTube X")
+                l_a = a4.text_input("Link", placeholder="https://...")
+                if st.form_submit_button("💾 Archivia", type="primary"):
+                    if t_a.strip():
+                        try:
+                            _scrivi_archivio(righe_nuove=[DIARIO.riga(
+                                "voce", f_a.strip() or "a mano", "manuale", 0, None,
+                                f"{t_a.strip()} :: {l_a.strip()}",
+                                quando=dt.datetime.combine(d_a, dt.time(12, 0)))])
+                            conferma("Voce archiviata")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Non sono riuscito a scrivere l'archivio: {e}")
+                    else:
+                        st.warning("Serve almeno il titolo.")
+
         if ARCH.empty:
             st.caption("Archivio ancora vuoto.")
         else:
@@ -5546,23 +5718,72 @@ with TAB[7]:
             st.plotly_chart(style(figa, 260, "Voci archiviate per mese"),
                             width='stretch')
 
+            def _separa(nota):
+                parti = str(nota).split(" :: ")
+                return parti[0], (parti[1] if len(parti) > 1 else "")
+
+            base_a = ARCH.sort_values("Data", ascending=False).reset_index(drop=True)
+            modifica_a = pd.DataFrame({
+                "Data": base_a["Data"].dt.date,
+                "Fonte": base_a["Attivita"],
+                "Tipo e lingua": base_a["Strumento"],
+                "Titolo": base_a["Nota"].map(lambda n: _separa(n)[0]),
+                "Link": base_a["Nota"].map(lambda n: _separa(n)[1]),
+                "Punti": base_a["Valore"],
+            })
+
             cerca_a = st.text_input("Cerca nell'archivio",
-                                    placeholder="una parola qualsiasi")
-            mostra_a = ARCH.sort_values("Data", ascending=False)
+                                    placeholder="una parola qualsiasi",
+                                    key="arch_cerca")
             if cerca_a.strip():
-                mostra_a = mostra_a[mostra_a["Nota"].str.contains(
-                    cerca_a.strip(), case=False, na=False)]
-                st.caption(f"{len(mostra_a)} voci trovate.")
-            tab_a = mostra_a[["Data", "Attivita", "Strumento", "Nota"]].head(300).copy()
-            tab_a["Titolo"] = tab_a["Nota"].str.split(" :: ").str[0]
-            tab_a["Link"] = tab_a["Nota"].str.split(" :: ").str[-1]
-            tab_a["Data"] = tab_a["Data"].dt.strftime("%d/%m/%Y")
-            tab_a = tab_a.drop(columns="Nota").rename(
-                columns={"Attivita": "Fonte", "Strumento": "Tipo e lingua"})
-            st.dataframe(tab_a, width='stretch', hide_index=True, height=420,
-                         column_config={"Link": st.column_config.LinkColumn(
-                             "Link", display_text="apri")})
-            scarica_tabella(tab_a, "radar_archivio", "⬇️ Scarica l'archivio")
+                # con la ricerca attiva la tabella è di sola lettura: modificare
+                # solo le voci trovate salverebbe via tutte le altre
+                trovate = modifica_a[modifica_a["Titolo"].str.contains(
+                    cerca_a.strip(), case=False, na=False)
+                    | modifica_a["Fonte"].str.contains(cerca_a.strip(), case=False, na=False)]
+                st.caption(f"{len(trovate)} voci trovate. Togli la ricerca per modificare.")
+                st.dataframe(trovate, width='stretch', hide_index=True, height=420,
+                             column_config={"Link": st.column_config.LinkColumn(
+                                 "Link", display_text="apri"),
+                                 "Data": st.column_config.DateColumn(format="DD/MM/YYYY")})
+            else:
+                st.markdown("##### Modifica l'archivio")
+                st.caption("Cambia direttamente nella tabella. Per cancellare "
+                           "una voce selezionala a sinistra e premi il cestino. "
+                           "Quando hai finito, premi **Salva**.")
+                editata_a = st.data_editor(
+                    modifica_a, hide_index=True, num_rows="dynamic",
+                    width='stretch', height=460, key="editor_archivio",
+                    column_config={
+                        "Data": st.column_config.DateColumn("Data", format="DD/MM/YYYY"),
+                        "Link": st.column_config.LinkColumn("Link", display_text="apri"),
+                        "Punti": st.column_config.NumberColumn("Punti", disabled=True),
+                    })
+                if st.button("💾 Salva le modifiche all'archivio", type="primary"):
+                    nuove_a = []
+                    for _, r_a in editata_a.iterrows():
+                        titolo_r = str(r_a["Titolo"] or "").strip()
+                        if not titolo_r:
+                            continue
+                        quando_r = r_a["Data"]
+                        if quando_r is None or pd.isna(quando_r):
+                            quando_r = DIARIO.oggi()
+                        punti_r = r_a["Punti"]
+                        nuove_a.append(DIARIO.riga(
+                            "voce", str(r_a["Fonte"] or "").strip() or "a mano",
+                            str(r_a["Tipo e lingua"] or "").strip(), 0,
+                            None if pd.isna(punti_r) else float(punti_r),
+                            f"{titolo_r} :: {str(r_a['Link'] or '').strip()}",
+                            quando=dt.datetime.combine(quando_r, dt.time(12, 0))))
+                    try:
+                        _scrivi_archivio(sostituisci=nuove_a)
+                        conferma(f"Archivio salvato: {len(nuove_a)} voci")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Non sono riuscito a salvare l'archivio: {e}")
+
+            scarica_tabella(modifica_a[["Data", "Fonte", "Tipo e lingua", "Titolo", "Link"]],
+                            "radar_archivio", "⬇️ Scarica l'archivio")
 
     # ------------------------------- le fonti -------------------------------
     with RT[6]:
@@ -5766,6 +5987,42 @@ with TAB[7]:
                             st.error(f"L'indirizzo non risponde: {e}")
 
                 st.divider()
+                st.markdown("##### Un canale YouTube, dal suo indirizzo")
+                st.caption("Incolla il link del canale, quello con «@nome» oppure "
+                           "quello con «/channel/UC…». Quadro trova il feed e il "
+                           "nome da solo.")
+                with st.form("nuovo_canale_yt", clear_on_submit=True):
+                    y1, y2 = st.columns([3, 1])
+                    url_yt = y1.text_input("Indirizzo del canale",
+                                           placeholder="https://www.youtube.com/@nomecanale")
+                    amb_yt1 = y2.selectbox("Ambito", ["maker", "tecnologia", "scienza",
+                                                      "informatica", "agritech",
+                                                      "ricerca"])
+                    if st.form_submit_button("🔎 Trova e aggiungi", type="primary"):
+                        if not url_yt.strip():
+                            st.warning("Incolla l'indirizzo del canale.")
+                        else:
+                            try:
+                                with st.spinner("Cerco il canale…"):
+                                    nome_yt1, url_feed_yt, n_yt = RAD.canale_youtube(
+                                        url_yt.strip())
+                                if n_yt == 0:
+                                    st.error("Ho trovato il canale, ma il feed non "
+                                             "contiene video.")
+                                else:
+                                    salva_fonti(
+                                        [dict(f, attiva=True) for f in FONTI]
+                                        + [{"nome": f"YouTube — {nome_yt1}",
+                                            "url": url_feed_yt, "tipo": amb_yt1,
+                                            "lingua": "?", "contenuto": "video",
+                                            "attiva": True}],
+                                        INTERESSI, ESCLUSIONI)
+                                    conferma(f"«{nome_yt1}» aggiunto ({n_yt} video trovati)")
+                                    st.rerun()
+                            except Exception as e:
+                                st.error(f"Non riesco ad aggiungere il canale: {e}")
+
+                st.divider()
                 st.markdown("##### I canali YouTube che segui, tutti insieme")
                 st.caption("Su **Google Takeout** chiedi l'esportazione di "
                            "YouTube limitata alle iscrizioni: ti arriva un "
@@ -5853,6 +6110,78 @@ with TAB[7]:
                                 st.rerun()
                             except Exception as e:
                                 st.error(f"Non sono riuscito a salvare: {e}")
+
+    # -------------------------------- bandi e agevolazioni -------------------
+    # Le notizie si cercano su Google Notizie: ogni volta che premi «Cerca
+    # adesso» si leggono le più recenti su ogni ricerca di bandi.json. Non è
+    # un controllo automatico: lo fai tu quando apri la pagina, e una volta
+    # a settimana basta per non perdere niente.
+    with RT[7]:
+        BANDI = _carica_json("bandi.json", _mtime("bandi.json"))
+        if "_errore" in BANDI:
+            st.error(f"Non riesco a leggere `bandi.json`: {BANDI['_errore']}")
+        else:
+            st.caption(BANDI.get("_nota", ""))
+            ricerche_b = list(BANDI.get("ricerche", []))
+            zona_b = [z.lower() for z in BANDI.get("zona_vicina", [])]
+
+            cb1, cb2 = st.columns([3, 1])
+            cb1.markdown("**Prima le notizie di oggi su bandi e incentivi**, poi le "
+                         "pagine ufficiali da tenere d'occhio.")
+            if cb2.button("🔄 Cerca adesso", type="primary", width='stretch'):
+                with st.spinner("Cerco le notizie sui bandi…"):
+                    st.session_state["bandi_voci"] = RAD.cerca_notizie(ricerche_b, giorni=30)
+                    st.session_state["bandi_ora"] = DIARIO.adesso()
+
+            voci_b = st.session_state.get("bandi_voci")
+            if voci_b is None:
+                st.info("Premi «Cerca adesso»: prende le notizie più recenti su "
+                        "ognuna delle ricerche della lista.")
+            elif not voci_b:
+                st.warning("Nessuna notizia sui bandi negli ultimi 30 giorni. "
+                           "Può essere che non ci sia niente di nuovo, oppure che "
+                           "Google Notizie non abbia risposto: riprova tra un "
+                           "po' e, se resta vuoto, dimmelo.")
+            else:
+                for v in voci_b:
+                    v["vicino"] = any(z in (v["titolo"] + " " + v["testo"]).lower()
+                                      for z in zona_b)
+                solo_vicino = st.toggle("Solo quelle vicino a me (Vallo di Diano, "
+                                        "Salerno, Campania…)", value=True,
+                                        key="bandi_vicino")
+                mostra_b = [v for v in voci_b if v["vicino"]] if solo_vicino else voci_b
+                ora_b = st.session_state.get("bandi_ora")
+                st.caption(f"Aggiornato alle {ora_b:%d/%m %H:%M} · "
+                           f"{len(mostra_b)} notizie"
+                           if ora_b else f"{len(mostra_b)} notizie")
+                if not mostra_b:
+                    st.info("Niente di vicino a te in questo momento. Togli il "
+                            "filtro per vedere il nazionale.")
+                for v in mostra_b[:40]:
+                    with st.container(border=True):
+                        b1, b2 = st.columns([5, 1])
+                        quando_b = f"{v['data']:%d/%m/%Y}" if v["data"] else "—"
+                        b1.markdown(("📍 " if v["vicino"] else "") + f"**{v['titolo']}**")
+                        b1.caption(f"{v['fonte']} · {quando_b}")
+                        if v["link"]:
+                            b2.link_button("Apri ↗", v["link"], width='stretch')
+                        pulsante_ascolta(f"{v['titolo']}. {v['testo']}")
+
+            st.divider()
+            st.markdown("##### Pagine ufficiali da tenere d'occhio")
+            zone_ord = ["Locale", "Provincia", "Regione", "Nazionale", "Europa"]
+            tutte_zone = {p.get("zona", "") for p in BANDI.get("pagine", [])}
+            for z in [z for z in zone_ord if z in tutte_zone] + sorted(tutte_zone - set(zone_ord)):
+                st.markdown(f"###### {z}")
+                for p in BANDI.get("pagine", []):
+                    if p.get("zona", "") != z:
+                        continue
+                    with st.container(border=True):
+                        p1, p2 = st.columns([4, 1])
+                        p1.markdown(f"**{p['nome']}**")
+                        if p.get("nota"):
+                            p1.caption(p["nota"])
+                        p2.link_button("Apri ↗", p["url"], width='stretch')
 
 # ============================================================================
 # TAB 8 - TARATURA  (sezione riservata: vedi taratura.py per la password)
@@ -6288,9 +6617,196 @@ with TAB[8]:
                             unsafe_allow_html=True)
 
 # ============================================================================
-# TAB 9 - GUIDA  (come si usa e come si modifica: il testo sta in guida.json)
+# TAB 9 - LAVORO  (clienti, fatture e scadenze: da freelance)
 # ============================================================================
 with TAB[9]:
+    import lavoro as LAV
+
+    mostra_conferma()
+    st.markdown("#### 💼 Lavoro")
+    st.caption("Clienti, preventivi, fatture e scadenze in un posto solo. Ogni "
+               "cambiamento aggiunge una riga al diario: non si perde niente, "
+               "e vince sempre l'ultima.")
+
+    oggi_l = DIARIO.oggi()
+    CLI = LAV.clienti(DIA)
+    FAT = LAV.fatture(DIA)
+    SCA = LAV.scadenze(DIA, oggi_l, giorni=60)
+    OBI = LAV.obiettivo(DIA)
+
+    def _eur(x):
+        return f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+    def _scrivi_lavoro(riga_l, messaggio):
+        diario_scrivi(riga_l)
+        conferma(messaggio)
+        st.rerun()
+
+    LT = st.tabs(["📊 Il mese", "👥 Clienti", "🧾 Fatture", "⏰ Scadenze"])
+
+    # ----------------------------------------------------------- il mese ---
+    with LT[0]:
+        fatt_m = LAV.fatturato_mese(DIA, oggi_l.year, oggi_l.month)
+        inc_m = LAV.mese_di(DIA, "incasso", oggi_l.year, oggi_l.month)
+        da_inc = LAV.da_incassare(FAT)
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Fatturato questo mese", f"{_eur(fatt_m)} €")
+        m2.metric("Incassato questo mese", f"{_eur(inc_m)} €")
+        m3.metric("Ancora da incassare", f"{_eur(da_inc)} €")
+
+        if OBI > 0:
+            st.progress(min(fatt_m / OBI, 1.0),
+                        text=f"Obiettivo del mese {_eur(OBI)} € · fatturato "
+                             f"{fatt_m / OBI * 100:.0f}%")
+
+        avvisi = []
+        scaduti_l = LAV.richiami_scaduti(CLI, oggi_l)
+        if not scaduti_l.empty:
+            avvisi.append("Da richiamare: " + ", ".join(scaduti_l["Cliente"].astype(str)))
+        if not SCA.empty and (SCA["Quando"] <= oggi_l + dt.timedelta(days=7)).any():
+            avvisi.append("Scadenze entro una settimana: " + ", ".join(
+                SCA[SCA["Quando"] <= oggi_l + dt.timedelta(days=7)]["Cosa"].astype(str)))
+        if not FAT.empty and FAT["Aperta"].any():
+            scadute = FAT[FAT["Aperta"] & FAT["Scadenza"].notna()
+                          & (FAT["Scadenza"] < oggi_l)]
+            if not scadute.empty:
+                avvisi.append(f"Fatture non pagate oltre la scadenza: {len(scadute)}")
+        for a in avvisi:
+            st.warning(a)
+
+        with st.form("obiettivo_lav"):
+            ob_nuovo = st.number_input("Quanto vuoi fatturare al mese (€)",
+                                       min_value=0.0, value=float(OBI), step=100.0,
+                                       help="0 vuol dire non impostato.")
+            if st.form_submit_button("💾 Salva l'obiettivo"):
+                _scrivi_lavoro(DIARIO.riga("obiettivo", "Obiettivo", "", 0,
+                                           float(ob_nuovo), "entrata mensile"),
+                               "Obiettivo salvato")
+
+    # ---------------------------------------------------------- clienti ---
+    with LT[1]:
+        mostra_chiusi = st.toggle("Mostra anche i persi", value=False, key="lav_chiusi")
+        vista_c = CLI if mostra_chiusi else CLI[CLI["Stato"] != "perso"] if not CLI.empty else CLI
+        if vista_c.empty:
+            st.caption("Ancora nessun cliente. Aggiungine uno qui sotto.")
+        else:
+            st.dataframe(vista_c, width='stretch', hide_index=True,
+                         column_config={
+                             "Importo": st.column_config.NumberColumn("Importo", format="%.0f €"),
+                             "Richiamo": st.column_config.DateColumn("Richiamo", format="DD/MM/YYYY"),
+                         })
+
+        st.markdown("##### Aggiungi o aggiorna un cliente")
+        st.caption("Scrivi il nome di un cliente già in elenco per cambiarne lo stato.")
+        with st.form("cliente_nuovo", clear_on_submit=True):
+            c1, c2 = st.columns([2, 1])
+            nome_c = c1.text_input("Cliente")
+            stato_c = c2.selectbox("Stato", LAV.STATI_CLIENTE)
+            c3, c4, c5 = st.columns([2, 1, 1])
+            passo_c = c3.text_input("Prossimo passo", placeholder="es. inviare il preventivo rivisto")
+            importo_c = c4.number_input("Importo stimato (€)", min_value=0.0, step=100.0)
+            richiamo_c = c5.date_input("Richiamo", value=oggi_l + dt.timedelta(days=7),
+                                       format="DD/MM/YYYY")
+            if st.form_submit_button("💾 Salva", type="primary"):
+                if nome_c.strip():
+                    _scrivi_lavoro(DIARIO.riga(
+                        "cliente", nome_c.strip()[:80], stato_c, 0, float(importo_c),
+                        f"{passo_c.strip()} :: {richiamo_c:%Y-%m-%d}"),
+                        f"Cliente aggiornato: {nome_c.strip()}")
+                else:
+                    st.warning("Serve il nome del cliente.")
+
+    # ---------------------------------------------------------- fatture ---
+    with LT[2]:
+        st.markdown("##### Fatture aperte")
+        aperte_f = FAT[FAT["Aperta"]] if not FAT.empty else FAT
+        if aperte_f.empty:
+            st.caption("Nessuna fattura aperta.")
+        for i_f, r_f in aperte_f.iterrows():
+            with st.container(border=True):
+                x1, x2 = st.columns([4, 1])
+                resto_f = float(r_f["Importo"] - r_f["Incassato"])
+                scad_f = (f" · pagamento entro {r_f['Scadenza']:%d/%m/%Y}"
+                          if r_f["Scadenza"] else "")
+                x1.markdown(f"**{r_f['Cliente']}** · fattura {r_f['Numero']}")
+                x1.caption(f"{_eur(resto_f)} € da incassare{scad_f}")
+                if x2.button("Incassata", key=f"inc_{i_f}", width='stretch'):
+                    _scrivi_lavoro(DIARIO.riga(
+                        "incasso", str(r_f["Cliente"]), str(r_f["Numero"]), 0,
+                        resto_f, "incasso"), "Fattura segnata come incassata")
+
+        with st.form("fattura_nuova", clear_on_submit=True):
+            st.markdown("##### Nuova fattura")
+            f1, f2 = st.columns([2, 1])
+            cli_f = f1.text_input("Cliente")
+            num_f = f2.text_input("Numero", placeholder="es. 12/2026")
+            f3, f4, f5 = st.columns(3)
+            imp_f = f3.number_input("Importo (€)", min_value=0.0, step=50.0)
+            dat_f = f4.date_input("Data emissione", value=oggi_l, format="DD/MM/YYYY")
+            scad_pf = f5.date_input("Pagamento entro", value=oggi_l + dt.timedelta(days=30),
+                                    format="DD/MM/YYYY")
+            if st.form_submit_button("💾 Registra la fattura", type="primary"):
+                if not cli_f.strip() or not num_f.strip():
+                    st.warning("Servono il cliente e il numero.")
+                elif (not FAT.empty) and (FAT["Numero"] == num_f.strip()).any():
+                    st.warning(f"Il numero {num_f.strip()} c'è già: usane un altro.")
+                else:
+                    _scrivi_lavoro(DIARIO.riga(
+                        "fattura", cli_f.strip()[:80], num_f.strip(), 0, float(imp_f),
+                        f"{scad_pf:%Y-%m-%d}",
+                        quando=dt.datetime.combine(dat_f, dt.time(12, 0))),
+                        f"Fattura {num_f.strip()} registrata")
+
+        if not FAT.empty:
+            with st.expander(f"Tutte le fatture ({len(FAT)})"):
+                st.dataframe(FAT, width='stretch', hide_index=True,
+                             column_config={
+                                 "Importo": st.column_config.NumberColumn(format="%.2f €"),
+                                 "Incassato": st.column_config.NumberColumn(format="%.2f €"),
+                                 "Data": st.column_config.DateColumn(format="DD/MM/YYYY"),
+                                 "Scadenza": st.column_config.DateColumn(format="DD/MM/YYYY"),
+                             })
+
+    # -------------------------------------------------------- scadenze ----
+    with LT[3]:
+        st.markdown("##### Da fare nei prossimi due mesi")
+        if SCA.empty:
+            st.caption("Nessuna scadenza in arrivo.")
+        for i_s, r_s in SCA.iterrows():
+            with st.container(border=True):
+                s1, s2 = st.columns([4, 1])
+                extra = f" · {_eur(r_s['Importo'])} €" if r_s["Importo"] else ""
+                s1.markdown(f"**{r_s['Cosa']}**")
+                s1.caption(f"{r_s['Quando']:%d/%m/%Y} · {r_s['Stato']}{extra}")
+                if s2.button("Fatta", key=f"sca_{i_s}", width='stretch'):
+                    _scrivi_lavoro(DIARIO.riga(
+                        "scadenza_fatta", str(r_s["Cosa"]), "", 0, None, "fatta",
+                        quando=dt.datetime.combine(oggi_l, dt.time(12, 0))),
+                        "Scadenza segnata come fatta")
+
+        with st.form("scadenza_nuova", clear_on_submit=True):
+            st.markdown("##### Nuova scadenza")
+            t1, t2, t3 = st.columns([3, 1, 1])
+            cosa_s = t1.text_input("Cosa", placeholder="es. dichiarazione IVA, rinnovo dominio")
+            quando_s = t2.date_input("Quando", value=oggi_l + dt.timedelta(days=7),
+                                     format="DD/MM/YYYY")
+            imp_s = t3.number_input("Importo (€, facoltativo)", min_value=0.0, step=10.0)
+            if st.form_submit_button("💾 Aggiungi", type="primary"):
+                if cosa_s.strip():
+                    _scrivi_lavoro(DIARIO.riga(
+                        "scadenza", cosa_s.strip()[:120], "", 0,
+                        float(imp_s) if imp_s else None, "",
+                        quando=dt.datetime.combine(quando_s, dt.time(9, 0))),
+                        "Scadenza aggiunta")
+                else:
+                    st.warning("Scrivi cosa scade.")
+        st.caption("Una scadenza è «fatta» quando la segni con il pulsante: il nome "
+                   "deve restare lo stesso, così la riconosco.")
+
+# ============================================================================
+# TAB 10 - GUIDA  (come si usa e come si modifica: il testo sta in guida.json)
+# ============================================================================
+with TAB[10]:
     pannello_riepilogo('guida')
     G = _carica_json("guida.json", _mtime("guida.json"))
     if "_errore" in G:

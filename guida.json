@@ -331,6 +331,52 @@
           "risposta": "Era un messaggio fuorviante, e l'ho corretto. Il modello che avevi scelto era solo occupato; la dashboard provava allora i modelli di riserva, e uno di quelli era un nome ritirato da Google. Ti mostrava l'errore dell'ultimo tentativo invece del primo.\n\nOra i modelli di riserva sono gli alias «-latest», che Google tiene sempre validi, e l'errore mostrato è quello vero. Il nome del modello si cambia in **un posto solo**: `studio.json`, campo `ai.modello`."
         }
       ]
+    },
+    {
+      "icona": "🆕",
+      "titolo": "Le novità di questa versione",
+      "voci": [
+        {
+          "domanda": "Come faccio ad ascoltare le notizie invece di leggerle?",
+          "risposta": "Nel Radar ogni voce ha il pulsante 🔊 Ascolta, e in cima alle novità c'è «Leggi i primi 15 titoli». Legge con la voce del browser: è gratuita e non serve nessuna chiave. Il pulsante diventa ■ Ferma mentre parla. La voce italiana dipende dal dispositivo: sul telefono e sul PC cambia."
+        },
+        {
+          "domanda": "Come filtro le novità per autore o per fonte?",
+          "risposta": "Nella sezione Le novità ci sono i filtri Fonte (scelta multipla) e Autore (scrivi parte del nome: cerca fra l'autore e il nome del canale). L'autore arriva solo dove la fonte lo pubblica nel feed."
+        },
+        {
+          "domanda": "Come modifico o cancello una voce dell'archivio?",
+          "risposta": "Nel Radar, sotto-scheda Archivio, la tabella si modifica direttamente: cambi il testo o il link, e per cancellare selezioni la riga a sinistra e premi il cestino. Quando hai finito premi «Salva le modifiche». Con la ricerca attiva la tabella è di sola lettura: togli la ricerca per modificare."
+        },
+        {
+          "domanda": "Come aggiungo una voce all'archivio a mano?",
+          "risposta": "Nell'Archivio apri «Aggiungi una voce a mano», scrivi titolo, fonte, link e data."
+        },
+        {
+          "domanda": "Come aggiungo un canale YouTube?",
+          "risposta": "Nel Radar, sotto-scheda Le fonti → Aggiungi, c'è «Un canale YouTube, dal suo indirizzo»: incolla il link del canale (quello con @nome o con /channel/UC…). Quadro trova il feed e il nome da solo."
+        },
+        {
+          "domanda": "Cosa sono i Bandi e agevolazioni?",
+          "risposta": "Una sotto-scheda del Radar con le notizie su bandi e incentivi, cercate su Google Notizie per le ricerche in `bandi.json` (Montesano, Vallo di Diano, Salerno, Campania, poi il nazionale). Il filtro «Solo quelle vicino a me» tiene le notizie dei luoghi che hai indicato. Sotto ci sono le pagine ufficiali da tenere d'occhio."
+        },
+        {
+          "domanda": "Con che frequenza si aggiornano i bandi?",
+          "risposta": "Non si aggiornano da soli: premi «Cerca adesso» quando apri la pagina. Una volta a settimana basta. Le pagine con «da verificare» non le ho potute controllare: se una non si apre, dimmelo e la sistemiamo."
+        },
+        {
+          "domanda": "Cos'è la scheda Lavoro?",
+          "risposta": "Il registro del lavoro da freelance: il tab Il mese (fatturato, incassato, quanto manca da incassare, obiettivo), Clienti (stato, prossimo passo, richiamo), Fatture (con il pulsante Incassata) e Scadenze (con il pulsante Fatta). Ogni cambiamento aggiunge una riga al diario: lo storico non si perde."
+        },
+        {
+          "domanda": "Perché in Lavoro non c'è un «modifica» per i clienti?",
+          "risposta": "Il diario si aggiunge solo in fondo, così nulla si perde. Per cambiare lo stato di un cliente scrivi di nuovo il suo nome nel modulo: vince l'ultimo inserimento. Per una scadenza, il pulsante Fatta funziona solo se il nome resta lo stesso."
+        },
+        {
+          "domanda": "Cosa trovo in Scienza → Sfide e idee?",
+          "risposta": "Due elenchi: le sfide scientifiche ancora aperte (con da dove partire e a quali progetti tuoi somigliano) e i bisogni da risolvere, cioè problemi di persone concrete. Puoi estrarre una sfida a caso e scrivere le tue idee, anche a voce, che restano nel diario."
+        }
+      ]
     }
   ]
 }

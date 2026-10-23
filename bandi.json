@@ -1,0 +1,81 @@
+{
+  "_nota": "Bandi e agevolazioni. Due cose: le RICERCHE (il Radar le cerca su Google Notizie, senza chiavi, ogni volta che premi «Cerca adesso») e le PAGINE ufficiali da aprire a mano. Le ricerche si cambiano qui: una per voce. Gli indirizzi marcati «da verificare» non li ho potuti controllare: se una pagina non si apre, dimmelo e la correggiamo.",
+  "ricerche": [
+    "bando Montesano sulla Marcellana",
+    "bando Vallo di Diano contributi",
+    "bando Salerno imprese contributi",
+    "bando Cilento imprese contributi",
+    "bando Campania imprese artigiane contributi",
+    "bando Campania startup innovative finanziamento",
+    "bando Campania giovani imprenditori",
+    "bando formazione digitale tutor docenti",
+    "bando fablab makerspace finanziamento",
+    "incentivi Transizione 5.0 PMI",
+    "incentivi Invitalia imprese 2026",
+    "bando nazionale innovazione PMI 2026"
+  ],
+  "zona_vicina": [
+    "Montesano",
+    "Marcellana",
+    "Vallo di Diano",
+    "Salerno",
+    "Cilento",
+    "Campania",
+    "Sala Consilina",
+    "Padula",
+    "Teggiano",
+    "Polla",
+    "Potenza",
+    "Basilicata"
+  ],
+  "pagine": [
+    {
+      "zona": "Nazionale",
+      "nome": "Invitalia — incentivi per le imprese",
+      "url": "https://www.invitalia.it",
+      "nota": "Agenzia dello Stato: i principali incentivi nazionali, con i bandi aperti."
+    },
+    {
+      "zona": "Nazionale",
+      "nome": "MIMIT — incentivi e bandi",
+      "url": "https://www.mimit.gov.it",
+      "nota": "Ministero delle imprese e del made in Italy."
+    },
+    {
+      "zona": "Nazionale",
+      "nome": "ENEA — efficienza energetica",
+      "url": "https://www.enea.it",
+      "nota": "Incentivi e detrazioni per l'efficienza energetica."
+    },
+    {
+      "zona": "Europa",
+      "nome": "Portale europeo dei finanziamenti",
+      "url": "https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/home",
+      "nota": "Tutti i bandi europei, con filtri per settore e per paese."
+    },
+    {
+      "zona": "Regione",
+      "nome": "Regione Campania — bandi e avvisi",
+      "url": "https://www.regione.campania.it",
+      "nota": "Bandi e avvisi regionali. Cerca la sezione «bandi» dalla home."
+    },
+    {
+      "zona": "Provincia",
+      "nome": "Camera di commercio di Salerno — contributi",
+      "url": "https://www.sa.camcom.it",
+      "nota": "Contributi per le imprese della provincia. Indirizzo da verificare."
+    },
+    {
+      "zona": "Locale",
+      "nome": "GAL Vallo di Diano — bandi per il territorio",
+      "url": "https://www.google.com/search?q=GAL+Vallo+di+Diano+bandi",
+      "nota": "Il GAL pubblica i bandi per il territorio. Il sito non l'ho potuto verificare: per ora ti porta alla ricerca. Quando lo trovi, incollalo qui."
+    },
+    {
+      "zona": "Locale",
+      "nome": "Comune di Montesano sulla Marcellana — avvisi",
+      "url": "https://www.google.com/search?q=comune+Montesano+sulla+Marcellana+avvisi",
+      "nota": "Albo pretorio e avvisi del Comune. Per ora ti porta alla ricerca: quando trovi il sito ufficiale, incollalo qui."
+    }
+  ]
+}

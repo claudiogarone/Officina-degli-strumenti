@@ -1,0 +1,109 @@
+{
+  "_nota": "Il posto dove tenere le cose difficili da risolvere. Due elenchi: le SFIDE (domande scientifiche ancora aperte, o problemi tecnici che non hanno una soluzione comoda) e i BISOGNI (problemi che vivono persone concrete, e che aspettano qualcuno che li risolva). Ogni voce dice perché conta, da dove si può cominciare e a quali dei tuoi progetti somiglia. Puoi aggiungerne quante vuoi.",
+  "sfide": [
+    {
+      "titolo": "Misurare il campo elettromagnetico ambientale in continuo, con un costo basso",
+      "perche": "Le misure si fanno a campagne: un giorno, poi nulla per mesi. Nessuno sa com'è la notte, o il sabato, quando non c'è nessuno a misurare.",
+      "da_dove": "Una sonda da casa che registra e confronta con una misura di riferimento per una settimana: quanto si scosta?",
+      "legame": "SENTINEL ELF"
+    },
+    {
+      "titolo": "Un sensore di umidità del suolo che duri anni senza corrodersi",
+      "perche": "Le sonde a elettrodi metallici si rovinano in qualche stagione. Quelle capacitive durano di più ma costano e derivano nel tempo.",
+      "da_dove": "Confrontare due elettrodi (inox e carbonio) in terra vera per tre mesi, con una taratura su acqua pesata.",
+      "legame": "HORTA, uliveto"
+    },
+    {
+      "titolo": "Estrarre un segnale debole da un rumore più forte, con hardware economico",
+      "perche": "Quasi ogni misura reale è sepolta nel rumore. Gli strumenti da laboratorio costano troppo per una scuola o un piccolo produttore.",
+      "da_dove": "Un ESP32 che campiona a frequenza fissa e una media mobile: quanto rumore si toglie prima che sparisca il segnale?",
+      "legame": "campi ELF, piastra di Chladni"
+    },
+    {
+      "titolo": "Accumulare energia per un'utenza piccola a un costo che si ripaghi in pochi anni",
+      "perche": "Le batterie al litio sono ancora care per un uso domestico lungo, e le alternative (acqua, aria, sale) sono ingombranti o poco efficienti.",
+      "da_dove": "Calcolare il costo per kWh cumulato in venti anni per tre tecnologie, con i numeri veri di una casa reale.",
+      "legame": "impianto fotovoltaico di casa"
+    },
+    {
+      "titolo": "Capire quando un'oliva è pronta senza assaggiarla né pesarla",
+      "perche": "Il momento della raccolta decide il sapore e la resa dell'olio, e oggi si decide a occhio o con un campione di assaggi.",
+      "da_dove": "Una foto da telefono e il colore della buccia, confrontati con l'olio ottenuto a fine campagna.",
+      "legame": "uliveto, defogliatore"
+    },
+    {
+      "titolo": "Prevedere un guasto a un motore elettrico guardando solo la corrente assorbita",
+      "perche": "Per un piccolo laboratorio o un'officina, un fermo imprevisto costa più della manutenzione programmata, ma la manutenzione è cieca.",
+      "da_dove": "Registrare la corrente di un motore sano e uno a cui si è tolto il lubrificante: quanto si distinguono?",
+      "legame": "PreVedo"
+    },
+    {
+      "titolo": "Insegnare il comportamento di un circuito senza simulatore né laboratorio",
+      "perche": "Chi comincia con l'elettronica si blocca sul perché le cose succedono. Gli strumenti che simulano sono bellissimi e poco didattici.",
+      "da_dove": "Una scheda di carta con i componenti disegnati e un LED che si accende quando la corrente passa: un modello fisico, non digitale.",
+      "legame": "corso Fusion, lezioni di elettronica"
+    }
+  ],
+  "bisogni": [
+    {
+      "chi": "Un pastificio artigianale piccolo",
+      "problema": "L'essiccazione della pasta dipende dal tempo e dall'umidità, e si controlla a occhio o con un termometro da cucina.",
+      "idea": "Un contenitore con sensore di temperatura e umidità che avvisa quando la curva non è quella del tuo prontuario.",
+      "legame": "Orosa"
+    },
+    {
+      "chi": "Un olivicoltore con cento piante",
+      "problema": "La raccolta a mano costa e la defogliazione manuale è lenta.",
+      "idea": "Un defogliatore economico, da costruire con materiali comuni, con un ventilatore a portata regolabile.",
+      "legame": "defogliatore olive, uliveto"
+    },
+    {
+      "chi": "Un docente o un formatore",
+      "problema": "Capire in tempo reale chi ha capito e chi no, senza far compilare moduli e senza spiare nessuno.",
+      "idea": "Domande rapide a voce o con una carta colorata, con un riepilogo che resta nel registro e non si vede da fuori.",
+      "legame": "ParlaChiaro, presenza"
+    },
+    {
+      "chi": "Uno studio legale piccolo",
+      "problema": "Le scadenze processuali si perdono quando sono in tre o quattro sulle stesse pratiche.",
+      "idea": "Un calendario condiviso con avvisi a più scadenze, che ogni collega vede dal telefono.",
+      "legame": "Toga"
+    },
+    {
+      "chi": "Un freelance che lavora da solo",
+      "problema": "Le fatture, i rinvii e le scadenze si dimenticano, e il mese si chiude senza sapere quanto si è davvero incassato.",
+      "idea": "Un registro che mette insieme clienti, preventivi, fatture e scadenze in un'unica vista mensile.",
+      "legame": "tab Lavoro"
+    },
+    {
+      "chi": "Una persona anziana che vive sola",
+      "problema": "Chi ha cura di lei non sa se sta bene senza telecamere in casa.",
+      "idea": "Un sensore che segnala solo le abitudini che cambiano (nessun movimento al mattino, per esempio), senza registrare immagini.",
+      "legame": "GABY"
+    },
+    {
+      "chi": "Un ristoratore o un piccolo negozio",
+      "problema": "Le scorte finiscono di colpo, e la lista della spesa si rifà a memoria.",
+      "idea": "Una base che conta quanto manca e propone la lista della spesa da sola.",
+      "legame": "Scorta"
+    },
+    {
+      "chi": "Una scuola con pochi fondi per i laboratori",
+      "problema": "I kit costano e si rompono, e nessuno sa ripararli.",
+      "idea": "Schede economiche con guide di riparazione in italiano, pensate per essere aperte e capite dagli studenti.",
+      "legame": "MakerHub, Studio"
+    },
+    {
+      "chi": "Un agricoltore di piccole dimensioni",
+      "problema": "Irrigare troppo o troppo poco, senza sapere cosa succede nel terreno.",
+      "idea": "Sensori di umidità economici che mandano un avviso sul telefono quando il terreno scende sotto soglia.",
+      "legame": "HORTA"
+    },
+    {
+      "chi": "Un professionista che vende ore",
+      "problema": "Non sa quanto guadagna davvero per ora di lavoro, perché non misura il tempo speso in ogni attività.",
+      "idea": "Un timer per cliente che calcola il valore orario reale a fine mese.",
+      "legame": "timer di Scrivania, tab Lavoro"
+    }
+  ]
+}
