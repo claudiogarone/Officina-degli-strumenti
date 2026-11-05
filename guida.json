@@ -1,382 +1,623 @@
 {
-  "_nota": "Il contenuto del tab Guida. Ogni sezione ha un titolo, un'icona e delle voci; ogni voce ha una domanda e una risposta scritta in markdown. Aggiungi, togli e riscrivi quello che vuoi: il codice non va toccato.",
-  "intro": "Tutto quello che serve per usare Quadro e per modificarlo da solo. Usa la ricerca qui sopra se cerchi una cosa precisa.",
-  "sezioni": [
+ "intro": "Tutto quello che serve per usare Quadro e per modificarlo da solo. Cerca qui sotto, chiedi alla guida in parole tue, o apri una scheda: c'è il pulsante per andarci.",
+ "schede": [
+  {
+   "scheda": "🧭 Scrivania",
+   "in_breve": "La sala di comando: da qui parte la giornata.",
+   "cosa_trovi": [
+    "**📌 I numeri** in alto (in ogni scheda): lezioni, progetti e studio in un colpo d'occhio",
+    "**L'aforisma del momento**, che cambia da solo ogni tanto (come, lo scegli in Segretaria → ✨ Aforismi)",
+    "**Le tre cose di oggi**: le priorità, da segnare ✓ Fatta o ↷ Rinvia",
+    "**🎯 La sessione di oggi**: scegli cosa fai e per quanto, ▶️ Comincia, cronometro con pausa e contatore delle distrazioni",
+    "**Tempo ed energia**: mappa dell'energia, piano di domani (anche in calendario), urgente/importante, la settimana",
+    "**🔬 Allenamento all'intuizione**: esercizio del giorno, taccuino delle anomalie, problemi aperti, previsioni, sfide e idee da inventare",
+    "**🎓 I corsi che segui**, **📈 Come sta andando**, **⚠️ Cosa richiede attenzione**, **🔗 Collegamenti rapidi**"
+   ],
+   "come_si_fa": [
     {
-      "icona": "🧭",
-      "titolo": "Come si usa, giorno per giorno",
-      "voci": [
-        {
-          "domanda": "Il giro della mattina, in tre minuti",
-          "risposta": "Apri la **Scrivania**. In alto scegli *cosa fai adesso* e *per quanto*, premi **Comincia** e parte il cronometro. Se l'attività apre uno strumento esterno, il pulsante compare lì sotto.\n\nQuando hai finito registri i minuti veri, com'è andata da 1 a 5 e una riga su cosa hai fatto. Quella riga vale più di quanto pensi: fra un mese è l'unica cosa che ti dirà che stavi facendo.\n\nPoi, se hai cinque minuti, scrivi una riga nel **taccuino delle anomalie**. È l'esercizio più corto e quello che rende utile tutto il resto."
-        },
-        {
-          "domanda": "A cosa serve ogni tab",
-          "risposta": "- **Scrivania** — la sala di comando: la sessione di oggi, l'allenamento all'intuizione, i corsi, l'andamento, gli avvisi su consegne e pagamenti.\n- **Ripetizioni** — tutto sulle lezioni private, in cinque schede: Panoramica, Allievi, Economia, Didattica, Dettaglio. Prima erano cinque tab separati.\n- **Progetti** — consulenze: stato, consegne, margini, movimenti di pagamento.\n- **Cancelleria** — carta intestata, biglietti, preventivi, NDA, attestati, tessere QR.\n- **Studio** — Officina (i tuoi strumenti), percorsi con le tappe da spuntare e le fonti, prontuari di comandi, assistente AI, prompt pronti.\n- **Parla chiaro** — allenamento alla comunicazione con registrazione e analisi.\n- **SENTINEL** — il corso «SENTINEL da zero» sulla tua stazione ELF, con l'avanzamento salvato nel diario.\n- **Radar** — cosa è uscito di nuovo sulle fonti che segui, già setacciato.\n- **Taratura** — sezione riservata, chiusa da password.\n- **Guida** — questa."
-        },
-        {
-          "domanda": "Perché a volte i dati sembrano vecchi",
-          "risposta": "Quadro tiene in memoria quello che legge da Drive per qualche minuto, altrimenti ricaricherebbe tutto a ogni clic e sarebbe lentissimo.\n\nSe hai appena modificato un registro e vuoi vederlo subito, usa il pulsante **🔄 Ricarica i contenuti dai file** nel tab Studio, oppure ricarica la pagina del browser."
-        }
-      ]
+     "domanda": "Cominciare una sessione di lavoro",
+     "passi": [
+      "In «🎯 La sessione di oggi» scegli *Cosa fai adesso* e *Per quanto*",
+      "Premi **▶️ Comincia**: parte il cronometro (se l'attività vive in un'altra scheda, Quadro ti ci porta)",
+      "Se ti fermi usa **⏸️ Pausa**; ogni volta che qualcosa ti distrae premi **🔔 Mi sono distratto**",
+      "Alla fine registra i minuti veri, com'è andata da 1 a 5 e una riga su cosa hai fatto"
+     ]
     },
     {
-      "icona": "✏️",
-      "titolo": "Modificare i contenuti da solo",
-      "voci": [
-        {
-          "domanda": "La regola generale",
-          "risposta": "I **testi e gli elenchi** stanno nei file che finiscono per `.json`. Il **comportamento** sta nei file che finiscono per `.py`.\n\nPer cambiare cosa c'è scritto non devi quasi mai toccare il codice: apri il `.json` giusto e modifichi le parole fra virgolette."
-        },
-        {
-          "domanda": "Quale file contiene cosa",
-          "risposta": "- `scrivania.json` — le attività che puoi scegliere, le durate, le faccine da 1 a 5\n- `scienza.json` — l'esercizio di ogni giorno della settimana, le otto abitudini, il taccuino\n- `studio.json` — i percorsi con le tappe e le fonti, i prontuari, i prompt, l'Officina\n- `parlachiaro.json` — i sei esercizi, gli scenari, le domande del coach, le 18 carte, le lezioni\n- `marchi.json` — i tuoi marchi con colori e loghi, per la cancelleria\n- `collegamenti.json` — i collegamenti rapidi della Scrivania\n- `guida.json` — questa guida\n- `radar.json` — le fonti del Radar, le parole che cerca e quelle che butta via"
-        },
-        {
-          "domanda": "Le tre regole per non rompere un file .json",
-          "risposta": "1. **Le virgolette vanno sempre a coppie.** Se ne cancelli una, il file non si legge più.\n2. **La virgola separa, non chiude.** Fra un blocco e il successivo ci va la virgola; dopo l'ultimo blocco **no**.\n3. **Gli apostrofi vanno bene**, le virgolette dentro il testo no: se devi scrivere una citazione usa « e ».\n\nSe sbagli, Quadro non si rompe in silenzio: ti scrive in rosso quale file non riesce a leggere. Incolla il file su `jsonlint.com` e ti dice la riga esatta."
-        },
-        {
-          "domanda": "Aggiungere un'attività alla Scrivania",
-          "risposta": "Apri `scrivania.json`, copia un blocco intero fra parentesi graffe, incollalo sotto e cambia i testi:\n\n```\n{\n  \"icona\": \"🔧\",\n  \"nome\": \"Come si chiama\",\n  \"strumento\": \"Dove si lavora\",\n  \"url\": \"https://...\",\n  \"nota\": \"Una riga di spiegazione\"\n}\n```\n\nLascia `url` vuoto se l'attività non apre niente. Ricorda la virgola fra un blocco e l'altro."
-        },
-        {
-          "domanda": "Aggiungere una tappa o una fonte a un percorso",
-          "risposta": "In `studio.json`, dentro `percorsi`, ogni argomento ha tre `livelli` e ogni livello ha una lista `tappe`: sono semplici righe di testo fra virgolette, ne aggiungi una e basta.\n\nLe `fonti` sono blocchi con `nome`, `url` e `nota`, come le attività."
-        }
-      ]
-    },
-    {
-      "icona": "🚀",
-      "titolo": "Mettere online le modifiche",
-      "voci": [
-        {
-          "domanda": "Dal sito di GitHub, senza comandi",
-          "risposta": "1. Vai sul repository `Officina-degli-strumenti`.\n2. **Add file → Upload files**, trascina i file nuovi.\n3. In basso scrivi due parole su cosa hai cambiato e premi **Commit changes**.\n4. Su `share.streamlit.io`, menù dell'app (i tre puntini) → **Reboot app**.\n\nI file con lo stesso nome vengono sostituiti: è il comportamento che vuoi."
-        },
-        {
-          "domanda": "Dal computer, con i comandi",
-          "risposta": "La prima volta, una volta sola:\n\n```\ngit clone https://github.com/claudiogarone/Officina-degli-strumenti.git\ncd Officina-degli-strumenti\n```\n\nPoi, ogni volta che hai file nuovi da mettere online: copia i file nella cartella e lancia\n\n```\ngit add .\ngit commit -m \"descrizione di cosa hai cambiato\"\ngit push\n```\n\n`git add .` prende tutto quello che è cambiato, `commit` lo registra con la tua descrizione, `push` lo manda su GitHub. Streamlit se ne accorge da solo nel giro di un minuto; se non succede, Reboot."
-        },
-        {
-          "domanda": "Come capisco se è andata",
-          "risposta": "Apri l'app e guarda in basso a destra: se Streamlit sta ricostruendo, lo scrive. Quando ha finito, ricarica la pagina.\n\nSe vedi ancora la versione vecchia: controlla di aver fatto il commit (su GitHub il file deve mostrare la data di oggi) e poi fai Reboot. **Non rinominare mai il repository**: Streamlit perde il collegamento e smette di leggere i commit senza dirtelo."
-        }
-      ]
-    },
-    {
-      "icona": "🔑",
-      "titolo": "Le chiavi e le cartelle (i Secrets)",
-      "voci": [
-        {
-          "domanda": "Cosa sono e dove stanno",
-          "risposta": "Sono le informazioni riservate che non devono finire su GitHub: le credenziali di Google e la chiave dell'intelligenza artificiale.\n\nStanno su `share.streamlit.io`, menù dell'app → **Settings → Secrets**. Si incollano lì e basta: l'app le legge da sola."
-        },
-        {
-          "domanda": "L'elenco completo",
-          "risposta": "- `gcp_service_account` — il blocco intero delle credenziali Google. Si copia dal file JSON che ti ha dato Google, campo per campo.\n- `drive_folder_id` — la cartella dei registri delle lezioni\n- `drive_folder_id_progetti` — la cartella dei progetti\n- `drive_folder_id_loghi` — la cartella dei loghi\n- `drive_folder_id_diario` — facoltativa: se la metti, il diario va cercato lì\n- `google_api_key` — la chiave di Google AI Studio, per l'assistente e la trascrizione\n- `diario_sheet_id` — facoltativa, solo se usi un foglio di Google invece del file Excel\n\nL'ID di una cartella è il pezzo di indirizzo dopo `/folders/`."
-        },
-        {
-          "domanda": "Condividere le cartelle con il service account",
-          "risposta": "Ogni cartella di Drive che Quadro deve leggere va condivisa con l'indirizzo del service account (quello che finisce per `.iam.gserviceaccount.com`).\n\n**Visualizzatore** basta per leggere. La cartella dove sta il diario invece vuole **Editor**, perché lì Quadro deve scrivere."
-        }
-      ]
-    },
-    {
-      "icona": "📓",
-      "titolo": "Il diario: dove finiscono i tuoi dati",
-      "voci": [
-        {
-          "domanda": "Dove vengono salvati",
-          "risposta": "In un file Excel che si chiama `Quadro_Diario.xlsx`, dentro una delle tue cartelle di Drive. Quadro lo cerca **per nome**, quindi non rinominarlo.\n\nPuoi aprirlo quando vuoi e correggerlo a mano: è tuo, e si legge anche senza la dashboard."
-        },
-        {
-          "domanda": "Perché non si salva sul server",
-          "risposta": "Perché Streamlit Cloud ricostruisce la macchina a ogni riavvio e cancella tutto quello che l'app ha scritto su disco. Non è una limitazione aggirabile: i dati devono stare fuori, su Drive."
-        },
-        {
-          "domanda": "Cosa vuol dire la colonna Tipo",
-          "risposta": "- `sessione` — una sessione di lavoro o allenamento, con i minuti\n- `parlachiaro` — un allenamento di comunicazione, con il punteggio in Valore\n- `anomalia` — una riga del taccuino delle anomalie\n- `problema` — uno dei tuoi problemi aperti\n- `esercizio` — un esercizio del giorno completato\n- `tappa` — una tappa di studio segnata come fatta\n- `corso` — un avanzamento su un corso, con la percentuale in Valore\n- `previsione` — una previsione, con la confidenza in Valore\n- `priorita` — una delle tre cose di oggi\n- `interruzioni` — quante volte ti sei distratto in una sessione"
-        },
-        {
-          "domanda": "Come porto via tutto",
-          "risposta": "In fondo alla Scrivania, dentro *Tutte le righe del diario*, trovi i pulsanti per scaricare in CSV, in Excel e in JSON. Il JSON è l'archivio completo.\n\nLo stesso vale per quasi ogni tabella e grafico della dashboard: sotto trovi sempre CSV ed Excel, e i grafici si salvano in immagine con l'icona della macchina fotografica in alto a destra."
-        },
-        {
-          "domanda": "I nuovi tipi di riga",
-          "risposta": "Oltre a quelli di prima, ora il diario contiene anche:\n\n- `abitudine` — la settimana chiusa su un'abitudine\n- `carta` — il giudizio su una carta di grammatica (1 la sai, 0 da ripassare)\n- `presenza` — un controllo di presenza, con la percentuale in Valore\n- `tensione` — la tensione prima e dopo un allenamento\n- `coach` — un canovaccio preparato\n- `dubbio` — una domanda fatta all'assistente su un modulo SENTINEL\n\nE nel file della Taratura, separato: `voce`, `pratica`, `seduta`, `medicinale`."
-        }
-      ]
-    },
-    {
-      "icona": "🆕",
-      "titolo": "Le sezioni aggiunte di recente",
-      "voci": [
-        {
-          "domanda": "Perché Panoramica, Allievi, Economia, Didattica e Dettaglio non ci sono più",
-          "risposta": "Ci sono, tutte e cinque: sono diventate le schede interne del tab **Ripetizioni**. Niente è stato tolto e niente ha cambiato comportamento, è cambiato solo dove si clicca.\n\nIl motivo è che nove tab in fila costringevano a cercare; ora i tab in alto sono gli argomenti veri — lezioni, progetti, documenti, studio — e il dettaglio sta dentro."
-        },
-        {
-          "domanda": "Il tab SENTINEL",
-          "risposta": "È il corso **SENTINEL da zero**: sedici moduli dalle basi elettriche all'indice PRISMA, più quattro appendici, tutto in un file solo che funziona anche senza rete.\n\nSopra la guida c'è l'elenco dei moduli da spuntare: **quelle spunte finiscono nel diario**, quindi restano anche se cambi dispositivo. Le spunte che trovi dentro la guida invece le tiene il browser e si perdono: usa quelle in alto.\n\nIl corso vive nel file `sentinel.html`, che deve stare nella repo accanto ad `app.py`."
-        },
-        {
-          "domanda": "Il tab Taratura",
-          "risposta": "È un diario personale chiuso da password: scrivi come stai, metti l'umore da 1 a 10, e se vuoi ne parli con l'assistente.\n\nI dati **non** finiscono nel diario normale: stanno in un file a parte, `Quadro_Taratura.xlsx`, che puoi tenere in una cartella di Drive diversa e condivisa solo con il service account. Se la metti in una cartella sua, aggiungi nei Secrets `drive_folder_id_taratura`.\n\nResta aperta dieci minuti, poi si richiude da sola e la password va ridigitata. C'è anche un pulsante **Chiudi** per bloccarla subito."
-        },
-        {
-          "domanda": "Cambiare la password della Taratura",
-          "risposta": "Due posti, e il primo vince sul secondo:\n\n1. nei **Secrets** dell'app, con la riga `taratura_password = \"...\"`\n2. nel file `taratura.py`, nella costante `PASSWORD_DI_SCORTA` in alto\n\n**Usa i Secrets.** Il repository su GitHub è pubblico: una password scritta dentro `taratura.py` è leggibile da chiunque apra il file, quindi non protegge niente. La costante nel file esiste solo come via di scorta se ti dimentichi cosa hai messo nei Secrets.\n\nE c'è una cosa più importante della password: finché l'app su Streamlit è pubblica, chiunque abbia il link arriva alla schermata di ingresso. Metti l'app su «Only specific people» dalle impostazioni di condivisione."
-        },
-        {
-          "domanda": "Il pannello «I numeri»",
-          "risposta": "I riquadroni grossi in cima non ci sono più: al loro posto c'è un pannello che si apre cliccando su **📌 I numeri**, con tessere piccole divise in tre gruppi — Ripetizioni, Progetti, Studio e allenamento.\n\nDue cose comode: il pannello è **in ogni sezione**, quindi i numeri li hai sempre sottomano senza tornare indietro; e ha i suoi filtri (periodo e allievi) che valgono solo per lui, senza toccare i grafici delle sezioni."
-        },
-        {
-          "domanda": "Il tab SENTINEL: come si naviga",
-          "risposta": "Il modulo si sceglie dal **menù a tendina** sopra la pagina, non dai collegamenti dentro la guida: quelli sono disattivati apposta.\n\nIl motivo: il corso è una pagina sola con un indice laterale fisso, e dentro un riquadro incorporato i suoi collegamenti interni facevano scomporre la pagina. Ora la pagina resta intera — così glossario, quiz e mappe continuano a funzionare — e si mostra solo il modulo scelto.\n\nLa spunta **Fatto** accanto al menù finisce nel diario, quindi l'avanzamento resta cambiando dispositivo."
-        },
-        {
-          "domanda": "L'anteprima dei documenti in Cancelleria",
-          "risposta": "Dopo aver premuto **Genera**, sotto compare l'anteprima del PDF vero, pagina per pagina, e solo sotto di essa il pulsante per scaricarlo. Se non ti piace cambi i campi e rigeneri, senza scaricare niente.\n\nSe al posto dell'anteprima vedi un avviso: nel file `requirements.txt` la prima riga deve essere `streamlit[pdf]>=1.50`. Senza quel `[pdf]` la libreria dell'anteprima non viene installata e Streamlit non sa mostrare i PDF."
-        },
-        {
-          "domanda": "Perché prima «tornava sempre all'esercizio del giorno»",
-          "risposta": "Era un difetto, ed era anche il motivo per cui sembrava che le altre sezioni non funzionassero.\n\nLe linguette di Streamlit, quando la pagina si ricarica dopo un salvataggio, tornano **sempre** sulla prima. Quindi salvavi un'anomalia, la pagina si ricaricava, e ti ritrovavi sull'esercizio del giorno senza capire perché.\n\nOra in Scienza la sezione si sceglie con dei pulsanti che si ricordano dove eri. Stesso discorso per le caselle di testo: dopo il salvataggio si svuotano da sole, pronte per la volta dopo."
-        },
-        {
-          "domanda": "Parlare con l'assistente più di una volta",
-          "risposta": "Nell'esercizio del giorno, dopo «🤖 Fammi le domande giuste», sotto compare una conversazione vera: rispondi nella riga in basso e lui tiene conto di quello che hai già detto invece di ricominciare da capo.\n\nQuando hai finito puoi salvare **tutta la conversazione** nell'esercizio di oggi, non solo la prima risposta. Il pulsante «Ricomincia» azzera lo scambio senza cancellare quello che hai già salvato."
-        },
-        {
-          "domanda": "I problemi aperti: stato, note e suggerimenti",
-          "risposta": "Ogni problema ha uno stato — **aperto**, **in corso**, **risolto** — e una riga dove scrivi a che punto sei. Aprilo e aggiorna quando qualcosa si muove.\n\nIl pulsante «🤖 Come lo affronterei» chiede all'assistente tre strade concrete, in ordine da quella più economica da provare, con il modo per capire se funziona.\n\nNiente si cancella mai: ogni aggiornamento è una riga nuova nel diario, quindi la storia di come hai ragionato su un problema resta tutta."
-        },
-        {
-          "domanda": "Il suono del cronometro",
-          "risposta": "Negli ultimi dieci secondi il cronometro diventa rosso e fa un bip al secondo, con un segnale più lungo alla fine. Si spegne con l'interruttore accanto al timer.\n\nIl suono lo genera il browser, non è un file: funziona anche senza rete. Se non lo senti, è il browser che blocca l'audio finché non hai cliccato qualcosa nella pagina — basta premere un pulsante qualsiasi una volta."
-        },
-        {
-          "domanda": "Le carte di grammatica adesso si ricordano",
-          "risposta": "Prima «La sapevo» valeva solo finché la pagina restava aperta. Ora ogni giudizio finisce nel diario, quindi la barra di avanzamento e l'elenco delle carte da ripassare restano anche cambiando dispositivo."
-        },
-        {
-          "domanda": "A cosa serve la checklist di presenza",
-          "risposta": "Le spunte sono un promemoria mentre provi davanti allo specchio e si azzerano ogni volta. Quando hai finito premi **Registra il controllo**: finisce nel diario con il punteggio in percentuale, e dalla seconda volta compare il grafico di come sta andando."
-        },
-        {
-          "domanda": "Il pulsante «Aggiorna tutto da Drive»",
-          "risposta": "È nella barra a sinistra. Rilegge i registri delle lezioni, la cartella dei progetti **e** rifà la ricerca dei file `Quadro_Diario.xlsx` e `Quadro_Taratura.xlsx`.\n\nServe quando hai appena caricato o modificato qualcosa su Drive e qui non lo vedi ancora: Quadro tiene da parte quello che legge per qualche minuto, e questo pulsante glielo fa rileggere subito."
-        },
-        {
-          "domanda": "L'abitudine della settimana",
-          "risposta": "Le otto abitudini non si leggono più tutte insieme: ne compare **una per settimana**, in fondo alla sezione Scienza, e cambia da sola il lunedì seguendo il numero della settimana nell'anno — quindi è la stessa su tutti i tuoi dispositivi.\n\nA fine settimana scrivi una riga su dove l'hai usata e chiudi: finisce nel diario, e sotto trovi tutte le settimane passate. Le otto restano comunque consultabili tutte insieme nel riquadro sotto."
-        },
-        {
-          "domanda": "Il Coach: cosa fare dopo il canovaccio",
-          "risposta": "Il canovaccio è la scaletta, non l'intervento. Sotto trovi tre pulsanti:\n\n- **Trova i punti deboli** — dove un ascoltatore si perderebbe, dove manca un dato, cosa stai dando per scontato\n- **Fammi le domande cattive** — le cinque domande più scomode che ti farebbero in riunione, con l'impostazione della risposta\n- **Riducilo a 90 secondi** — la versione da 200 parole, e cosa è stato tolto\n\nQuello che esce si aggiunge al canovaccio quando lo scarichi, e con **Salva nel diario** resta lì: sotto trovi tutti i canovacci già preparati."
-        },
-        {
-          "domanda": "SENTINEL: chiedere e vedere l'andamento",
-          "risposta": "Sotto la pagina del corso ci sono due schede.\n\n**Chiedi su questo modulo** manda la domanda all'assistente insieme al titolo del modulo che stai leggendo, quindi non devi spiegargli il contesto. Domanda e risposta si salvano nel diario e restano consultabili.\n\n**Come stai andando** mostra i moduli completati nel tempo e, se hai tenuto un ritmo, stima quanti giorni mancano per finire."
-        },
-        {
-          "domanda": "La scheda Benessere nella Taratura",
-          "risposta": "Tre cose, tutte sotto la stessa password e nello stesso file separato `Quadro_Taratura.xlsx`:\n\n**Pratica** — yoga, meditazione, respirazione o camminata: minuti, com'è andata e quanto eri presente. Sotto, le ore di pratica mese per mese.\n\n**Appuntamento** — che c'è stato un incontro e come stavi prima e dopo. Il grafico mostra quanto cambia come stai, non cosa vi siete detti: quello, se ti va, va nella scheda Oggi.\n\n**Medicinali** — un promemoria di cosa hai preso e quando, da scaricare e portare allo specialista invece di ricordarlo a memoria."
-        },
-        {
-          "domanda": "Cosa l'assistente della Taratura non fa",
-          "risposta": "Non commenta medicinali: né dosi, né tempi, né effetti, né se continuare o cambiare. Nemmeno per rassicurare.\n\nÈ una regola scritta dentro `taratura.py` e non è prudenza di facciata: su quel terreno una risposta che suona ragionevole ed è sbagliata fa danni veri, e chi ti segue ha informazioni che un diario non ha. Se gli scrivi di un medicinale ti risponde su **come stai** — quello sì — e ti rimanda a chi te l'ha prescritto.\n\nPer il resto è quello che è sempre stato: un posto dove scaricare la giornata e rileggerla a mente fredda, non una terapia."
-        },
-        {
-          "domanda": "Il tab Radar",
-          "risposta": "Raccoglie quello che esce di nuovo su trentadue fonti — maker, tecnologia, scienza, agritech, informatica — in italiano, spagnolo e inglese, toglie i doppioni e mette davanti quello che c'entra con i tuoi campi.\n\n**I filtri** in alto: argomento, lingua, tipo (articolo, video, podcast, corso), periodo da 3 a 60 giorni, più la ricerca nel testo. Ogni voce ha la bandierina della lingua e il segno del tipo, così si capisce a colpo d'occhio.\n\n**L'italiano viene prima.** A parità di argomento una voce in italiano guadagna 3 punti e una in spagnolo 2: non cambia quanto c'entra, cambia l'ordine in cui le vedi. Si regola in `radar.json`, campo `bonus_lingua`.\n\n**I pulsanti sulle voci:** ⭐ Dopo la mette da parte, 💡 Di che parla chiede all'assistente di spiegartela in tre frasi.\n\n**In cima:** 📝 Riassumimi tutto legge i titoli e ti dice quali sono i filoni del periodo; 🗄️ Archivia salva le voci nello storico."
-        },
-        {
-          "domanda": "Come si aggiunge o si toglie una fonte al Radar",
-          "risposta": "Serve l'indirizzo del suo **feed RSS**: quasi tutti i siti di notizie ne hanno uno, lo trovi cercando «nome del sito rss». Poi è una riga in `radar.json`, dentro `fonti`:\n\n```\n{ \"nome\": \"Come si chiama\", \"url\": \"https://.../feed/\", \"tipo\": \"maker\" }\n```\n\nIl `tipo` serve solo al filtro per ambiti: usa uno di quelli già presenti o inventane uno nuovo.\n\nNella scheda **Le fonti** vedi quali hanno risposto e quali no. Se una resta in errore per giorni ha tolto o cambiato il feed: levala."
-        },
-        {
-          "domanda": "Cosa il Radar cerca e cosa butta via",
-          "risposta": "In `radar.json` ci sono due elenchi di parole.\n\n`interessi` fa **salire** una voce: una parola trovata nel titolo vale due punti, nel riassunto uno. Sotto il punteggio minimo la voce non compare proprio.\n\n`esclusioni` la fa **buttare via** comunque, qualunque sia il punteggio. Dentro ci sono già anime, manga, cartoni animati, cosplay, videogiochi, calcio, gossip e le pagine di offerte e sconti.\n\nSono liste tue: aggiungi e togli parole liberamente, sono solo testo fra virgolette."
-        },
-        {
-          "domanda": "Eventi e seminari: cosa si può e cosa no",
-          "risposta": "**Gli atenei di Salerno e della Basilicata non pubblicano un feed.** Ho provato gli indirizzi soliti e non esistono. Senza feed non c'è niente da leggere in automatico: o la fonte pubblica un elenco in formato standard, o la pagina va aperta a mano. Non è una cosa aggirabile.\n\nQuindi nella scheda **Eventi e seminari** ci sono i collegamenti diretti alle loro pagine, così almeno non li cerchi ogni volta, più Eventbrite filtrato su scienza e tecnologia per Salerno e Potenza.\n\nSotto puoi segnarti un evento in agenda con data e collegamento: compare in «In arrivo» con quanti giorni mancano, e finisce nel diario.\n\nSe un giorno trovi su quei siti un indirizzo che finisce per `/rss` o `/feed`, aggiungilo alle fonti e entra nel giro automatico."
-        },
-        {
-          "domanda": "La pausa nell'allenamento",
-          "risposta": "Accanto al cronometro c'è **⏸️ Pausa**. Non ferma l'orologio: tiene il conto dei secondi passati in pausa e li toglie dal tempo trascorso, quindi puoi fermarti quante volte vuoi senza falsare i minuti.\n\nQuando chiudi la sessione, i minuti proposti sono già al netto delle pause."
-        },
-        {
-          "domanda": "L'assistente del Radar",
-          "risposta": "Scheda **🤖 Assistente**: gli chiedi quello che vuoi e lui ha davanti titoli e riassunti di tutte le voci che passano i filtri che hai messo in quel momento.\n\nEsempi che funzionano bene: «cosa mi conviene leggere se ho venti minuti?», «c'è qualcosa sull'ESP32 che non so già?», «qualcosa di utile per le lezioni di questa settimana?».\n\nÈ istruito a rispondere **solo** su quello che trova nell'elenco: se una cosa non c'è lo dice, invece di inventarla. Se cambi i filtri, cambia anche quello che vede."
-        },
-        {
-          "domanda": "L'archivio del Radar, e perché non parte da giugno",
-          "risposta": "**I feed pubblicano solo le ultime voci**, fra le dieci e le sessanta a seconda della fonte. Quello che è uscito a giugno non è più scaricabile da nessuna parte: non è un limite di Quadro, è come funziona il formato.\n\nQuello che si può fare è cominciare ad archiviare **da adesso**. Nella scheda Le novità premi **🗄️ Archivia**: le voci nuove si aggiungono allo storico, i doppioni no. Da lì in avanti lo storico cresce, con il grafico per mese e la ricerca su tutto.\n\nL'archivio sta in un file suo, `Quadro_Radar.xlsx`, separato dal diario — le voci del Radar sono tante e non devono mescolarsi con le tue sessioni. Si collega come gli altri: lo scarichi dalla scheda Archivio, lo metti in una cartella Drive condivisa come Editor, e il pulsante «Aggiorna tutto da Drive» lo trova."
-        },
-        {
-          "domanda": "Le riviste che leggi su Readly",
-          "risposta": "**Readly non pubblica niente che un programma possa leggere**: è un'app a pagamento con il catalogo chiuso, senza feed né interfaccia pubblica. Quindi il Radar non può sapere quando esce un numero nuovo di una rivista che segui lì dentro, e non c'è modo di aggirarlo.\n\nQuello che si può fare è seguire il **sito** della rivista, che quasi sempre un feed ce l'ha: cerchi «*nome della rivista* rss», aggiungi l'indirizzo alle fonti in `radar.json`, e da quel momento sai quando escono articoli nuovi. Il fascicolo completo lo leggi su Readly, il cui collegamento trovi nella scheda Riviste.\n\nNon è la stessa cosa che sapere quando esce il numero, ma è il massimo ottenibile senza controllare a mano."
-        },
-        {
-          "domanda": "Gli indirizzi delle università erano sbagliati",
-          "risposta": "Quelli che ti avevo dato puntavano a `www.unisa.it` e davano errore. Gli indirizzi giusti stanno su **`web.unisa.it`**: eventi, news, Focus on Research e dottorati. Per UNIBAS ho messo «Unibas oggi», la pagina dei dipartimenti — da cui si arriva ai seminari dei singoli — e la home.\n\nSono divisi per zona, Salerno e Potenza. Il feed continuano a non averlo: vanno aperti a mano, e questo non cambia finché non lo pubblicano loro."
-        },
-        {
-          "domanda": "Dettare invece di scrivere, e la scrittura a mano",
-          "risposta": "Sotto le caselle di testo principali c'è **🎙️ Detta · ✍️ Scrivi a mano**.\n\n**Dettare**: premi il microfono, parli, premi Trascrivi. Il testo viene **aggiunto in fondo** a quello che c'è già, così puoi dettare un pezzo per volta e correggere in mezzo.\n\n**Scrittura a mano**: non c'è un foglio su cui scrivere col pennino dentro Quadro, e il motivo è tecnico — il componente che servirebbe (`streamlit-drawable-canvas`) non parte con questa versione di Streamlit, l'ho installato e provato. Quindi scrivi col pennino dove preferisci (l'app di note del tablet, o la carta), fai uno scatto e carichi l'immagine: la trascrizione la fa l'AI. Un foglio per volta viene meglio.\n\nPer i quaderni veri resta **Inchiostro**, che fa questo mestiere molto meglio: qui serve per le due righe al volo.\n\nPer ora è sulle caselle che contano: risposta all'esercizio, taccuino delle anomalie, dubbi su SENTINEL e il diario della Taratura."
-        },
-        {
-          "domanda": "La Taratura adesso è una conversazione",
-          "risposta": "Premendo **💬 Salva e parlane** la tua voce viene salvata e si apre uno scambio come in un'app di messaggi: lui risponde, tu replichi nella riga in basso, e così via.\n\nTiene conto di quello che vi siete già detti invece di ricominciare da capo, e vede anche le tue ultime cinque voci dei giorni scorsi.\n\nAlla fine: **Salva tutta la conversazione** la mette nell'archivio, **Scarta** butta solo lo scambio — la prima cosa che avevi scritto resta salvata comunque."
-        },
-        {
-          "domanda": "Le fonti del Radar adesso stanno su Drive",
-          "risposta": "In `Quadro_Fonti.xlsx`, accanto agli altri archivi. Il motivo: `radar.json` sta nella repository e Streamlit ricostruisce il disco a ogni riavvio, quindi una fonte aggiunta dall'interfaccia sarebbe sparita al primo Reboot.\n\nUna volta collegato il file, nella scheda **⚙️ Le fonti** puoi: spegnere una fonte senza cancellarla (la spunta On), modificare nome, ambito, lingua e contenuto direttamente in tabella, eliminarne una selezionando la riga e premendo il cestino, e riscrivere le parole chiave nella scheda accanto.\n\nFinché il file non c'è, Quadro usa le fonti di `radar.json` e la pagina resta in sola lettura — te lo dice con un riquadro giallo."
-        },
-        {
-          "domanda": "Aggiungere fonti: una, i canali YouTube, i podcast",
-          "risposta": "Scheda **➕ Aggiungi**.\n\n**Una alla volta**: nome, indirizzo del feed, ambito, lingua, contenuto. Il pulsante **Prova e aggiungi** scarica l'indirizzo prima di salvarlo e ti dice quante voci ha trovato: se non è un feed, lo scopri subito invece che fra tre giorni.\n\n**I canali YouTube**: su Google Takeout chiedi l'esportazione di YouTube limitata alle iscrizioni, ti arriva un `subscriptions.csv`. Lo carichi, scegli quali canali vuoi, e ognuno diventa una fonte di tipo video. **Non serve collegare l'account**: il feed dei video YouTube lo pubblica per tutti i canali, quindi niente accessi, niente password, niente token che scadono.\n\n**I podcast**: quasi tutte le app esportano un file OPML con gli abbonamenti, di solito sotto «esporta» nelle impostazioni. Stesso giro."
-        },
-        {
-          "domanda": "Le riviste: cosa è entrato e cosa no",
-          "risposta": "Entrate e funzionanti: **Computer Idea**, **Elettronica In**, **Il Sole 24 Ore Tecnologia**, **Corriere Innovazione**, **Punto Informatico**, **DDay.it**. Focus e Wired Italia c'erano già.\n\n**Le Scienze non ha feed**: ho provato quattro indirizzi e poi ho letto la loro home cercando un feed dichiarato, non ce n'è. Non è aggirabile.\n\n**Win Magazine** è dentro ma da verificare: dalla mia parte la connessione al loro sito viene rifiutata per un problema di certificato, che però potrebbe essere solo del mio collegamento. Guarda la scheda Le fonti: se resta in rosso per qualche giorno, spegnila."
-        },
-        {
-          "domanda": "I problemi aperti: rinomina, archivia, elimina",
-          "risposta": "Aprendo un problema, sotto il pulsante Aggiorna ce ne sono tre:\n\n**✏️ Rinomina** cambia il testo tenendo stato e nota.\n**📦 Archivia** lo toglie dalla lista ma lo lascia nello storico, e da lì si può **↩️ Riprendere**.\n**🗑️ Elimina** chiede conferma e lo toglie del tutto.\n\nNota su come funziona sotto: l'archivio è un registro a cui si aggiunge soltanto, quindi eliminare scrive una riga che annulla le precedenti. Per te il risultato è identico, e in più non si perde la storia di come ci avevi ragionato."
-        },
-        {
-          "domanda": "L'archivio del Radar si riempie da solo",
-          "risposta": "Non serve più premere Archivia: appena apri il Radar, le voci che non ci sono ancora entrano nell'archivio, una volta per sessione. Te lo scrive con una riga sotto i filtri.\n\nIl pulsante **🗄️ Archivia** resta per quando vuoi forzarlo. Si spegne mettendo `\"archivia_da_solo\": false` in `radar.json`."
-        },
-        {
-          "domanda": "Il registro delle previsioni",
-          "risposta": "Quarta sezione di Scienza, **🎲 Le previsioni**. È l'esercizio più scomodo e il più utile.\n\nScrivi cosa ti aspetti **prima** di saperlo e quanto sei sicuro, da 50 a 99. Vale per un esperimento al banco come per «questo cliente risponde entro venerdì». Quando sai com'è andata, premi Giusta o Sbagliata.\n\nDopo una decina di previsioni chiuse compare **la taratura**: un grafico che confronta quanto eri sicuro con quante volte è andata davvero così. I punti sotto la riga vogliono dire che sei più sicuro di quanto i fatti giustifichino — è l'errore più comune e il più utile da correggere.\n\nIl **punteggio di Brier** riassume tutto in un numero: 0 è perfetto, 0,25 è come tirare a indovinare. Più è basso, meglio sei tarato.\n\nNon misura quanto sai. Misura quanto conosci i tuoi limiti, che è la cosa che separa chi fa ricerca da chi ha opinioni."
-        },
-        {
-          "domanda": "Le tre cose di oggi",
-          "risposta": "In cima alla Scrivania, sopra la sessione. Scrivi le tre che contano; oltre le tre non te ne fa aggiungere, e il motivo è semplice: se ne scrivi dieci, domani ne avrai dieci rimandate.\n\nQuelle non fatte tornano il giorno dopo con un contatore. A due rinvii te lo segna sottovoce; **a cinque te lo dice in rosso** — non per farti sentire in colpa, ma perché a quel punto quasi sempre la cosa è posta male: troppo grande, o non tua. Spezzala o toglila."
-        },
-        {
-          "domanda": "Il contatore delle interruzioni",
-          "risposta": "Durante una sessione, accanto a Pausa, c'è **🔔 Mi sono distratto**. Premilo ogni volta che qualcosa ti stacca. Non interrompe niente e non ferma il cronometro: conta e basta, e ti mostra una interruzione ogni quanti minuti.\n\nQuando chiudi la sessione il numero finisce nel diario insieme ai minuti. Dopo due settimane serve a vedere quali attività e quali orari ti frammentano davvero — che di solito non sono quelli che pensavi."
-        },
-        {
-          "domanda": "Comincia ti porta dove devi lavorare",
-          "risposta": "Scegliendo un'attività che vive dentro Quadro, **Comincia** oltre a far partire il cronometro ti sposta nella scheda giusta: Comunicazione va in Parla chiaro, Python e Database in Studio, Cancelleria nel suo tab, Scienza resta nella Scrivania ma apre direttamente l'esercizio del giorno.\n\nSi configura in `scrivania.json`, campo `vai_a` di ogni attività: `tab` è il nome esatto della scheda in alto, e `chiave`/`valore` servono se vuoi aprire anche una sezione precisa dentro quella scheda. Le attività che aprono strumenti esterni non hanno `vai_a` e si comportano come prima."
-        }
-      ]
-    },
-    {
-      "icona": "🩹",
-      "titolo": "Quando qualcosa non va",
-      "voci": [
-        {
-          "domanda": "«Credenziali Google non configurate»",
-          "risposta": "Manca o è scritto male il blocco `gcp_service_account` nei Secrets. L'errore più comune è aver incollato il modello con i puntini al posto dei valori veri: ogni campo va copiato dal file JSON di Google."
-        },
-        {
-          "domanda": "«Unable to load PEM file»",
-          "risposta": "La chiave privata è incollata male. Deve stare tutta su una riga sola, fra virgolette, con i `\\n` scritti così come sono — non devi mandarla a capo tu."
-        },
-        {
-          "domanda": "L'assistente dà errore 503",
-          "risposta": "Vuol dire che i server di Google sono pieni in quel momento. Non è un problema tuo né della chiave.\n\nQuadro riprova da solo tre volte e poi passa ai modelli di riserva, scrivendotelo a schermo. Se insiste, riprova fra qualche minuto: nelle ore di punta capita."
-        },
-        {
-          "domanda": "L'assistente dà errore 404",
-          "risposta": "Il nome del modello non esiste più: Google li cambia ogni tanto. Nel tab Studio, dentro l'assistente, premi **Quali modelli posso usare** e copia uno di quelli che ti elenca."
-        },
-        {
-          "domanda": "Un tab è vuoto",
-          "risposta": "Quasi sempre è la cartella di Drive: o l'ID nei Secrets è sbagliato, o la cartella non è condivisa con il service account.\n\nIn fondo ai tab Progetti e Dettaglio c'è un riquadro **Diagnostica**: dice quali file ha trovato e cosa ha scartato, e di solito la risposta è lì."
-        },
-        {
-          "domanda": "Non riesco a salvare nel diario",
-          "risposta": "La cartella dove sta `Quadro_Diario.xlsx` è condivisa come Visualizzatore invece che come **Editor**. Cambia il permesso e ricarica la pagina.\n\nIntanto Quadro salva in memoria, così non perdi quello che hai scritto, ma al riavvio sparisce."
-        },
-        {
-          "domanda": "Il tab SENTINEL dice che manca un file",
-          "risposta": "Manca `sentinel.html` nella repo. È un file grande, circa 250 KB: caricalo accanto ad `app.py` insieme agli altri."
-        },
-        {
-          "domanda": "Ho dimenticato la password della Taratura",
-          "risposta": "Se l'avevi messa nei Secrets: apri Settings → Secrets su Streamlit e la rileggi, sono in chiaro lì dentro.\n\nSe invece usavi la costante, aprila in `taratura.py`, riga `PASSWORD_DI_SCORTA`. Cambiandola e ricaricando il file su GitHub la nuova vale subito.\n\nI dati già scritti non si perdono in nessun caso: stanno nel file su Drive."
-        },
-        {
-          "domanda": "Gli orari salvati sono indietro di un'ora o due",
-          "risposta": "Era un difetto, ed è corretto. Il server di Streamlit Cloud ha l'orologio su UTC, quindi registrava le due di meno d'estate e una d'inverno. Ora tutte le date e gli orari passano dal fuso italiano.\n\nLe righe già scritte con l'ora sbagliata restano come sono: se ti danno fastidio, apri il file su Drive e correggi la colonna Ora a mano."
-        },
-        {
-          "domanda": "Ho caricato il file del diario ma dice ancora «non collegato»",
-          "risposta": "Quadro si ricorda per un paio di minuti l'esito della ricerca, per non interrogare Drive a ogni clic. Se hai appena caricato il file, premi **🔄 Ho appena caricato il file: cercalo di nuovo** nel riquadro dell'avviso: rifà la ricerca subito.\n\nSe dopo quello dice ancora di no, allora è il permesso: la cartella va condivisa come **Editor**, non Visualizzatore."
-        },
-        {
-          "domanda": "Non vedo la conferma quando salvo",
-          "risposta": "Adesso la vedi: compare un riquadro verde in alto a destra che resta anche mentre la pagina si ricarica, più un messaggio in cima alla sezione per una ventina di secondi.\n\nPrima il messaggio veniva scritto e subito cancellato dal ricaricamento della pagina: era un difetto, non una tua distrazione."
-        },
-        {
-          "domanda": "La trascrizione riesce ma il testo non compare",
-          "risposta": "Era un difetto, corretto. Una casella di testo con un nome proprio si tiene il contenuto e ignora quello che il programma prova a metterci dopo: la trascrizione arrivava ma finiva in un cassetto che nessuno apriva. Ora viene scritta direttamente nella casella."
-        },
-        {
-          "domanda": "«Il servizio è occupato» quando trascrivo",
-          "risposta": "È il 503: i server di Google sono pieni, dura pochi secondi e non dipende da te. La trascrizione ora riprova da sola quattro volte aspettando 3, 6 e 12 secondi, scrivendotelo a schermo mentre lo fa.\n\nSe dopo quattro tentativi non ce la fa, aspetta qualche minuto: nelle ore di punta capita."
-        },
-        {
-          "domanda": "«Il modello gemini-2.5-flash non esiste»",
-          "risposta": "Era un messaggio fuorviante, e l'ho corretto. Il modello che avevi scelto era solo occupato; la dashboard provava allora i modelli di riserva, e uno di quelli era un nome ritirato da Google. Ti mostrava l'errore dell'ultimo tentativo invece del primo.\n\nOra i modelli di riserva sono gli alias «-latest», che Google tiene sempre validi, e l'errore mostrato è quello vero. Il nome del modello si cambia in **un posto solo**: `studio.json`, campo `ai.modello`."
-        }
-      ]
-    },
-    {
-      "icona": "🆕",
-      "titolo": "Le novità di questa versione",
-      "voci": [
-        {
-          "domanda": "Come faccio ad ascoltare le notizie invece di leggerle?",
-          "risposta": "Nel Radar ogni voce ha il pulsante 🔊 Ascolta, e in cima alle novità c'è «Leggi i primi 15 titoli». Legge con la voce del browser: è gratuita e non serve nessuna chiave. Il pulsante diventa ■ Ferma mentre parla. La voce italiana dipende dal dispositivo: sul telefono e sul PC cambia."
-        },
-        {
-          "domanda": "Come filtro le novità per autore o per fonte?",
-          "risposta": "Nella sezione Le novità ci sono i filtri Fonte (scelta multipla) e Autore (scrivi parte del nome: cerca fra l'autore e il nome del canale). L'autore arriva solo dove la fonte lo pubblica nel feed."
-        },
-        {
-          "domanda": "Come modifico o cancello una voce dell'archivio?",
-          "risposta": "Nel Radar, sotto-scheda Archivio, la tabella si modifica direttamente: cambi il testo o il link, e per cancellare selezioni la riga a sinistra e premi il cestino. Quando hai finito premi «Salva le modifiche». Con la ricerca attiva la tabella è di sola lettura: togli la ricerca per modificare."
-        },
-        {
-          "domanda": "Come aggiungo una voce all'archivio a mano?",
-          "risposta": "Nell'Archivio apri «Aggiungi una voce a mano», scrivi titolo, fonte, link e data."
-        },
-        {
-          "domanda": "Come aggiungo un canale YouTube?",
-          "risposta": "Nel Radar, sotto-scheda Le fonti → Aggiungi, c'è «Un canale YouTube, dal suo indirizzo»: incolla il link del canale (quello con @nome o con /channel/UC…). Quadro trova il feed e il nome da solo."
-        },
-        {
-          "domanda": "Cosa sono i Bandi e agevolazioni?",
-          "risposta": "Una sotto-scheda del Radar con le notizie su bandi e incentivi, cercate su Google Notizie per le ricerche in `bandi.json` (Montesano, Vallo di Diano, Salerno, Campania, poi il nazionale). Il filtro «Solo quelle vicino a me» tiene le notizie dei luoghi che hai indicato. Sotto ci sono le pagine ufficiali da tenere d'occhio."
-        },
-        {
-          "domanda": "Con che frequenza si aggiornano i bandi?",
-          "risposta": "Non si aggiornano da soli: premi «Cerca adesso» quando apri la pagina. Una volta a settimana basta. Le pagine con «da verificare» non le ho potute controllare: se una non si apre, dimmelo e la sistemiamo."
-        },
-        {
-          "domanda": "Cos'è la scheda Lavoro?",
-          "risposta": "Il registro del lavoro da freelance: il tab Il mese (fatturato, incassato, quanto manca da incassare, obiettivo), Clienti (stato, prossimo passo, richiamo), Fatture (con il pulsante Incassata) e Scadenze (con il pulsante Fatta). Ogni cambiamento aggiunge una riga al diario: lo storico non si perde."
-        },
-        {
-          "domanda": "Perché in Lavoro non c'è un «modifica» per i clienti?",
-          "risposta": "Il diario si aggiunge solo in fondo, così nulla si perde. Per cambiare lo stato di un cliente scrivi di nuovo il suo nome nel modulo: vince l'ultimo inserimento. Per una scadenza, il pulsante Fatta funziona solo se il nome resta lo stesso."
-        },
-        {
-          "domanda": "Cosa trovo in Scienza → Sfide e idee?",
-          "risposta": "Due elenchi: le sfide scientifiche ancora aperte (con da dove partire e a quali progetti tuoi somigliano) e i bisogni da risolvere, cioè problemi di persone concrete. Puoi estrarre una sfida a caso e scrivere le tue idee, anche a voce, che restano nel diario."
-        }
-      ]
+     "domanda": "Pianificare domani e metterlo nel calendario del telefono",
+     "passi": [
+      "Scrivania → Tempo ed energia → **🗓️ Piano di domani**",
+      "Scrivi le cose da fare con i minuti stimati: Quadro le mette nelle tue ore migliori",
+      "Scarica il file **.ics** e aprilo dal telefono: finisce nel calendario"
+     ]
     }
-  ]
+   ],
+   "pagina": "scrivania"
+  },
+  {
+   "scheda": "👩‍💼 Segretaria",
+   "in_breve": "Sofia: ti parla, ti ricorda, propone azioni che confermi tu. È anche nell'angolo di ogni scheda.",
+   "cosa_trovi": [
+    "**Nell'angolo in basso a destra**, su tutte le schede: chat scritta o a voce (🎙️ nella casella), si rimpicciolisce con ➖",
+    "**💬 Parla**: la stessa conversazione in grande, con l'avatar 3D e il fumetto",
+    "**📈 Come lavora**: il registro di tutte le conversazioni (Quadro, Telegram, desktop), gradimento, azioni accettate, tempi, revisione fatta dall'AI",
+    "**⚙️ Come la vuoi**: nome, carattere, voce (Gemini o del dispositivo), aspetto, dove sta nell'angolo",
+    "**🧠 Cosa sa di te**: il tuo profilo, i ricordi, cosa vede esattamente di Quadro",
+    "**✨ Aforismi**: preferenze (temi, autori, tono, ogni quanto) e la tua raccolta con voti e note",
+    "**🔔 Notifiche e Telegram**: cosa ti manda e quando, le istruzioni del bot, le cose arrivate da fuori",
+    "**📲 Telefono e desktop**: icona sul telefono e app per Windows"
+   ],
+   "come_si_fa": [
+    {
+     "domanda": "Parlarle a voce",
+     "passi": [
+      "Nella casella in basso (nell'angolo o in 💬 Parla) tocca il **microfono** 🎙️",
+      "Parla, poi invia: trascrive, risponde e te lo dice a voce",
+      "La prima volta il browser può chiedere il permesso del microfono: consenti"
+     ]
+    },
+    {
+     "domanda": "Insegnarle cosa non ti piace",
+     "passi": [
+      "Sotto ogni sua risposta ci sono 👍 e 👎",
+      "Con 👎 compare «Cosa non andava?»: scrivilo in due parole",
+      "Lo rilegge ogni volta prima di risponderti (lo vedi in 📈 Come lavora → «Le sue lezioni»)"
+     ]
+    },
+    {
+     "domanda": "Configurare il bot di Telegram",
+     "passi": [
+      "Segretaria → **🔔 Notifiche e Telegram** → in fondo, «🛠️ Come si attiva il bot Telegram»",
+      "Crea il bot con @BotFather, incolla lo script su script.google.com, metti le due chiavi",
+      "Esegui `configura` e scrivi `/start` al bot: da lì ti scrive lui agli orari scelti"
+     ],
+     "apri": {
+      "scheda": "👩‍💼 Segretaria",
+      "chiave": "sg_sezione",
+      "valore": "🔔 Notifiche e Telegram"
+     }
+    },
+    {
+     "domanda": "Cambiarle voce o farla tacere",
+     "passi": [
+      "Segretaria → **⚙️ Come la vuoi** → «La voce»",
+      "Scegli la voce naturale di Gemini (poche al giorno nel piano gratuito) o quella del dispositivo",
+      "Nell'avatar ⏹ la ferma, 🔊 ripete l'ultima risposta"
+     ],
+     "apri": {
+      "scheda": "👩‍💼 Segretaria",
+      "chiave": "sg_sezione",
+      "valore": "⚙️ Come la vuoi"
+     }
+    }
+   ],
+   "sottopagine": [
+    {
+     "nome": "Come lavora",
+     "chiave": "sg_sezione",
+     "valore": "📈 Come lavora"
+    },
+    {
+     "nome": "Aforismi",
+     "chiave": "sg_sezione",
+     "valore": "✨ Aforismi"
+    },
+    {
+     "nome": "Notifiche e Telegram",
+     "chiave": "sg_sezione",
+     "valore": "🔔 Notifiche e Telegram"
+    },
+    {
+     "nome": "Come la vuoi",
+     "chiave": "sg_sezione",
+     "valore": "⚙️ Come la vuoi"
+    },
+    {
+     "nome": "Cosa sa di te",
+     "chiave": "sg_sezione",
+     "valore": "🧠 Cosa sa di te"
+    }
+   ],
+   "pagina": "segretaria"
+  },
+  {
+   "scheda": "🎓 Ripetizioni",
+   "in_breve": "Le lezioni private, lette dai registri degli allievi su Drive.",
+   "cosa_trovi": [
+    "**📊 Panoramica**: ore e lezioni, attività giornaliera",
+    "**👥 Allievi**: scheda per allievo, cadenza delle lezioni nel tempo",
+    "**💶 Economia**: incassato, ⚠️ lezioni da incassare, resa oraria",
+    "**🎓 Didattica**: argomenti più frequenti, copertura dei materiali",
+    "**📋 Dettaglio**: tutte le lezioni, filtrabili, da scaricare"
+   ],
+   "come_si_fa": [
+    {
+     "domanda": "Vedere chi deve ancora pagare",
+     "passi": [
+      "Ripetizioni → **💶 Economia** → «⚠️ Lezioni da incassare»",
+      "I filtri nella barra a sinistra restringono per allievo, materia e periodo"
+     ]
+    }
+   ]
+  },
+  {
+   "scheda": "🗂️ Progetti",
+   "in_breve": "Le consulenze e i progetti: stato, consegne, pagamenti, contatti.",
+   "cosa_trovi": [
+    "**Stato dei progetti** ed **elenco**, con le prossime consegne",
+    "**Movimenti di pagamento**: acconti, saldi, storni",
+    "**📇 Piano contatti** e **🔍 Diagnostica lettura** (se un progetto non compare)"
+   ],
+   "come_si_fa": [
+    {
+     "domanda": "Un progetto non compare",
+     "passi": [
+      "Apri **🔍 Diagnostica lettura progetti** in fondo alla scheda",
+      "Controlla che il file sia nella cartella `drive_folder_id_progetti` e condiviso con il service account"
+     ]
+    }
+   ]
+  },
+  {
+   "scheda": "🛠️ Laboratorio",
+   "in_breve": "Il laboratorio da maker: componenti, progetti con i costi, calcoli, diario.",
+   "cosa_trovi": [
+    "**📦 Magazzino**: componenti, quantità, scorta minima, dove sono",
+    "**🧾 Progetti e prezzi**: bacheca dei progetti, distinta materiali, costo e prezzo",
+    "**🧮 Calcolatori**: resistenza per LED, valori E12, sezione dei cavi, autonomia delle batterie",
+    "**📓 Diario di laboratorio**: cosa hai provato e com'è andata, anche a voce",
+    "**🤖 Ingegnere AI**: domande tecniche su un progetto (vede descrizione, distinta e note) o libere"
+   ],
+   "come_si_fa": [
+    {
+     "domanda": "Calcolare la resistenza di un LED",
+     "passi": [
+      "Laboratorio → **🧮 Calcolatori**",
+      "Tensione di alimentazione, tensione e corrente del LED: ti dà il valore E12 e la potenza"
+     ],
+     "apri": {
+      "scheda": "🛠️ Laboratorio",
+      "chiave": "lab_sezione",
+      "valore": "🧮 Calcolatori"
+     }
+    }
+   ],
+   "pagina": "laboratorio",
+   "sottopagine": [
+    {
+     "nome": "Magazzino",
+     "chiave": "lab_sezione",
+     "valore": "📦 Magazzino"
+    },
+    {
+     "nome": "Calcolatori",
+     "chiave": "lab_sezione",
+     "valore": "🧮 Calcolatori"
+    },
+    {
+     "nome": "Diario di laboratorio",
+     "chiave": "lab_sezione",
+     "valore": "📓 Diario di laboratorio"
+    },
+    {
+     "nome": "Ingegnere AI",
+     "chiave": "lab_sezione",
+     "valore": "🤖 Ingegnere AI"
+    }
+   ]
+  },
+  {
+   "scheda": "💼 Lavoro",
+   "in_breve": "Il lavoro da freelance: clienti, fatture, incassi, scadenze, quanto rendi all'ora.",
+   "cosa_trovi": [
+    "**📊 Il mese**: emesso, incassato, obiettivo, e «💶 Quanto guadagni davvero all'ora» cliente per cliente",
+    "**👥 Clienti**: stato (contattato, preventivo, trattativa, acquisito…) e data di richiamo",
+    "**🧾 Fatture**: aperte, «Incassata», nuova fattura con le ore impiegate",
+    "**⏰ Scadenze**: IVA, contributi, rinnovi, da segnare «Fatta»"
+   ],
+   "come_si_fa": [
+    {
+     "domanda": "Sapere quale cliente rende di più",
+     "passi": [
+      "Quando registri una fattura scrivi anche le **ore impiegate**",
+      "In **📊 Il mese** il riquadro «Quanto guadagni davvero all'ora» divide il fatturato per le ore"
+     ]
+    }
+   ],
+   "pagina": "lavoro"
+  },
+  {
+   "scheda": "🖋️ Cancelleria",
+   "in_breve": "I documenti con il tuo marchio, pronti in PDF.",
+   "cosa_trovi": [
+    "Carta intestata, biglietti da visita, tessera, scheda, volantino, etichette, firma email",
+    "Preventivo, ricevuta, documento libero, accordo di riservatezza, attestato",
+    "Marchio, dati e stile si impostano una volta (sezioni 1-3), poi scegli il documento (4)"
+   ],
+   "come_si_fa": [
+    {
+     "domanda": "Fare un preventivo",
+     "passi": [
+      "Cancelleria → scegli il marchio → in «4 · Documento» scegli **Preventivo**",
+      "Compila voci e importi, premi **Genera il preventivo** e scarica il PDF"
+     ]
+    }
+   ]
+  },
+  {
+   "scheda": "📚 Studio",
+   "in_breve": "Studiare e farsi leggere le cose: Officina, Leggimelo, percorsi, prontuari, assistente.",
+   "cosa_trovi": [
+    "**🧪 Officina**: i tuoi strumenti, a portata di clic",
+    "**📖 Leggimelo**: foto, PDF, link o testo → lettura ad alta voce con tutti i comandi, audio MP3, riassunto, traduzione, mappe concettuali, infografiche, flashcard, biblioteca",
+    "**🎯 Percorsi** con le tappe da spuntare, **🧰 Strumenti**, **📋 Prontuari**",
+    "**🤖 Assistente** e **💬 Prompt pronti**"
+   ],
+   "come_si_fa": [
+    {
+     "domanda": "Farmi leggere la pagina di un libro",
+     "passi": [
+      "Studio → **📖 Leggimelo** → «📥 Prendi il testo» → **📷 Fotografa**",
+      "Inquadra la pagina dritta e ben illuminata: Quadro legge il testo",
+      "Passa a «🎧 Ascolta e lavora»: ▶️ per ascoltare, voce e velocità le scegli lì"
+     ],
+     "apri": {
+      "scheda": "📚 Studio",
+      "chiave": "studio_sezione",
+      "valore": "📖 Leggimelo"
+     }
+    },
+    {
+     "domanda": "Ascoltare un articolo da un link",
+     "passi": [
+      "Studio → 📖 Leggimelo → «📥 Prendi il testo» → **🔗 Link di un articolo**",
+      "Incolla l'indirizzo: Quadro tiene solo il testo dell'articolo",
+      "In «🎧 Ascolta e lavora» lo ascolti, lo riassumi o lo scarichi in MP3, Word, PDF"
+     ],
+     "apri": {
+      "scheda": "📚 Studio",
+      "chiave": "studio_sezione",
+      "valore": "📖 Leggimelo"
+     }
+    },
+    {
+     "domanda": "Fare le flashcard da un testo",
+     "passi": [
+      "Prendi il testo in Leggimelo, poi **🃏 Flashcard** → «✨ Crea le flashcard» e «💾 Salva il mazzo»",
+      "Ripassale con «✅ La sapevo» / «❌ Non la sapevo»: quelle che sai tornano più tardi, le altre presto"
+     ]
+    }
+   ],
+   "sottopagine": [
+    {
+     "nome": "Leggimelo",
+     "chiave": "studio_sezione",
+     "valore": "📖 Leggimelo"
+    }
+   ],
+   "pagina": "studio"
+  },
+  {
+   "scheda": "🎙️ Parla chiaro",
+   "in_breve": "Allenamento a parlare in pubblico e a spiegare, con registrazione e analisi.",
+   "cosa_trovi": [
+    "**🏋️ Allenamento**: scenario, registri il tuo intervento, l'AI lo trascrive e ti dice cosa migliorare",
+    "**🧭 Coach**: prepari un canovaccio, cerchi i punti deboli, ti fa le domande cattive, lo riduce a 90 secondi",
+    "**📇 Grammatica** (carte da ripassare), **📚 Lezioni**, **🧍 Presenza**, **📈 Andamento**"
+   ]
+  },
+  {
+   "scheda": "📡 SENTINEL",
+   "in_breve": "Il percorso SENTINEL da zero: moduli, domande all'AI su ogni modulo, andamento.",
+   "cosa_trovi": [
+    "**🤖 Chiedi su questo modulo** (e salva domanda e risposta)",
+    "**📈 Come stai andando**"
+   ]
+  },
+  {
+   "scheda": "🛰️ Radar",
+   "in_breve": "Le novità dalle tue fonti, ogni giorno, con bandi ed eventi.",
+   "cosa_trovi": [
+    "**📰 Le novità**: filtri per fonte, autore, argomento; riassunto in dieci righe; ascolto a voce",
+    "**🤖 Assistente**, **🎓 Eventi e seminari**, **📚 Riviste**, **⭐ Messe da parte**",
+    "**🗄️ Archivio**: aggiungi, modifica, cancella voci e link (anche canali YouTube)",
+    "**⚙️ Le fonti**: fonti, parole chiave, canali YouTube e podcast da aggiungere",
+    "**🏛️ Bandi e agevolazioni**: bandi e finanziamenti vicino a te, aggiornati"
+   ],
+   "come_si_fa": [
+    {
+     "domanda": "Aggiungere un canale YouTube da seguire",
+     "passi": [
+      "Radar → **⚙️ Le fonti** → **➕ Aggiungi**",
+      "Incolla l'indirizzo del canale: Quadro trova il suo feed e lo aggiunge"
+     ]
+    }
+   ],
+   "pagina": "radar"
+  },
+  {
+   "scheda": "🌿 Equilibrio",
+   "in_breve": "Respiro, presenza, stile di vita e crescita personale.",
+   "cosa_trovi": [
+    "**🌬️ Respira**: respirazione guidata (con voce o bip) e conta dei respiri al minuto",
+    "**🧘 Presenza**: timer di meditazione con campana e pratiche guidate a voce",
+    "**🌙 Stile di vita**: check-in serale, dati dello smartwatch da una foto, lettura AI dell'andamento",
+    "**🌱 Crescita**: obiettivi del trimestre e revisione settimanale",
+    "I dati personali stanno sotto la password della Taratura"
+   ],
+   "come_si_fa": [
+    {
+     "domanda": "Leggere i dati dello smartwatch Honor",
+     "passi": [
+      "Fai uno screenshot della schermata di Honor Health (sonno, passi, stress…)",
+      "Equilibrio → **🌙 Stile di vita** → «⌚ Leggi i dati dallo smartwatch, da una foto»",
+      "Carica l'immagine: Quadro legge i valori e li mette nel check-in"
+     ],
+     "apri": {
+      "scheda": "🌿 Equilibrio",
+      "chiave": "eq_sezione",
+      "valore": "🌙 Stile di vita"
+     }
+    }
+   ],
+   "pagina": "equilibrio",
+   "sottopagine": [
+    {
+     "nome": "Respira",
+     "chiave": "eq_sezione",
+     "valore": "🌬️ Respira"
+    },
+    {
+     "nome": "Presenza",
+     "chiave": "eq_sezione",
+     "valore": "🧘 Presenza"
+    },
+    {
+     "nome": "Stile di vita",
+     "chiave": "eq_sezione",
+     "valore": "🌙 Stile di vita"
+    },
+    {
+     "nome": "Crescita",
+     "chiave": "eq_sezione",
+     "valore": "🌱 Crescita"
+    }
+   ]
+  },
+  {
+   "scheda": "⚙️ Taratura",
+   "in_breve": "Il tuo spazio privato, con password: scrivere, benessere, andamento.",
+   "cosa_trovi": [
+    "**✍️ Oggi** (salva, o salva e parlane con l'AI)",
+    "**🧘 Benessere**",
+    "**📖 Quello che hai scritto**",
+    "**📈 Andamento**",
+    "Dopo un po' si richiude da sola; 🔒 Chiudi la chiude subito"
+   ]
+  },
+  {
+   "scheda": "❓ Guida",
+   "in_breve": "Questa guida: cerca, chiedi, e salta dritto alla scheda giusta.",
+   "cosa_trovi": [
+    "**🗺️ Le schede**, **🆕 Novità**, **❓ Domande e problemi**",
+    "**🤖 Chiedi alla guida**: una domanda in parole tue, risposta con i passi"
+   ]
+  }
+ ],
+ "novita": [
+  {
+   "quando": "5 novembre 2026",
+   "titolo": "📈 Come lavora la segretaria",
+   "testo": "Registro di tutte le conversazioni (anche Telegram e desktop), 👍/👎 con il perché, azioni accettate, tempi, revisione fatta dall'AI. I 👎 diventano lezioni che Sofia rilegge.",
+   "apri": {
+    "scheda": "👩‍💼 Segretaria",
+    "chiave": "sg_sezione",
+    "valore": "📈 Come lavora"
+   }
+  },
+  {
+   "quando": "5 novembre 2026",
+   "titolo": "❓ Una guida nuova",
+   "testo": "Una scheda per ogni scheda di Quadro, con i passi e il pulsante per andarci; si può chiedere alla guida in parole proprie. Anche Sofia la conosce: chiedile «come si fa…».",
+   "apri": {
+    "scheda": "❓ Guida"
+   }
+  },
+  {
+   "quando": "5 novembre 2026",
+   "titolo": "👩‍💼 Sofia nell'angolo, con la voce naturale",
+   "testo": "La segretaria è su tutte le schede, in basso a destra; si rimpicciolisce con ➖. Risponde con la voce di Gemini e la bocca a tempo; finite le voci del giorno usa quella del dispositivo."
+  },
+  {
+   "quando": "5 novembre 2026",
+   "titolo": "📖 Leggimelo in Studio, ✨ aforismi in Segretaria",
+   "testo": "Equilibrio ora ha solo Respira, Presenza, Stile di vita e Crescita. L'aforisma del momento resta in cima alla Scrivania e cambia da solo.",
+   "apri": {
+    "scheda": "📚 Studio",
+    "chiave": "studio_sezione",
+    "valore": "📖 Leggimelo"
+   }
+  },
+  {
+   "quando": "inizio novembre 2026",
+   "titolo": "👩‍💼 La segretaria, con Telegram e l'app per il desktop",
+   "testo": "Avatar 3D configurabile, notifiche su Telegram agli orari che scegli, app per Windows sopra le altre finestre."
+  },
+  {
+   "quando": "inizio novembre 2026",
+   "titolo": "🛠️ Laboratorio, 🌿 Equilibrio, ⏱️ Tempo ed energia, 💼 Lavoro",
+   "testo": "Magazzino e calcolatori da maker; respiro e meditazione; mappa dell'energia e piano di domani; clienti, fatture, scadenze e guadagno vero all'ora."
+  },
+  {
+   "quando": "inizio novembre 2026",
+   "titolo": "🛰️ Radar più ricco",
+   "testo": "Ascolto a voce, filtri per autore e fonte, archivio modificabile, canali YouTube e podcast, bandi e agevolazioni."
+  }
+ ],
+ "sezioni": [
+  {
+   "icona": "🧭",
+   "titolo": "Come si usa, giorno per giorno",
+   "voci": [
+    {
+     "domanda": "Il giro della mattina, in tre minuti",
+     "risposta": "Apri la **Scrivania**. In alto scegli *cosa fai adesso* e *per quanto*, premi **Comincia** e parte il cronometro. Se l'attività apre uno strumento esterno, il pulsante compare lì sotto.\n\nQuando hai finito registri i minuti veri, com'è andata da 1 a 5 e una riga su cosa hai fatto. Quella riga vale più di quanto pensi: fra un mese è l'unica cosa che ti dirà che stavi facendo.\n\nPoi, se hai cinque minuti, scrivi una riga nel **taccuino delle anomalie**. È l'esercizio più corto e quello che rende utile tutto il resto."
+    },
+    {
+     "domanda": "A cosa serve ogni tab",
+     "risposta": "Lo trovi, scheda per scheda e con i pulsanti per andarci, in **🗺️ Le schede** qui in Guida. In breve: **Scrivania** la sala di comando · **Segretaria** Sofia, che è anche nell'angolo · **Ripetizioni** le lezioni · **Progetti** le consulenze · **Laboratorio** il maker · **Lavoro** clienti, fatture, scadenze · **Cancelleria** i documenti · **Studio** Officina, Leggimelo e percorsi · **Parla chiaro** la comunicazione · **SENTINEL** il percorso · **Radar** le novità e i bandi · **Equilibrio** respiro e crescita · **Taratura** lo spazio privato."
+    },
+    {
+     "domanda": "Perché a volte i dati sembrano vecchi",
+     "risposta": "Quadro tiene in memoria quello che legge da Drive per qualche minuto, altrimenti ricaricherebbe tutto a ogni clic e sarebbe lentissimo.\n\nSe hai appena modificato un registro e vuoi vederlo subito, usa il pulsante **🔄 Ricarica i contenuti dai file** nel tab Studio, oppure ricarica la pagina del browser."
+    }
+   ]
+  },
+  {
+   "icona": "✏️",
+   "titolo": "Modificare i contenuti da solo",
+   "voci": [
+    {
+     "domanda": "La regola generale",
+     "risposta": "I **testi e gli elenchi** stanno nei file che finiscono per `.json`. Il **comportamento** sta nei file che finiscono per `.py`.\n\nPer cambiare cosa c'è scritto non devi quasi mai toccare il codice: apri il `.json` giusto e modifichi le parole fra virgolette."
+    },
+    {
+     "domanda": "Quale file contiene cosa",
+     "risposta": "**I contenuti** (si modificano senza toccare il codice):\n- `scrivania.json` — le attività che puoi scegliere, le durate, le faccine da 1 a 5\n- `scienza.json` — l'esercizio di ogni giorno, le abitudini, il taccuino\n- `studio.json` — percorsi, prontuari, prompt, Officina, e il modello dell'AI (`ai.modello`)\n- `parlachiaro.json` — esercizi, scenari, domande del coach, carte, lezioni\n- `equilibrio.json` — ritmi del respiro, pratiche guidate, temi e aforismi di scorta\n- `marchi.json` — i tuoi marchi con colori e loghi, per la cancelleria\n- `collegamenti.json` — i collegamenti rapidi della Scrivania\n- `guida.json` — questa guida\n\n**Il codice**, un file per parte: `app.py` (l'ossatura e le schede storiche), `segretaria.py`, `aforismi.py`, `lettura.py` (Leggimelo), `equilibrio.py`, `produttivita.py` (Tempo ed energia), `lavoro.py`, `laboratorio.py`, `drive_json.py`, `avatar_motore.js` (l'avatar 3D), `segretaria_telegram.gs` (il bot, da incollare su script.google.com)."
+    },
+    {
+     "domanda": "Le tre regole per non rompere un file .json",
+     "risposta": "1. **Le virgolette vanno sempre a coppie.** Se ne cancelli una, il file non si legge più.\n2. **La virgola separa, non chiude.** Fra un blocco e il successivo ci va la virgola; dopo l'ultimo blocco **no**.\n3. **Gli apostrofi vanno bene**, le virgolette dentro il testo no: se devi scrivere una citazione usa « e ».\n\nSe sbagli, Quadro non si rompe in silenzio: ti scrive in rosso quale file non riesce a leggere. Incolla il file su `jsonlint.com` e ti dice la riga esatta."
+    },
+    {
+     "domanda": "Aggiungere un'attività alla Scrivania",
+     "risposta": "Apri `scrivania.json`, copia un blocco intero fra parentesi graffe, incollalo sotto e cambia i testi:\n\n```\n{\n  \"icona\": \"🔧\",\n  \"nome\": \"Come si chiama\",\n  \"strumento\": \"Dove si lavora\",\n  \"url\": \"https://...\",\n  \"nota\": \"Una riga di spiegazione\"\n}\n```\n\nLascia `url` vuoto se l'attività non apre niente. Ricorda la virgola fra un blocco e l'altro."
+    },
+    {
+     "domanda": "Aggiungere una tappa o una fonte a un percorso",
+     "risposta": "In `studio.json`, dentro `percorsi`, ogni argomento ha tre `livelli` e ogni livello ha una lista `tappe`: sono semplici righe di testo fra virgolette, ne aggiungi una e basta.\n\nLe `fonti` sono blocchi con `nome`, `url` e `nota`, come le attività."
+    }
+   ]
+  },
+  {
+   "icona": "🚀",
+   "titolo": "Mettere online le modifiche",
+   "voci": [
+    {
+     "domanda": "Dal sito di GitHub, senza comandi",
+     "risposta": "1. Vai sul repository `Officina-degli-strumenti`.\n2. **Add file → Upload files**, trascina i file nuovi.\n3. In basso scrivi due parole su cosa hai cambiato e premi **Commit changes**.\n4. Su `share.streamlit.io`, menù dell'app (i tre puntini) → **Reboot app**.\n\nI file con lo stesso nome vengono sostituiti: è il comportamento che vuoi."
+    },
+    {
+     "domanda": "Dal computer, con i comandi",
+     "risposta": "La prima volta, una volta sola:\n\n```\ngit clone https://github.com/claudiogarone/Officina-degli-strumenti.git\ncd Officina-degli-strumenti\n```\n\nPoi, ogni volta che hai file nuovi da mettere online: copia i file nella cartella e lancia\n\n```\ngit add .\ngit commit -m \"descrizione di cosa hai cambiato\"\ngit push\n```\n\n`git add .` prende tutto quello che è cambiato, `commit` lo registra con la tua descrizione, `push` lo manda su GitHub. Streamlit se ne accorge da solo nel giro di un minuto; se non succede, Reboot."
+    },
+    {
+     "domanda": "Come capisco se è andata",
+     "risposta": "Apri l'app e guarda in basso a destra: se Streamlit sta ricostruendo, lo scrive. Quando ha finito, ricarica la pagina.\n\nSe vedi ancora la versione vecchia: controlla di aver fatto il commit (su GitHub il file deve mostrare la data di oggi) e poi fai Reboot. **Non rinominare mai il repository**: Streamlit perde il collegamento e smette di leggere i commit senza dirtelo."
+    }
+   ]
+  },
+  {
+   "icona": "🔑",
+   "titolo": "Le chiavi e le cartelle (i Secrets)",
+   "voci": [
+    {
+     "domanda": "Cosa sono e dove stanno",
+     "risposta": "Sono le informazioni riservate che non devono finire su GitHub: le credenziali di Google e la chiave dell'intelligenza artificiale.\n\nStanno su `share.streamlit.io`, menù dell'app → **Settings → Secrets**. Si incollano lì e basta: l'app le legge da sola."
+    },
+    {
+     "domanda": "L'elenco completo",
+     "risposta": "- `gcp_service_account` — il blocco intero delle credenziali Google, campo per campo\n- `drive_folder_id` — la cartella dei registri delle lezioni\n- `drive_folder_id_progetti` — la cartella dei progetti\n- `drive_folder_id_loghi` — la cartella dei loghi\n- `drive_folder_id_diario` — facoltativa: dove cercare il diario (e i file della segretaria)\n- `drive_folder_id_taratura` — la cartella dell'archivio privato\n- `taratura_password` — la password della Taratura (e dei dati personali di Equilibrio)\n- `google_api_key` — la chiave di Google AI Studio: assistente, trascrizione, segretaria, voce\n- `diario_sheet_id` — facoltativa, solo se usi un foglio Google invece del file Excel\n\nL'ID di una cartella è il pezzo di indirizzo dopo `/folders/`. Le chiavi stanno solo nei Secrets: mai nei file su GitHub o su Drive."
+    },
+    {
+     "domanda": "Condividere le cartelle con il service account",
+     "risposta": "Ogni cartella di Drive che Quadro deve leggere va condivisa con l'indirizzo del service account (quello che finisce per `.iam.gserviceaccount.com`).\n\n**Visualizzatore** basta per leggere. La cartella dove sta il diario invece vuole **Editor**, perché lì Quadro deve scrivere."
+    }
+   ]
+  },
+  {
+   "icona": "📓",
+   "titolo": "Il diario: dove finiscono i tuoi dati",
+   "voci": [
+    {
+     "domanda": "Dove vengono salvati",
+     "risposta": "In un file Excel che si chiama `Quadro_Diario.xlsx`, dentro una delle tue cartelle di Drive. Quadro lo cerca **per nome**, quindi non rinominarlo.\n\nPuoi aprirlo quando vuoi e correggerlo a mano: è tuo, e si legge anche senza la dashboard."
+    },
+    {
+     "domanda": "Perché non si salva sul server",
+     "risposta": "Perché Streamlit Cloud ricostruisce la macchina a ogni riavvio e cancella tutto quello che l'app ha scritto su disco. Non è una limitazione aggirabile: i dati devono stare fuori, su Drive."
+    },
+    {
+     "domanda": "Cosa vuol dire la colonna Tipo",
+     "risposta": "- `sessione` — una sessione di lavoro o allenamento, con i minuti\n- `parlachiaro` — un allenamento di comunicazione, con il punteggio in Valore\n- `anomalia` — una riga del taccuino delle anomalie\n- `problema` — uno dei tuoi problemi aperti\n- `esercizio` — un esercizio del giorno completato\n- `tappa` — una tappa di studio segnata come fatta\n- `corso` — un avanzamento su un corso, con la percentuale in Valore\n- `priorita` — una delle tre cose di oggi\n- `cliente`, `fattura`, `incasso`, `scadenza`, `obiettivo` — il lavoro (scheda Lavoro)\n- `impostazione` — preferenze salvate (segretaria, aforismi, notifiche…)\n- `aforisma` — un aforisma salvato, con voto e note\n- `ricordo`, `idea`, `nota` — quello che hai detto alla segretaria di tenere\n- `sg_scambio`, `sg_voto`, `sg_azione` — il registro della segretaria: conversazioni, 👍/👎, azioni\n- `lettura`, `flashcard` — Leggimelo\n- `laboratorio` — il diario di laboratorio"
+    },
+    {
+     "domanda": "Come porto via tutto",
+     "risposta": "In fondo alla Scrivania, dentro *Tutte le righe del diario*, trovi i pulsanti per scaricare in CSV, in Excel e in JSON. Il JSON è l'archivio completo.\n\nLo stesso vale per quasi ogni tabella e grafico della dashboard: sotto trovi sempre CSV ed Excel, e i grafici si salvano in immagine con l'icona della macchina fotografica in alto a destra."
+    }
+   ]
+  },
+  {
+   "icona": "👩‍💼",
+   "titolo": "La segretaria",
+   "voci": [
+    {
+     "domanda": "Sofia nell'angolo non risponde o il ➖ non va",
+     "risposta": "Su Streamlit Cloud, in basso a destra, c'è il pulsante **Manage app** (lo vedi solo tu): se ci clicchi si apre il pannello dei log e sembra che Quadro si blocchi. Sofia ora sta un po' più in alto apposta. Per scriverle usa il tasto **Invio** o la freccia nella casella; se il pannello dei log è aperto, chiudilo con la ✕. Se compare un riquadro rosso con un errore, mandamelo."
+    },
+    {
+     "domanda": "Perché a volte la voce è diversa",
+     "risposta": "La voce naturale di Gemini, nel piano gratuito, si può usare poche volte al giorno (una decina, a fine 2026, insieme ai file audio di Leggimelo). Finite quelle, Sofia passa da sola alla **voce del dispositivo** fino al giorno dopo. Su Windows con Edge le voci «Natural» sono le migliori. Il numero vero per la tua chiave: aistudio.google.com/rate-limit."
+    },
+    {
+     "domanda": "Cosa tiene il registro e come lo spengo",
+     "risposta": "In **📈 Come lavora** trovi ogni domanda e risposta (da Quadro, Telegram, desktop), con i tempi, le azioni e i tuoi voti. Sta nel diario come righe `sg_scambio`. In fondo alla stessa pagina puoi spegnere il registro, o tenere solo i numeri senza il testo delle conversazioni."
+    },
+    {
+     "domanda": "Telegram: le chiacchierate non compaiono in «Come lavora»",
+     "risposta": "Serve lo script aggiornato: copia di nuovo `segretaria_telegram.gs` su script.google.com e salva (non serve rifare `configura`). Le chiacchierate arrivano nella posta su Drive; in «📈 Come lavora» le vedi subito e con «📥 Archivia nel diario» le metti nel registro per sempre."
+    }
+   ]
+  },
+  {
+   "icona": "📱",
+   "titolo": "Telefono e indirizzi diretti",
+   "voci": [
+    {
+     "domanda": "Aprire direttamente una scheda",
+     "risposta": "Aggiungi in fondo all'indirizzo di Quadro `?pagina=` e il nome: `segretaria`, `equilibrio`, `laboratorio`, `lavoro`, `radar`, `studio`, `scrivania`, oppure `leggimelo` e `aforismi`. Da Chrome sul telefono, ⋮ → **Aggiungi a schermata Home**: diventa un'icona che apre proprio lì."
+    }
+   ]
+  },
+  {
+   "icona": "🩹",
+   "titolo": "Quando qualcosa non va",
+   "voci": [
+    {
+     "domanda": "«Credenziali Google non configurate»",
+     "risposta": "Manca o è scritto male il blocco `gcp_service_account` nei Secrets. L'errore più comune è aver incollato il modello con i puntini al posto dei valori veri: ogni campo va copiato dal file JSON di Google."
+    },
+    {
+     "domanda": "«Unable to load PEM file»",
+     "risposta": "La chiave privata è incollata male. Deve stare tutta su una riga sola, fra virgolette, con i `\\n` scritti così come sono — non devi mandarla a capo tu."
+    },
+    {
+     "domanda": "L'assistente dà errore 503",
+     "risposta": "Vuol dire che i server di Google sono pieni in quel momento. Non è un problema tuo né della chiave.\n\nQuadro riprova da solo tre volte e poi passa ai modelli di riserva, scrivendotelo a schermo. Se insiste, riprova fra qualche minuto: nelle ore di punta capita."
+    },
+    {
+     "domanda": "L'assistente dà errore 404",
+     "risposta": "Il nome del modello non esiste più: Google li cambia ogni tanto. Nel tab Studio, dentro l'assistente, premi **Quali modelli posso usare** e copia uno di quelli che ti elenca."
+    },
+    {
+     "domanda": "Un tab è vuoto",
+     "risposta": "Quasi sempre è la cartella di Drive: o l'ID nei Secrets è sbagliato, o la cartella non è condivisa con il service account.\n\nIn fondo ai tab Progetti e Dettaglio c'è un riquadro **Diagnostica**: dice quali file ha trovato e cosa ha scartato, e di solito la risposta è lì."
+    },
+    {
+     "domanda": "Non riesco a salvare nel diario",
+     "risposta": "La cartella dove sta `Quadro_Diario.xlsx` è condivisa come Visualizzatore invece che come **Editor**. Cambia il permesso e ricarica la pagina.\n\nIntanto Quadro salva in memoria, così non perdi quello che hai scritto, ma al riavvio sparisce."
+    }
+   ]
+  }
+ ]
 }

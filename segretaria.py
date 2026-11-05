@@ -47,6 +47,8 @@ import html
 import json
 import os
 import re
+import time
+import types
 import uuid
 
 import pandas as pd
@@ -62,6 +64,7 @@ PREDEFINITE = {
     "carattere_extra": "", "risposte_brevi": True, "mostra_benessere": False,
     "velocita": 1.0, "tono": 1.05, "voce": "",
     "voce_motore": "gemini", "voce_gemini": "Sulafat", "angolo": "automatico", "lato": "destra",
+    "registro": True, "registro_testi": True,
     "avatar": {"pelle": "#f1c7a5", "capelli": "#3b2a20", "giacca": "#0f5d47",
                "camicia": "#f7f7f2", "occhi": "#4a3426", "labbra": "#c45a5a",
                "acconciatura": "caschetto", "occhiali": False, "orecchini": True,
@@ -90,7 +93,27 @@ REGOLE_INIZIALI = [
 ]
 AZIONI = {"priorita": "🎯 Aggiungi alle tre cose di oggi", "scadenza": "⏰ Aggiungi la scadenza",
           "idea": "💡 Salva l'idea", "ricordo": "🧠 Ricordatelo", "obiettivo": "🌱 Nuovo obiettivo del trimestre",
-          "promemoria": "📲 Promemoria su Telegram", "nota": "📝 Salva la nota"}
+          "promemoria": "📲 Promemoria su Telegram", "nota": "📝 Salva la nota",
+          "apri": "➜ Portami lì"}
+
+# Quando la domanda è su come si usa Quadro, lei riceve anche la guida
+# (guida.json) e può proporre l'azione «apri» per portarti nella scheda giusta.
+_COME_SI_FA = re.compile(r"\b(come (si |faccio|posso|funziona|uso|attivo|configuro|cambio|imposto|aggiungo)|"
+                         r"dove (trovo|si trova|sta|stanno|metto|vedo|cambio)|portami|aprimi|apri la|vai a|"
+                         r"in quale scheda|che scheda|guida|quadro)", re.I)
+
+
+def _guida_prompt(domanda):
+    if not _COME_SI_FA.search(domanda or ""):
+        return ""
+    import guida as GUIDA
+    G = GUIDA.carica()
+    if "_errore" in G:
+        return ""
+    return ("Ti sta chiedendo come si usa Quadro: rispondi con i passi presi dalla guida qui sotto, "
+            "dicendo la scheda. Se serve, proponi l'azione «apri» con testo uguale a uno di questi "
+            f"posti: {', '.join(GUIDA.destinazioni(G))}.\n"
+            f"GUIDA DI QUADRO:\n{GUIDA.testo_per_ai(G, 7000)}\n\n")
 
 
 # =========================================================== impostazioni ===
@@ -129,6 +152,120 @@ def ricordi(dia):
     for _, r in dia[dia["Tipo"] == "ricordo_rimosso"].iterrows():
         tolto[r["Nota"]] = max(tolto.get(r["Nota"], pd.Timestamp.min), _quando(r))
     return [x for x, q in ultimo.items() if x not in tolto or q > tolto[x]]
+
+
+# ========================================================== il registro =====
+# Ogni domanda e risposta finisce nel diario come riga «sg_scambio»: da dove
+# (angolo, scheda, telegram, desktop), com'è andata, quanti secondi ci ha
+# messo, le azioni che ha proposto, che voce ha usato e, se vuoi, il testo.
+# I tuoi 👍/👎 sono righe «sg_voto» (vince l'ultima per ogni risposta), le
+# azioni confermate o rifiutate righe «sg_azione». Da qui escono i numeri di
+# «📈 Come lavora», e i 👎 con un commento diventano le sue «lezioni»: le
+# rilegge ogni volta che ti risponde, per non ripetere lo stesso errore.
+def _numero(x):
+    try:
+        v = float(x)
+    except (TypeError, ValueError):
+        return None
+    return None if v != v else v
+
+
+def _nota_json(testo):
+    try:
+        d = json.loads(testo or "{}")
+        return d if isinstance(d, dict) else {}
+    except (json.JSONDecodeError, TypeError):
+        return {}
+
+
+def voti(dia):
+    """id della risposta → (voto +1/-1, commento). Vince l'ultimo dato."""
+    if dia is None or dia.empty:
+        return {}
+    v = dia[dia["Tipo"] == "sg_voto"].sort_values(["Data", "Ora"], kind="stable")
+    return {r["Attivita"]: (_numero(r["Valore"]), _nota_json(r["Nota"]).get("c", "")) for _, r in v.iterrows()}
+
+
+COLONNE_REGISTRO = ["quando", "canale", "esito", "secondi", "domanda", "risposta", "azioni",
+                    "voce", "voto", "commento", "errore", "id"]
+
+
+def registro(dia, da_posta=()):
+    """Tutte le chiacchierate, dal diario e (non ancora archiviate) dalla posta."""
+    righe = []
+    if dia is not None and not dia.empty:
+        for _, r in dia[dia["Tipo"] == "sg_scambio"].iterrows():
+            n = _nota_json(r["Nota"])
+            righe.append({"quando": _quando(r), "canale": r["Attivita"], "esito": r["Strumento"],
+                          "secondi": _numero(r["Valore"]), "domanda": n.get("d", ""),
+                          "risposta": n.get("r", ""), "azioni": ", ".join(n.get("azioni", [])),
+                          "voce": n.get("voce", ""), "errore": n.get("errore", ""), "id": n.get("id", "")})
+    for v in da_posta:
+        try:
+            quando = pd.Timestamp(str(v.get("quando"))[:16])
+        except ValueError:
+            quando = pd.NaT
+        righe.append({"quando": quando, "canale": str(v.get("da", "Telegram")).lower(),
+                      "esito": "errore" if v.get("errore") else "ok", "secondi": _numero(v.get("secondi")),
+                      "domanda": str(v.get("testo", "")), "risposta": str(v.get("risposta", "")),
+                      "azioni": v.get("azione") or "", "voce": "", "errore": str(v.get("errore") or ""),
+                      "id": v.get("id", "")})
+    df = pd.DataFrame(righe, columns=[c for c in COLONNE_REGISTRO if c not in ("voto", "commento")])
+    vt = voti(dia)
+    df["voto"] = df["id"].map(lambda i: vt.get(i, (None, ""))[0])
+    df["commento"] = df["id"].map(lambda i: vt.get(i, (None, ""))[1])
+    return df[COLONNE_REGISTRO].sort_values("quando", kind="stable").reset_index(drop=True)
+
+
+def azioni_decise(dia):
+    if dia is None or dia.empty:
+        return pd.DataFrame(columns=["quando", "tipo", "decisione", "canale", "testo"])
+    a = dia[dia["Tipo"] == "sg_azione"]
+    return pd.DataFrame([{"quando": _quando(r), "tipo": r["Attivita"], "decisione": r["Strumento"],
+                          "canale": _nota_json(r["Nota"]).get("canale", ""),
+                          "testo": _nota_json(r["Nota"]).get("testo", "")} for _, r in a.iterrows()],
+                        columns=["quando", "tipo", "decisione", "canale", "testo"])
+
+
+def lezioni(dia, quante=8):
+    """I 👎 con un commento: cosa non ti è piaciuto, in parole tue."""
+    reg = registro(dia)
+    if reg.empty:
+        return []
+    neg = reg[(reg["voto"] < 0) & (reg["commento"].fillna("").str.strip() != "")].tail(quante)
+    return [f"alla domanda «{r['domanda'][:120]}» hai risposto «{r['risposta'][:160]}»: "
+            f"non gli è piaciuto perché «{r['commento']}»" for _, r in neg.iterrows()]
+
+
+def _registra_scambio(ctx, imp, canale, domanda, m, secondi, voce, errore=""):
+    if not imp.get("registro", True):
+        return
+    m = m or {}
+    nota = {"id": m.get("id", ""), "azioni": [a["tipo"] for a in m.get("azioni", [])],
+            "voce": voce, "umore": m.get("umore", "")}
+    if imp.get("registro_testi", True):
+        nota["d"], nota["r"] = domanda[:400], str(m.get("testo", ""))[:800]
+    if errore:
+        nota["errore"] = str(errore)[:300]
+    try:
+        ctx.diario_scrivi(ctx.DIARIO.riga("sg_scambio", canale, "errore" if errore else "ok", 0,
+                                          round(float(secondi), 1), json.dumps(nota, ensure_ascii=False)))
+    except Exception:
+        pass                       # il registro non deve mai fermare la conversazione
+
+
+def _vota(ctx, chiave, mid, canale):
+    """Il 👍/👎 sotto una risposta: si salva subito, il commento eventuale dopo."""
+    val = st.session_state.get(chiave)
+    if val is None:
+        return
+    commento = st.session_state.get(chiave + "_nota", "")
+    try:
+        ctx.diario_scrivi(ctx.DIARIO.riga("sg_voto", mid, canale, 0, 1 if val == 1 else -1,
+                                          json.dumps({"c": commento}, ensure_ascii=False)))
+        st.session_state.setdefault("sg_voti_sessione", {})[mid] = (1 if val == 1 else -1, commento)
+    except Exception:
+        pass
 
 
 def _salva_impostazione(ctx, nome, valore):
@@ -200,6 +337,14 @@ def contesto(ctx, includi_benessere=False):
     return c
 
 
+def _lezioni_prompt(ctx):
+    lez = lezioni(ctx.DIA)
+    if not lez:
+        return ""
+    return ("Risposte tue che non gli sono piaciute: tienine conto e non ripeterle così.\n"
+            + "\n".join(f"- {x}" for x in lez) + "\n\n")
+
+
 def prompt(ctx, imp, domanda, storia):
     adesso = ctx.DIARIO.adesso()
     brevi = ("Risposte brevi, da 1 a 4 frasi, adatte a essere ascoltate."
@@ -216,13 +361,15 @@ def prompt(ctx, imp, domanda, storia):
         f"Adesso: {adesso:%A %d/%m/%Y, ore %H:%M}.\n"
         f"Chi è {imp['chiamami']}, nelle sue parole:\n{profilo(ctx) or '(non ancora scritto)'}\n\n"
         f"Cose che ti ha chiesto di ricordare:\n" + ("\n".join(f"- {r}" for r in ric[-40:]) or "(nessuna)") + "\n\n"
-        f"La situazione in Quadro:\n{json.dumps(contesto(ctx, imp.get('mostra_benessere')), ensure_ascii=False, default=str)}\n\n"
+        + _lezioni_prompt(ctx)
+        + _guida_prompt(domanda)
+        + f"La situazione in Quadro:\n{json.dumps(contesto(ctx, imp.get('mostra_benessere')), ensure_ascii=False, default=str)}\n\n"
         "La conversazione finora:\n"
         + "\n".join(("Lui: " if m["ruolo"] == "io" else "Tu: ") + m["testo"] for m in storia[-12:])
         + f"\nLui: {domanda}\n\n"
         "Rispondi SOLO con JSON valido:\n"
         '{"risposta": "quello che dici", "umore": "felice | pensa | riposo", '
-        '"azioni": [{"tipo": "priorita | scadenza | idea | ricordo | obiettivo | promemoria | nota", '
+        '"azioni": [{"tipo": "priorita | scadenza | idea | ricordo | obiettivo | promemoria | nota | apri", '
         '"testo": "...", "data": "AAAA-MM-GG o vuoto", "ora": "HH:MM o vuoto", "importo": null}]}\n'
         "Proponi azioni solo quando te le chiede o sono chiaramente utili: le conferma lui.")
 
@@ -254,6 +401,17 @@ def esegui(ctx, a):
     except ValueError:
         pass
     t = a["tipo"]
+    if t == "apri":
+        # solo navigazione: niente da scrivere nel diario
+        import guida as GUIDA
+        posti = GUIDA.destinazioni(GUIDA.carica())
+        basso = testo.lower()
+        nome = (next((n for n in posti if n.lower() == basso), None)
+                or next((n for n in posti if basso and (basso in n.lower() or n.lower().split(" ", 1)[-1] in basso)), None))
+        if not nome:
+            return f"Non so dove sia «{testo}»: guarda nella ❓ Guida"
+        GUIDA.vai(posti[nome])
+        return f"Eccoci in {nome}"
     if t == "priorita":
         ctx.diario_scrivi(D.riga("priorita", "aperta", "", 0, None, testo))
         return f"Aggiunta alle tre cose: {testo}"
@@ -349,8 +507,13 @@ def sincronizza(ctx):
         return False, str(e)[:200]
 
 
-def posta(ctx):
-    """Le cose arrivate da Telegram o dall'app desktop, non ancora importate."""
+def posta(ctx, scambi=False):
+    """
+    Le cose arrivate da Telegram o dall'app desktop, non ancora importate.
+    Con scambi=True, invece, solo il registro delle chiacchierate fatte là
+    (tipo «scambio»): quelle non sono cose da rivedere, ma numeri per
+    «📈 Come lavora».
+    """
     fid = id_file(ctx, FILE_POSTA)
     if not fid:
         return None, []
@@ -360,7 +523,8 @@ def posta(ctx):
         return fid, []
     voci = dati.get("voci", []) if isinstance(dati, dict) else (dati if isinstance(dati, list) else [])
     gia = set(ctx.DIA[ctx.DIA["Tipo"] == "importato"]["Attivita"]) if not ctx.DIA.empty else set()
-    return fid, [v for v in voci if isinstance(v, dict) and v.get("id") not in gia]
+    voci = [v for v in voci if isinstance(v, dict) and v.get("id") not in gia]
+    return fid, [v for v in voci if (v.get("tipo") == "scambio") == scambi]
 
 
 def importa(ctx, voci):
@@ -384,6 +548,15 @@ def importa(ctx, voci):
             righe.append(D.riga("idea", testo[:80], v.get("da", "Telegram"), 0, None, testo, quando=quando))
         elif tipo == "ricordo":
             righe.append(D.riga("ricordo", "", v.get("da", "Telegram"), 0, None, testo, quando=quando))
+        elif tipo == "scambio":
+            # una chiacchierata fatta su Telegram o sul desktop: va nel registro
+            nota = {"id": v.get("id", ""), "d": testo[:400], "r": str(v.get("risposta", ""))[:800],
+                    "azioni": [v["azione"]] if v.get("azione") else [], "voce": ""}
+            if v.get("errore"):
+                nota["errore"] = str(v["errore"])[:300]
+            righe.append(D.riga("sg_scambio", str(v.get("da", "Telegram")).lower(),
+                                "errore" if v.get("errore") else "ok", 0, _numero(v.get("secondi")),
+                                json.dumps(nota, ensure_ascii=False), quando=quando))
         else:
             righe.append(D.riga("nota", testo[:80], v.get("da", "Telegram"), 0, None, testo, quando=quando))
         righe.append(D.riga("importato", v.get("id", ""), v.get("da", "Telegram"), 0, None, tipo))
@@ -596,19 +769,21 @@ def mostra(ctx):
         if id_file(ctx, FILE_SEGRETARIA):
             sincronizza(ctx)
 
-    T = st.tabs(["💬 Parla", "⚙️ Come la vuoi", "🧠 Cosa sa di te", "✨ Aforismi",
+    T = st.tabs(["💬 Parla", "📈 Come lavora", "⚙️ Come la vuoi", "🧠 Cosa sa di te", "✨ Aforismi",
                  "🔔 Notifiche e Telegram", "📲 Telefono e desktop"], key="sg_sezione")
     with T[0]:
         _parla(ctx, imp)
     with T[1]:
-        _aspetto(ctx, imp)
+        _come_lavora(ctx, imp)
     with T[2]:
-        _conoscenza(ctx, imp)
+        _aspetto(ctx, imp)
     with T[3]:
-        _aforismi(ctx)
+        _conoscenza(ctx, imp)
     with T[4]:
-        _notifiche(ctx)
+        _aforismi(ctx)
     with T[5]:
+        _notifiche(ctx)
+    with T[6]:
         _dispositivi(ctx, imp)
 
 
@@ -622,10 +797,21 @@ def _ultima(canale):
                  if m["ruolo"] == "lei" and m.get("canale", "scheda") == canale), None)
 
 
-def _messaggio(m):
+def _messaggio(m, ctx=None, p="", canale="", vt=None):
+    """Un messaggio della chat. Sotto le risposte di lei, 👍/👎 (e il perché, se 👎)."""
     with st.chat_message("user" if m["ruolo"] == "io" else "assistant",
                          avatar="🧑" if m["ruolo"] == "io" else "👩‍💼"):
         st.markdown(m["testo"])
+        if ctx is None or m["ruolo"] != "lei" or not m.get("id"):
+            return
+        chiave = f"{p}_voto_{m['id']}"
+        prima = (vt or {}).get(m["id"], (None, ""))[0]           # il voto già salvato, se c'è
+        st.feedback("thumbs", key=chiave, on_change=_vota, args=(ctx, chiave, m["id"], canale),
+                    default=None if prima is None else (1 if prima > 0 else 0))
+        if st.session_state.get(chiave) == 0:
+            st.text_input("Cosa non andava? (facoltativo, lo terrà a mente)", key=chiave + "_nota",
+                          on_change=_vota, args=(ctx, chiave, m["id"], canale),
+                          placeholder="es. troppo lunga, ha inventato una data, tono sbagliato")
 
 
 def _domanda(ctx, valore, box):
@@ -646,15 +832,35 @@ def _domanda(ctx, valore, box):
     return testo
 
 
-def _fai(ctx, a):
-    ctx.conferma(esegui(ctx, a))
+def _decisione(ctx, a, canale, decisione):
+    return ctx.DIARIO.riga("sg_azione", a["tipo"], decisione, 0, None,
+                           json.dumps({"testo": str(a.get("testo", ""))[:200], "canale": canale},
+                                      ensure_ascii=False))
+
+
+def _fai(ctx, a, canale):
+    # Tutto in una scrittura sola (l'azione e il fatto che l'hai confermata):
+    # ogni scrittura nel diario su Drive costa un paio di secondi.
+    righe = []
+    vicino = types.SimpleNamespace(**vars(ctx))
+    vicino.diario_scrivi = lambda r: righe.extend(r if isinstance(r, list) else [r])
+    messaggio = esegui(vicino, a)
+    if a["tipo"] != "apri":            # portarti in una scheda non è un'azione da registrare
+        righe.append(_decisione(ctx, a, canale, "fatta"))
+    if righe:
+        ctx.diario_scrivi(righe)
+    ctx.conferma(messaggio)
     st.session_state.setdefault("sg_azioni_fatte", {})[a["id"]] = True
     st.session_state["sg_da_sincronizzare"] = True
     st.rerun()                 # tutto Quadro: la priorità, la scadenza… si vedono subito
 
 
-def _no(a):
+def _no(ctx, a, canale):
     st.session_state.setdefault("sg_azioni_fatte", {})[a["id"]] = False
+    try:
+        ctx.diario_scrivi(_decisione(ctx, a, canale, "rifiutata"))
+    except Exception:
+        pass
 
 
 def _azioni(ctx, canale, p):
@@ -676,8 +882,8 @@ def _azioni(ctx, canale, p):
                 st.caption(extra)
             b1, b2 = st.columns(2)
             b1.button("✅ Fai", key=f"{p}_si_{a['id']}", type="primary", width='stretch',
-                      on_click=_fai, args=(ctx, a))
-            b2.button("✖️ No", key=f"{p}_no_{a['id']}", width='stretch', on_click=_no, args=(a,))
+                      on_click=_fai, args=(ctx, a, canale))
+            b2.button("✖️ No", key=f"{p}_no_{a['id']}", width='stretch', on_click=_no, args=(ctx, a, canale))
 
 
 def _chat(ctx, imp, canale, altezza):
@@ -695,23 +901,29 @@ def _chat(ctx, imp, canale, altezza):
             st.caption("Scrivile, o tocca 🎙️ e parlale. Per esempio: «Cosa ho di importante "
                        "oggi?», «Ricordati che il GAL risponde a fine mese», «Aggiungi la "
                        "scadenza dell'IVA il 16», «Preparami la giornata».")
+        vt = voti(ctx.DIA)
         for m in storia[-30:]:
-            _messaggio(m)
+            _messaggio(m, ctx, p, canale, vt)
     posto_azioni = st.container()
     posto_voce = st.container(key=f"sg_dato_{canale}")
     valore = st.chat_input(f"Scrivi o parla a {imp['nome']}…", key=f"{p}_scrivi",
                            accept_audio=True, submit_mode="disable")
+    scambio = None                         # (domanda, secondi, errore) da mettere nel registro
     if valore:
         domanda = _domanda(ctx, valore, box)
         if domanda:
             with box:
                 _messaggio({"ruolo": "io", "testo": domanda})
+                inizio = time.time()
                 try:
                     with st.spinner(f"{imp['nome']} ci pensa…"):
                         rispondi(ctx, imp, domanda, canale)
-                    _messaggio(storia[-1])
+                    scambio = (domanda, time.time() - inizio, "")
+                    _messaggio(storia[-1], ctx, p, canale)
                 except Exception as e:
-                    st.error(getattr(e, "messaggio", None) or str(e))
+                    errore = getattr(e, "messaggio", None) or str(e)
+                    scambio = (domanda, time.time() - inizio, errore)
+                    st.error(errore)
     with posto_azioni:
         _azioni(ctx, canale, p)
     # la voce: si prepara una volta sola per risposta, appena arrivata
@@ -725,6 +937,11 @@ def _chat(ctx, imp, canale, altezza):
                     audio = voce_naturale(ctx, imp, m["testo"])
     with posto_voce:
         _segnale(canale, m, audio)
+    # nel registro dopo la voce: la scrittura su Drive non fa aspettare la risposta
+    if scambio:
+        voce = "gemini" if audio else "dispositivo"
+        _registra_scambio(ctx, imp, canale, scambio[0], None if scambio[2] else m,
+                          scambio[1], voce, scambio[2])
     return storia
 
 
@@ -763,18 +980,21 @@ def _css(imp, angolo_visibile):
     nascondi = """
 [data-testid="stLayoutWrapper"]:has(> .st-key-sg_dato_angolo),
 [data-testid="stLayoutWrapper"]:has(> .st-key-sg_dato_scheda),
-.st-key-sg_dato_angolo, .st-key-sg_dato_scheda { display: none !important; }"""
+[data-testid="stLayoutWrapper"]:has(> .st-key-gd_naviga),
+.st-key-sg_dato_angolo, .st-key-sg_dato_scheda, .st-key-gd_naviga { display: none !important; }"""
     if not angolo_visibile:
         st.html(f"<style>{nascondi}</style>")
         return
     st.html(f"""<style>{nascondi}
-.st-key-sg_angolo {{ position: fixed; {lato}: 14px; bottom: 14px; z-index: 999000;
+/* bottom 70px: in basso a destra Streamlit Cloud mette il suo pulsante «Manage app»,
+   che sta sopra la pagina e prenderebbe i clic al posto di lei */
+.st-key-sg_angolo {{ position: fixed; {lato}: 14px; bottom: 70px; z-index: 999000;
   width: auto !important; max-width: calc(100vw - 28px); }}
 /* nella scheda «Parla» c'è già lei in grande: l'angolo si fa da parte. Le schede
    non aperte restano nella pagina ma «inert»: conta solo se la si vede davvero */
 .stApp:has(.st-key-sg_dato_scheda):not(:has([inert] .st-key-sg_dato_scheda)) .st-key-sg_angolo {{
   display: none !important; }}
-.st-key-sg_pannello {{ width: min(370px, calc(100vw - 28px)); max-height: calc(100vh - 90px);
+.st-key-sg_pannello {{ width: min(370px, calc(100vw - 28px)); max-height: calc(100vh - 150px);
   overflow-y: auto; background: Canvas; border: 1px solid rgba(27,175,122,.45);
   border-radius: 18px; box-shadow: 0 14px 36px rgba(0,0,0,.28); padding: 8px 10px 10px; }}
 .st-key-sg_pannello iframe {{ border-radius: 12px; }}
@@ -812,6 +1032,15 @@ def _apri_angolo(aperta):
 
 @st.fragment
 def _angolo(ctx):
+    # se qualcosa va storto, l'errore si vede qui dentro e il resto di Quadro va avanti
+    try:
+        _angolo_dentro(ctx)
+    except Exception as e:
+        st.error(f"La segretaria nell'angolo ha avuto un problema: {e}")
+        st.button("➖ Chiudi", key="sga_chiudi_errore", on_click=_apri_angolo, args=(False,))
+
+
+def _angolo_dentro(ctx):
     imp = impostazioni(ctx)
     if not st.session_state.get("sg_angolo_aperta"):
         st.button(f"👩‍💼 {imp['nome']}", key="sga_apri", on_click=_apri_angolo, args=(True,),
@@ -957,6 +1186,176 @@ def _aforismi(ctx):
         AF.preferenze(ctx)
     st.divider()
     AF.mostra_raccolta(ctx)
+
+
+# ======================================================== 📈 come lavora =====
+CANALI = {"angolo": "🧭 Quadro, nell'angolo", "scheda": "👩‍💼 Quadro, scheda Parla",
+          "telegram": "📨 Telegram", "desktop": "💻 Desktop"}
+
+
+def _revisione_prompt(imp, reg, az):
+    righe = []
+    for _, r in reg.tail(40).iterrows():
+        voto = {1: "👍", -1: "👎"}.get(r["voto"], "")
+        righe.append(f"- [{r['canale']}] D: {r['domanda'][:200]} | R: {r['risposta'][:300]} | "
+                     f"{voto} {r['commento'] or ''} | azioni: {r['azioni'] or '-'} | {r['esito']}")
+    acc = az["decisione"].value_counts().to_dict() if not az.empty else {}
+    return (f"Sei un revisore esigente ma giusto. Qui sotto ci sono le ultime conversazioni fra "
+            f"{imp['chiamami']} e la sua segretaria virtuale {imp['nome']} (carattere: {imp['carattere']}), "
+            f"con i voti che lui ha dato. Azioni proposte e decise: {json.dumps(acc, ensure_ascii=False)}.\n\n"
+            + "\n".join(righe) +
+            "\n\nScrivi in italiano, in markdown, breve e concreto, con questi titoli:\n"
+            "### Cosa fa bene\n### Dove sbaglia o delude (con esempi presi da sopra)\n"
+            "### Cosa cambiare\nNell'ultima parte proponi frasi pronte da aggiungere al suo profilo "
+            "«chi sono» o ai suoi ricordi, e se serve un ritocco al carattere. Non inventare dati "
+            "che non vedi sopra.")
+
+
+def _come_lavora(ctx, imp):
+    st.markdown("##### 📈 Come lavora la tua segretaria")
+    st.caption("Ogni domanda e risposta finisce nel registro (nel diario): da dove le hai scritto, "
+               "quanto ci ha messo, le azioni che ha proposto e cosa hai deciso tu, la voce usata e "
+               "i tuoi 👍/👎. I 👎 con il perché diventano «lezioni» che rilegge ogni volta.")
+    # Telegram e desktop: le chiacchierate arrivano nella posta; finché non le
+    # archivi stanno lì (la posta tiene le ultime 500 voci), ma si contano lo stesso
+    _, da_posta = posta(ctx, scambi=True) if ctx.SA else (None, [])
+    reg = registro(ctx.DIA, da_posta)
+    az = azioni_decise(ctx.DIA)
+
+    c1, c2 = st.columns([3, 2])
+    giorni = c1.radio("Periodo", [7, 30, 90, 365], index=1, horizontal=True, key="sg_mon_giorni",
+                      format_func=lambda g: {7: "7 giorni", 30: "30 giorni", 90: "3 mesi", 365: "un anno"}[g])
+    if da_posta and c2.button(f"📥 Archivia nel diario {len(da_posta)} chiacchierate da Telegram/desktop",
+                              key="sg_mon_archivia", width="stretch"):
+        ctx.conferma(f"Archiviate {importa(ctx, da_posta)} chiacchierate")
+        st.session_state["sg_posta_segno"] = st.session_state.get("sg_posta_segno", 0) + 1
+        st.rerun()
+
+    if reg.empty:
+        st.info("Ancora nessuna conversazione nel registro. Parlale un po' (dall'angolo, dalla "
+                "scheda Parla, da Telegram o dal desktop) e torna qui.")
+    else:
+        dal = pd.Timestamp(ctx.DIARIO.oggi()) - pd.Timedelta(days=giorni - 1)
+        r = reg[reg["quando"] >= dal]
+        a = az[az["quando"] >= dal] if not az.empty else az
+        n = len(r)
+        votate = r["voto"].notna().sum()
+        su = int((r["voto"] > 0).sum())
+        proposte = int(r["azioni"].fillna("").str.len().gt(0).sum())
+        fatte = int((a["decisione"] == "fatta").sum()) if not a.empty else 0
+        rifiutate = int((a["decisione"] == "rifiutata").sum()) if not a.empty else 0
+        quadro = r[r["canale"].isin(["angolo", "scheda"])]
+        k = st.columns(5)
+        k[0].metric("Conversazioni", n, help="Una domanda con la sua risposta")
+        k[1].metric("Gradimento", f"{su / votate:.0%}" if votate else "—",
+                    help=f"Sulle {votate} risposte che hai votato")
+        k[2].metric("Azioni accettate", f"{fatte / (fatte + rifiutate):.0%}" if fatte + rifiutate else "—",
+                    help=f"{fatte} fatte, {rifiutate} rifiutate, su {proposte} risposte con proposte")
+        tempi = quadro["secondi"].dropna()
+        k[3].metric("Risponde in", f"{tempi.median():.1f} s" if len(tempi) else "—",
+                    help="Il valore tipico (mediana) delle risposte da Quadro")
+        k[4].metric("Errori", int((r["esito"] == "errore").sum()))
+
+        if n:
+            import plotly.express as px
+            per_giorno = (r.assign(giorno=r["quando"].dt.normalize(), dove=r["canale"].map(lambda c: CANALI.get(c, c)))
+                          .groupby(["giorno", "dove"]).size().reset_index(name="conversazioni"))
+            graf = px.bar(per_giorno, x="giorno", y="conversazioni", color="dove", height=240,
+                          labels={"giorno": "", "dove": ""})
+            graf.update_layout(margin=dict(l=10, r=10, t=10, b=10), legend=dict(orientation="h", y=-0.25),
+                               xaxis=dict(tickformat="%d/%m"))
+            st.plotly_chart(graf, width="stretch", key="sg_mon_grafico")
+            v1, v2 = st.columns(2)
+            with v1:
+                st.markdown("**Da dove le parli**")
+                st.dataframe(r["canale"].map(lambda c: CANALI.get(c, c)).value_counts().rename("conversazioni"),
+                             width="stretch")
+            with v2:
+                st.markdown("**La voce delle risposte (da Quadro)**")
+                if len(quadro):
+                    st.dataframe(quadro["voce"].replace({"gemini": "🎙️ Gemini", "dispositivo": "📱 dispositivo"})
+                                 .value_counts().rename("risposte"), width="stretch")
+                    st.caption("«dispositivo» vuol dire anche: voci di Gemini del giorno finite.")
+            if not a.empty:
+                st.markdown("**Le azioni che ha proposto, e cosa hai deciso**")
+                st.dataframe(a.pivot_table(index="tipo", columns="decisione", values="quando",
+                                           aggfunc="count", fill_value=0), width="stretch")
+
+        st.markdown("##### 👎 Da rivedere")
+        neg = reg[reg["voto"] < 0].tail(15)
+        if neg.empty:
+            st.caption("Nessuna risposta bocciata. Quando una non ti piace, premi 👎 sotto la risposta "
+                       "e scrivi il perché: lei lo legge e non lo rifà.")
+        for _, x in neg.iloc[::-1].iterrows():
+            with st.container(border=True):
+                st.caption(f"{x['quando']:%d/%m %H:%M} · {CANALI.get(x['canale'], x['canale'])}")
+                st.text(f"Tu: {x['domanda']}\n{imp['nome']}: {x['risposta']}")
+                if x["commento"]:
+                    st.caption(f"Perché: {x['commento']}")
+
+        st.markdown("##### 🗂️ Tutte le conversazioni")
+        f1, f2 = st.columns(2)
+        dove = f1.multiselect("Da dove", list(CANALI), format_func=CANALI.get, key="sg_mon_dove",
+                              placeholder="tutti")
+        quali = f2.radio("Quali", ["tutte", "votate 👍", "votate 👎", "non votate", "con errori"],
+                         horizontal=True, key="sg_mon_quali")
+        t = reg.copy()
+        if dove:
+            t = t[t["canale"].isin(dove)]
+        t = {"votate 👍": t[t["voto"] > 0], "votate 👎": t[t["voto"] < 0],
+             "non votate": t[t["voto"].isna()], "con errori": t[t["esito"] == "errore"]}.get(quali, t)
+        st.dataframe(t.iloc[::-1].drop(columns=["id"]), width="stretch", hide_index=True, height=300,
+                     column_config={"quando": st.column_config.DatetimeColumn("Quando", format="DD/MM HH:mm"),
+                                    "secondi": st.column_config.NumberColumn("Secondi", format="%.1f"),
+                                    "voto": st.column_config.NumberColumn("Voto", help="1 = 👍, -1 = 👎")})
+        st.download_button("⬇️ Scarica il registro (CSV, si apre con Excel)",
+                           t.to_csv(index=False, sep=";").encode("utf-8-sig"), "registro_segretaria.csv",
+                           "text/csv", key="sg_mon_csv")
+
+        # votare anche le chiacchierate di Telegram e del desktop, a posteriori
+        da_votare = reg[reg["voto"].isna() & reg["canale"].isin(["telegram", "desktop"])].tail(8)
+        if not da_votare.empty:
+            with st.expander(f"⭐ Vota le ultime chiacchierate di Telegram e del desktop ({len(da_votare)})"):
+                for _, x in da_votare.iloc[::-1].iterrows():
+                    st.text(f"{x['quando']:%d/%m %H:%M} · Tu: {x['domanda'][:200]}\n{imp['nome']}: {x['risposta'][:400]}")
+                    chiave = f"sgm_voto_{x['id']}"
+                    st.feedback("thumbs", key=chiave, on_change=_vota, args=(ctx, chiave, x["id"], x["canale"]))
+                    if st.session_state.get(chiave) == 0:
+                        st.text_input("Cosa non andava?", key=chiave + "_nota", on_change=_vota,
+                                      args=(ctx, chiave, x["id"], x["canale"]))
+                    st.divider()
+
+        st.markdown("##### 🧐 Una revisione fatta dall'AI")
+        st.caption("Legge le ultime 40 conversazioni con i tuoi voti e ti dice cosa va, cosa no e cosa "
+                   "cambiare nel profilo, nei ricordi o nel carattere. Usa una chiamata all'AI.")
+        if st.button("🧐 Fammi la revisione", key="sg_mon_rev", disabled=not ctx.chiave_ai):
+            with st.spinner("Rileggo le conversazioni…"):
+                try:
+                    st.session_state["sg_mon_testo"] = ctx.AI.chiedi(_revisione_prompt(imp, reg, az),
+                                                                     ctx.chiave_ai, ctx.modello_ai)
+                except Exception as e:
+                    st.error(getattr(e, "messaggio", None) or str(e))
+        if st.session_state.get("sg_mon_testo"):
+            with st.container(border=True):
+                st.markdown(st.session_state["sg_mon_testo"])
+
+    lez = lezioni(ctx.DIA)
+    if lez:
+        with st.expander(f"🧠 Le sue lezioni ({len(lez)}): le rilegge prima di risponderti"):
+            for x in lez:
+                st.markdown(f"- {x}")
+    st.markdown("##### ⚙️ Il registro")
+
+    def _salva_registro():
+        _salva_impostazione(ctx, "segretaria", dict(impostazioni(ctx),
+                                                    registro=st.session_state["sg_reg_on"],
+                                                    registro_testi=st.session_state["sg_reg_testi"]))
+    r1, r2 = st.columns(2)
+    r1.toggle("Tieni il registro delle conversazioni", imp.get("registro", True), key="sg_reg_on",
+              on_change=_salva_registro)
+    r2.toggle("Salva anche il testo di domande e risposte", imp.get("registro_testi", True),
+              key="sg_reg_testi", on_change=_salva_registro,
+              help="Spento, restano solo i numeri: quando, quanto ci ha messo, azioni, voti.")
 
 
 def _conoscenza(ctx, imp):
@@ -1147,7 +1546,12 @@ risponde: da quel momento parla solo con te.
 Da lì: ti scrive agli orari delle notifiche, e tu puoi scriverle o mandarle **messaggi
 vocali**. Comandi: `/oggi` · `/aforisma` · `/respira` · `/nota testo` · `/idea testo` ·
 `/fatto testo` · `/priorita testo` · `/scadenza 2026-11-20 testo` · `/ricorda testo` · `/aiuto`.
-Quello che le dici con i comandi arriva qui, in «Arrivate da Telegram».
+Quello che le dici con i comandi arriva qui, in «Arrivate da Telegram». Le chiacchierate
+finiscono nel registro di «📈 Come lavora», dove le puoi anche votare.
+
+**Aggiornare lo script** (quando ti mando una versione nuova): su script.google.com apri il
+progetto, seleziona tutto il codice, incolla quello nuovo e premi 💾 Salva. Le chiavi restano;
+non serve rifare `configura`.
 
 **Costi:** zero. Google Apps Script è gratuito e lo script controlla i messaggi una volta
 al minuto, ben dentro i limiti gratuiti.

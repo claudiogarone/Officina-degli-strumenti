@@ -1,4 +1,5 @@
-streamlit[pdf]>=1.50
+# la versione con cui Quadro è provato: tabelle, schede e chat usano funzioni recenti
+streamlit[pdf]>=1.66
 pandas>=2.2
 numpy>=1.26
 plotly>=5.24

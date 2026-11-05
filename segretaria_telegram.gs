@@ -236,6 +236,15 @@ function gestisci(testo) {
 }
 
 /** La conversazione libera, con il profilo, i ricordi e la situazione di Quadro. */
+// Ogni chiacchierata va nella posta come «scambio»: Quadro la mette nel registro
+// della segretaria (📈 Come lavora), con il tempo di risposta e l'azione proposta.
+function registraScambio(domanda, risposta, secondi, azione, errore) {
+  try {
+    posta('scambio', String(domanda).slice(0, 400), {
+      risposta: String(risposta || '').slice(0, 800), secondi: secondi, azione: azione || '', errore: errore || '' });
+  } catch (e) { console.warn('Registro non scritto: ' + e); }
+}
+
 function chiacchiera(testo, cfg) {
   const s = seg(cfg);
   const storia = propJSON('STORIA', []);
@@ -250,8 +259,14 @@ function chiacchiera(testo, cfg) {
     '\nLui: ' + testo + '\n\nRispondi SOLO con JSON: {"risposta": "...", "azione": null oppure ' +
     '{"tipo": "nota|idea|ricordo|priorita|scadenza", "testo": "...", "data": "AAAA-MM-GG o vuoto"}}. ' +
     'Proponi un\'azione solo se te la chiede o è chiaramente utile: la confermerà lui.';
+  const t0 = Date.now();
   const r = gemini(p);
-  if (!r) { invia('Non riesco a pensare in questo momento (il servizio AI non risponde). Riprova fra poco.'); return; }
+  const secondi = Math.round((Date.now() - t0) / 100) / 10;
+  if (!r) {
+    invia('Non riesco a pensare in questo momento (il servizio AI non risponde). Riprova fra poco.');
+    registraScambio(testo, '', secondi, '', 'il servizio AI non risponde');
+    return;
+  }
   const d = jsonDa(r) || { risposta: r };
   let risposta = d.risposta || r;
   if (d.azione && d.azione.tipo && d.azione.testo) {
@@ -259,6 +274,7 @@ function chiacchiera(testo, cfg) {
     risposta += '\n\n👉 Vuoi che segni «' + d.azione.testo + '»' + (d.azione.data ? ' per il ' + d.azione.data : '') + '? Rispondi sì.';
   }
   invia(risposta);
+  registraScambio(testo, String(d.risposta || r), secondi, d.azione && d.azione.tipo ? d.azione.tipo : '', '');
   storia.push({ r: 'io', t: testo.slice(0, 400) }, { r: 'lei', t: String(d.risposta || r).slice(0, 400) });
   setProp('STORIA', JSON.stringify(storia.slice(-10)));
 }

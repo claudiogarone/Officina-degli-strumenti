@@ -1588,6 +1588,15 @@ if not st.session_state.get("_pagina_aperta"):
 POSTO_SEGRETARIA = st.container(key="sg_angolo")
 TAB = st.tabs(ETICHETTE_TAB, key="tab_aperto", default=ETICHETTE_TAB[0])
 
+# Se un pulsante (della guida, o della segretaria) ha chiesto di aprire una
+# scheda, qui la si apre. Sta nel contenitore della segretaria, fuori dal flusso.
+# Il contenitore c'è sempre (anche vuoto), così la segretaria dopo di lui resta
+# sempre allo stesso posto e il suo avatar non si ricarica.
+with POSTO_SEGRETARIA:
+    import guida as GUIDA
+    with st.container(key="gd_naviga"):
+        GUIDA.naviga_se_serve()
+
 
 # ============================================================================
 # TAB 0 - SCRIVANIA  (collegamenti rapidi e stato di salute)
@@ -6987,43 +6996,12 @@ with TAB[4]:
 # ============================================================================
 with TAB[13]:
     pannello_riepilogo('guida')
-    G = _carica_json("guida.json", _mtime("guida.json"))
+    # La guida vive in guida.py (come si mostra) e guida.json (cosa dice)
+    import guida as GUIDA
+    G = GUIDA.carica()
     if "_errore" in G:
         st.error(f"Non riesco a leggere `guida.json`: {G['_errore']}")
+        st.caption("Di solito è una virgola di troppo o una virgoletta mancante: incollalo su "
+                   "jsonlint.com e ti dice la riga.")
     else:
-        st.markdown("#### ❓ Guida")
-        st.caption(G.get("intro", ""))
-
-        cerca_g = st.text_input(
-            "Cerca nella guida",
-            placeholder="per esempio: secrets, 503, virgola, diario, git",
-            label_visibility="collapsed")
-
-        q = cerca_g.strip().lower()
-        trovate = 0
-
-        for sez in G.get("sezioni", []):
-            voci = sez.get("voci", [])
-            if q:
-                voci = [v for v in voci
-                        if q in v.get("domanda", "").lower()
-                        or q in v.get("risposta", "").lower()
-                        or q in sez.get("titolo", "").lower()]
-            if not voci:
-                continue
-            trovate += len(voci)
-            st.markdown(f"##### {sez.get('icona', '')} {sez['titolo']}")
-            for v in voci:
-                with st.expander(v["domanda"], expanded=bool(q)):
-                    st.markdown(v["risposta"])
-            st.markdown("")
-
-        if q and not trovate:
-            st.warning("Nessuna voce corrisponde. Prova con una parola più corta: "
-                       "la ricerca guarda dentro al testo, non solo nei titoli.")
-
-        st.divider()
-        st.caption("Questa guida sta in `guida.json`: puoi aggiungere sezioni e "
-                   "voci tue senza toccare il codice. Ogni voce ha una «domanda» "
-                   "e una «risposta», e la risposta accetta il grassetto con i "
-                   "doppi asterischi e gli elenchi con il trattino.")
+        GUIDA.mostra(G, CTX)
