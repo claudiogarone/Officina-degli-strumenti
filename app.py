@@ -1557,10 +1557,22 @@ else:
 # La `key` serve a poter cambiare scheda dal codice: scrivendo in
 # st.session_state["tab_aperto"] il nome di una scheda e ricaricando, Quadro
 # si sposta lì. È quello che fa «Comincia» nella sessione di oggi.
-ETICHETTE_TAB = ["🧭 Scrivania", "🎓 Ripetizioni", "🗂️ Progetti",
-                 "🖋️ Cancelleria", "📚 Studio", "🎙️ Parla chiaro",
-                 "📡 SENTINEL", "🛰️ Radar", "⚙️ Taratura", "💼 Lavoro",
-                 "❓ Guida"]
+ETICHETTE_TAB = ["🧭 Scrivania", "👩‍💼 Segretaria", "🎓 Ripetizioni", "🗂️ Progetti",
+                 "🛠️ Laboratorio", "💼 Lavoro", "🖋️ Cancelleria", "📚 Studio",
+                 "🎙️ Parla chiaro", "📡 SENTINEL", "🛰️ Radar", "🌿 Equilibrio",
+                 "⚙️ Taratura", "❓ Guida"]
+
+# Aprire Quadro direttamente su una scheda con un link, per esempio
+# https://…streamlit.app/?pagina=segretaria — è quello che si mette come
+# icona sulla schermata Home del telefono. Vale solo alla prima apertura.
+PAGINE_DIRETTE = {"segretaria": "👩‍💼 Segretaria", "equilibrio": "🌿 Equilibrio",
+                  "laboratorio": "🛠️ Laboratorio", "lavoro": "💼 Lavoro",
+                  "radar": "🛰️ Radar", "studio": "📚 Studio", "scrivania": "🧭 Scrivania"}
+_pagina = str(st.query_params.get("pagina", "")).lower()
+if _pagina in PAGINE_DIRETTE and not st.session_state.get("_pagina_aperta"):
+    st.session_state["tab_aperto"] = PAGINE_DIRETTE[_pagina]
+    st.session_state["_pagina_aperta"] = True
+
 TAB = st.tabs(ETICHETTE_TAB, key="tab_aperto", default=ETICHETTE_TAB[0])
 
 
@@ -1662,6 +1674,88 @@ with TAB[0]:
                    "del service account. Intanto salvo in memoria.")
 
     mostra_conferma()
+
+    # ---- il contesto per equilibrio.py e produttivita.py --------------------
+    # Tutto quello che quei due file devono sapere di Quadro sta qui dentro,
+    # in CTX: così non dipendono dal resto di app.py e si provano da soli.
+    # I dati personali (pratiche, respiri, check-in) vanno nello stesso
+    # archivio privato della Taratura, Quadro_Taratura.xlsx, e si aprono con
+    # la stessa password.
+    import types
+    import taratura as TAR
+    import equilibrio as EQ
+    import produttivita as PROD
+
+    @st.cache_data(ttl=120, show_spinner=False)
+    def _eq_cerca_privato(_segno):
+        if not SA:
+            return None
+        try:
+            return DIARIO.trova_file(
+                dict(SA), [secret("drive_folder_id_taratura", ""),
+                           secret("drive_folder_id_diario", ""),
+                           secret("drive_folder_id_progetti", ""),
+                           secret("drive_folder_id", "")],
+                "Quadro_Taratura.xlsx")
+        except Exception:
+            return None
+
+    @st.cache_data(ttl=30, show_spinner=False)
+    def _eq_leggi_privato(_f, _segno):
+        return DIARIO.leggi_xlsx(dict(SA), _f)
+
+    def privato_leggi():
+        f = _eq_cerca_privato(st.session_state.get("cerca_archivio", 0))
+        if not f:
+            return st.session_state.get("tar_locale", DIARIO.vuoto())
+        try:
+            # stesso «tar_segno» della Taratura: quando scrive una, si
+            # rilegge anche l'altra
+            return _eq_leggi_privato(f, st.session_state.get("tar_segno", 0))
+        except Exception:
+            return st.session_state.get("tar_locale", DIARIO.vuoto())
+
+    def privato_scrivi(r):
+        f = _eq_cerca_privato(st.session_state.get("cerca_archivio", 0))
+        if f:
+            try:
+                DIARIO.aggiungi_xlsx(dict(SA), f, [r])
+                st.session_state["tar_segno"] = st.session_state.get("tar_segno", 0) + 1
+                return True
+            except Exception as e:
+                st.warning(f"Non sono riuscito a scrivere nell'archivio privato: {e}")
+        loc = st.session_state.get("tar_locale", DIARIO.vuoto())
+        st.session_state["tar_locale"] = DIARIO._sistema(
+            pd.concat([loc, pd.DataFrame([r])], ignore_index=True))
+        return False
+
+    def eq_aperto():
+        """Aperto se la password è stata data da poco, qui o nella Taratura."""
+        quando = st.session_state.get("tar_aperta_alle")
+        return bool(quando) and not TAR.scaduta(quando)
+
+    def eq_sblocca(pw):
+        if TAR.password_giusta(pw, secret("taratura_password", "")):
+            st.session_state["tar_aperta_alle"] = DIARIO.adesso()
+            return True
+        return False
+
+    CTX = types.SimpleNamespace(
+        DIA=DIA, DIARIO=DIARIO, AI=AI, VOCE=VOCE,
+        cfg=_carica_json("equilibrio.json", _mtime("equilibrio.json")),
+        chiave_ai=chiave_ai(), modello_ai=modello_ai(),
+        pagina_html=pagina_html, ascolta=pulsante_ascolta,
+        diario_scrivi=diario_scrivi, conferma=conferma,
+        privato_leggi=privato_leggi, privato_scrivi=privato_scrivi,
+        aperto=eq_aperto, sblocca=eq_sblocca, impostazione=EQ.impostazione,
+        SA=SA, cartelle=[secret("drive_folder_id_diario", ""), secret("drive_folder_id_progetti", ""),
+                         secret("drive_folder_id", ""), secret("drive_folder_id_taratura", "")],
+        pratiche=getattr(TAR, "PRATICHE",
+                         ["Respirazione", "Meditazione", "Yoga", "Camminata", "Altro"]))
+
+    # l'aforisma del momento, se nelle preferenze hai chiesto di vederlo qui
+    if EQ.impostazione(DIA, "aforismi", EQ.PREDEFINITE_AFORISMI).get("in_scrivania"):
+        EQ.riquadro_aforisma(CTX, chiave="scr")
 
     # --------------------------------------------------------- i tre numeri --
     minuti_7 = DIARIO.andamento(DIA, 7).sum()
@@ -2572,6 +2666,11 @@ try {{
 
     st.divider()
 
+    # =================== TEMPO ED ENERGIA (vedi produttivita.py) =============
+    PROD.mostra(CTX)
+
+    st.divider()
+
     # =================== I CORSI CHE SEGUI ==================================
     st.markdown("### 🎓 I corsi che segui")
     st.caption("Udemy, YouTube, un libro, un corso in aula: qui dentro ci sta "
@@ -2974,9 +3073,9 @@ try {{
 
 
 # ============================================================================
-# TAB 1 - RIPETIZIONI  (tutto sulle lezioni private: era cinque tab separati)
+# TAB 2 - RIPETIZIONI  (tutto sulle lezioni private: era cinque tab separati)
 # ============================================================================
-with TAB[1]:
+with TAB[2]:
     pannello_riepilogo('ripetizioni')
     RIP = st.tabs(["📊 Panoramica", "👥 Allievi", "💶 Economia", "🎓 Didattica", "📋 Dettaglio"])
 
@@ -3362,9 +3461,9 @@ with TAB[1]:
                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                            width='stretch')
 
-# TAB 2 - PROGETTI E CONSULENZE
+# TAB 3 - PROGETTI E CONSULENZE
 # ============================================================================
-with TAB[2]:
+with TAB[3]:
     pannello_riepilogo('progetti')
     if dfp.empty:
         st.warning(prog_msg or "Nessun progetto trovato nei file indicati.")
@@ -3626,9 +3725,9 @@ with TAB[2]:
 
 
 # ============================================================================
-# TAB 3 - CANCELLERIA  (generatore di documenti e materiale intestato)
+# TAB 6 - CANCELLERIA  (generatore di documenti e materiale intestato)
 # ============================================================================
-with TAB[3]:
+with TAB[6]:
     pannello_riepilogo('cancelleria')
     if not CANCELLERIA_OK:
         st.error("Il modulo della cancelleria non è disponibile: "
@@ -4064,9 +4163,9 @@ with TAB[3]:
 
 
 # ============================================================================
-# TAB 4 - STUDIO  (percorsi, prontuari, strumenti AI, prompt pronti)
+# TAB 7 - STUDIO  (percorsi, prontuari, strumenti AI, prompt pronti)
 # ============================================================================
-with TAB[4]:
+with TAB[7]:
     pannello_riepilogo('studio')
 
     @st.cache_data(show_spinner=False)
@@ -4495,9 +4594,9 @@ with TAB[4]:
 
 
 # ============================================================================
-# TAB 5 - PARLA CHIARO  (allenamento alla comunicazione, nativo in Quadro)
+# TAB 8 - PARLA CHIARO  (allenamento alla comunicazione, nativo in Quadro)
 # ============================================================================
-with TAB[5]:
+with TAB[8]:
     pannello_riepilogo('parlachiaro')
     import parlachiaro as PC
 
@@ -4940,9 +5039,9 @@ with TAB[5]:
 
 
 # ============================================================================
-# TAB 6 - SENTINEL  (il corso «SENTINEL da zero», con l'avanzamento nel diario)
+# TAB 9 - SENTINEL  (il corso «SENTINEL da zero», con l'avanzamento nel diario)
 # ============================================================================
-with TAB[6]:
+with TAB[9]:
     pannello_riepilogo('sentinel')
     import sentinel as SENT
 
@@ -5113,9 +5212,9 @@ with TAB[6]:
 
 
 # ============================================================================
-# TAB 7 - RADAR  (cosa esce di nuovo sulle cose che segui — vedi radar.py)
+# TAB 10 - RADAR  (cosa esce di nuovo sulle cose che segui — vedi radar.py)
 # ============================================================================
-with TAB[7]:
+with TAB[10]:
     import radar as RAD
 
     pannello_riepilogo('radar')
@@ -5761,8 +5860,12 @@ with TAB[7]:
                     })
                 if st.button("💾 Salva le modifiche all'archivio", type="primary"):
                     nuove_a = []
+
+                    def _t(x):
+                        # una casella vuota di una riga nuova arriva come NaN, non come ""
+                        return "" if x is None or (isinstance(x, float) and pd.isna(x)) else str(x).strip()
                     for _, r_a in editata_a.iterrows():
-                        titolo_r = str(r_a["Titolo"] or "").strip()
+                        titolo_r = _t(r_a["Titolo"])
                         if not titolo_r:
                             continue
                         quando_r = r_a["Data"]
@@ -5770,10 +5873,10 @@ with TAB[7]:
                             quando_r = DIARIO.oggi()
                         punti_r = r_a["Punti"]
                         nuove_a.append(DIARIO.riga(
-                            "voce", str(r_a["Fonte"] or "").strip() or "a mano",
-                            str(r_a["Tipo e lingua"] or "").strip(), 0,
+                            "voce", _t(r_a["Fonte"]) or "a mano",
+                            _t(r_a["Tipo e lingua"]), 0,
                             None if pd.isna(punti_r) else float(punti_r),
-                            f"{titolo_r} :: {str(r_a['Link'] or '').strip()}",
+                            f"{titolo_r} :: {_t(r_a['Link'])}",
                             quando=dt.datetime.combine(quando_r, dt.time(12, 0))))
                     try:
                         _scrivi_archivio(sostituisci=nuove_a)
@@ -6184,9 +6287,17 @@ with TAB[7]:
                         p2.link_button("Apri ↗", p["url"], width='stretch')
 
 # ============================================================================
-# TAB 8 - TARATURA  (sezione riservata: vedi taratura.py per la password)
+# TAB 11 - EQUILIBRIO  (respiro, presenza, leggimelo, aforismi, stile di vita,
+#                      crescita: tutto il codice sta in equilibrio.py)
 # ============================================================================
-with TAB[8]:
+with TAB[11]:
+    mostra_conferma()
+    EQ.mostra(CTX)
+
+# ============================================================================
+# TAB 12 - TARATURA  (sezione riservata: vedi taratura.py per la password)
+# ============================================================================
+with TAB[12]:
     import taratura as TAR
 
     SBLOCCO = "tar_aperta_alle"
@@ -6617,9 +6728,9 @@ with TAB[8]:
                             unsafe_allow_html=True)
 
 # ============================================================================
-# TAB 9 - LAVORO  (clienti, fatture e scadenze: da freelance)
+# TAB 5 - LAVORO  (clienti, fatture e scadenze: da freelance)
 # ============================================================================
-with TAB[9]:
+with TAB[5]:
     import lavoro as LAV
 
     mostra_conferma()
@@ -6653,6 +6764,19 @@ with TAB[9]:
         m1.metric("Fatturato questo mese", f"{_eur(fatt_m)} €")
         m2.metric("Incassato questo mese", f"{_eur(inc_m)} €")
         m3.metric("Ancora da incassare", f"{_eur(da_inc)} €")
+
+        # quanto rende davvero un'ora: spesso non è il cliente che paga di più
+        VO = LAV.valore_orario(FAT)
+        if not VO.empty:
+            with st.expander("💶 Quanto guadagni davvero all'ora, cliente per cliente", expanded=True):
+                tot_e, tot_h = VO["Fatturato"].sum(), VO["Ore"].sum()
+                st.metric("In media", f"{_eur(tot_e / tot_h)} € all'ora",
+                          help="Fatturato diviso le ore scritte nelle fatture")
+                st.dataframe(VO, hide_index=True, width='stretch', column_config={
+                    "Fatturato": st.column_config.NumberColumn(format="%.0f €"),
+                    "Euro all'ora": st.column_config.NumberColumn(format="%.2f €/h")})
+                st.caption("Contano solo le fatture con le ore scritte. Se un cliente rende molto meno "
+                           "degli altri, è il primo da rinegoziare.")
 
         if OBI > 0:
             st.progress(min(fatt_m / OBI, 1.0),
@@ -6740,8 +6864,11 @@ with TAB[9]:
             f1, f2 = st.columns([2, 1])
             cli_f = f1.text_input("Cliente")
             num_f = f2.text_input("Numero", placeholder="es. 12/2026")
-            f3, f4, f5 = st.columns(3)
+            f3, f4, f5, f6 = st.columns(4)
             imp_f = f3.number_input("Importo (€)", min_value=0.0, step=50.0)
+            ore_f = f6.number_input("Ore impiegate", min_value=0.0, step=0.5,
+                                    help="Il tempo che ti è costato questo lavoro, tutto: "
+                                         "serve a sapere quanto guadagni davvero all'ora.")
             dat_f = f4.date_input("Data emissione", value=oggi_l, format="DD/MM/YYYY")
             scad_pf = f5.date_input("Pagamento entro", value=oggi_l + dt.timedelta(days=30),
                                     format="DD/MM/YYYY")
@@ -6752,7 +6879,7 @@ with TAB[9]:
                     st.warning(f"Il numero {num_f.strip()} c'è già: usane un altro.")
                 else:
                     _scrivi_lavoro(DIARIO.riga(
-                        "fattura", cli_f.strip()[:80], num_f.strip(), 0, float(imp_f),
+                        "fattura", cli_f.strip()[:80], num_f.strip(), int(round(ore_f * 60)), float(imp_f),
                         f"{scad_pf:%Y-%m-%d}",
                         quando=dt.datetime.combine(dat_f, dt.time(12, 0))),
                         f"Fattura {num_f.strip()} registrata")
@@ -6780,7 +6907,7 @@ with TAB[9]:
                 s1.caption(f"{r_s['Quando']:%d/%m/%Y} · {r_s['Stato']}{extra}")
                 if s2.button("Fatta", key=f"sca_{i_s}", width='stretch'):
                     _scrivi_lavoro(DIARIO.riga(
-                        "scadenza_fatta", str(r_s["Cosa"]), "", 0, None, "fatta",
+                        "scadenza_fatta", str(r_s["Cosa"]), r_s["Quando"].isoformat(), 0, None, "fatta",
                         quando=dt.datetime.combine(oggi_l, dt.time(12, 0))),
                         "Scadenza segnata come fatta")
 
@@ -6804,9 +6931,25 @@ with TAB[9]:
                    "deve restare lo stesso, così la riconosco.")
 
 # ============================================================================
-# TAB 10 - GUIDA  (come si usa e come si modifica: il testo sta in guida.json)
+# TAB 1 - SEGRETARIA  (avatar, chat a voce, azioni, notifiche: vedi segretaria.py)
 # ============================================================================
-with TAB[10]:
+with TAB[1]:
+    import segretaria as SEG
+    mostra_conferma()
+    SEG.mostra(CTX)
+
+# ============================================================================
+# TAB 4 - LABORATORIO  (magazzino, progetti e prezzi, calcolatori: laboratorio.py)
+# ============================================================================
+with TAB[4]:
+    import laboratorio as LAB
+    mostra_conferma()
+    LAB.mostra(CTX)
+
+# ============================================================================
+# TAB 13 - GUIDA  (come si usa e come si modifica: il testo sta in guida.json)
+# ============================================================================
+with TAB[13]:
     pannello_riepilogo('guida')
     G = _carica_json("guida.json", _mtime("guida.json"))
     if "_errore" in G:

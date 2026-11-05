@@ -11,10 +11,12 @@ Tipi di riga usati:
   cliente          Attivita=nome, Strumento=stato, Valore=importo stimato,
                    Nota=prossimo passo :: data di richiamo (AAAA-MM-GG)
   fattura          Attivita=cliente, Strumento=numero, Valore=importo,
-                   Nota=data di scadenza del pagamento (AAAA-MM-GG)
+                   Nota=data di scadenza del pagamento (AAAA-MM-GG),
+                   Minuti=il tempo che ti è costata (per il guadagno all'ora)
   incasso          Strumento=numero della fattura, Valore=importo incassato
   scadenza         Attivita=cosa, Valore=importo (facoltativo), Data=quando
-  scadenza_fatta   Attivita=cosa (come nella scadenza), Data=quando è stata fatta
+  scadenza_fatta   Attivita=cosa (come nella scadenza), Strumento=la data della
+                   scadenza (AAAA-MM-GG), Data=quando è stata fatta
   obiettivo        Valore=entrata mensile che ti sei dato
 """
 
@@ -57,7 +59,7 @@ def clienti(df):
     colonne = ["Cliente", "Stato", "Importo", "Prossimo passo", "Richiamo"]
     if c.empty:
         return pd.DataFrame(columns=colonne)
-    c = c.sort_values("Data")
+    c = c.sort_values(["Data", "Ora"], kind="stable")
     ultimi = c.groupby("Attivita", sort=False).tail(1)
     righe = []
     for _, r in ultimi.iterrows():
@@ -87,7 +89,7 @@ def fatture(df):
     """Ogni fattura con quanto è già stato incassato e se è chiusa."""
     f = _valori(df, "fattura")
     colonne = ["Data", "Cliente", "Numero", "Importo", "Incassato",
-               "Scadenza", "Aperta"]
+               "Scadenza", "Aperta", "Ore"]
     if f.empty:
         return pd.DataFrame(columns=colonne)
     inc = _valori(df, "incasso")
@@ -109,8 +111,26 @@ def fatture(df):
             "Incassato": incassato,
             "Scadenza": _data_nota(r["Nota"]),
             "Aperta": incassato + 0.005 < importo,
+            "Ore": round(_num(r["Minuti"]) / 60, 2),
         })
     return pd.DataFrame(righe, columns=colonne)
+
+
+def valore_orario(tabella_fatture):
+    """
+    Quanto rende davvero un'ora, cliente per cliente: fatturato diviso le ore
+    che le fatture ti sono costate. Contano solo le fatture con le ore scritte.
+    Spesso il cliente che paga di più non è quello che rende di più.
+    """
+    colonne = ["Cliente", "Fatturato", "Ore", "Euro all'ora"]
+    if tabella_fatture.empty or "Ore" not in tabella_fatture:
+        return pd.DataFrame(columns=colonne)
+    f = tabella_fatture[tabella_fatture["Ore"] > 0]
+    if f.empty:
+        return pd.DataFrame(columns=colonne)
+    g = f.groupby("Cliente").agg(Fatturato=("Importo", "sum"), Ore=("Ore", "sum")).reset_index()
+    g["Euro all'ora"] = (g["Fatturato"] / g["Ore"]).round(2)
+    return g.sort_values("Euro all'ora", ascending=False)[colonne]
 
 
 def da_incassare(tabella_fatture):
@@ -142,7 +162,7 @@ def obiettivo(df):
     o = _valori(df, "obiettivo")
     if o.empty:
         return 0.0
-    return _num(o.sort_values("Data").iloc[-1]["Valore"])
+    return _num(o.sort_values(["Data", "Ora"], kind="stable").iloc[-1]["Valore"])
 
 
 # ----------------------------------------------------------- scadenze -----
@@ -154,13 +174,22 @@ def scadenze(df, oggi, giorni=30):
     s = _valori(df, "scadenza")
     if s.empty:
         return pd.DataFrame(columns=["Quando", "Cosa", "Importo", "Stato"])
-    fatte = set(_valori(df, "scadenza_fatta")["Attivita"].astype(str))
+    # «fatta» vale per la scadenza con lo stesso testo E la stessa data: così
+    # l'IVA di novembre segnata fatta non nasconde quella di dicembre. Le righe
+    # vecchie, senza data, valgono per le scadenze dei 60 giorni dopo il giorno in cui
+    # le hai segnate: era la finestra che la scheda mostrava, e si segna fatta prima.
+    fatte = []
+    for _, r in _valori(df, "scadenza_fatta").iterrows():
+        fatte.append((str(r["Attivita"]), _data_nota(r["Strumento"]),
+                      r["Data"].date() if pd.notna(r["Data"]) else None))
     righe = []
     for _, r in s.sort_values("Data").iterrows():
-        if str(r["Attivita"]) in fatte:
-            continue
         quando = r["Data"].date() if pd.notna(r["Data"]) else None
         if quando is None:
+            continue
+        cosa = str(r["Attivita"])
+        if any(c == cosa and (d == quando or (d is None and fatto and quando <= fatto + dt.timedelta(days=60)))
+               for c, d, fatto in fatte):
             continue
         gg = (quando - oggi).days
         if gg > giorni:

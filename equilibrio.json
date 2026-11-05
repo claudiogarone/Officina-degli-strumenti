@@ -1,0 +1,326 @@
+{
+  "_nota": "Il contenuto della scheda Equilibrio. Si cambia qui senza toccare il codice: i ritmi del respiro (ogni fase ha un nome e i secondi), le pratiche guidate (ogni passo è un testo letto a voce e una pausa in secondi), i temi degli aforismi e gli aforismi di scorta, usati quando l'intelligenza artificiale non risponde. Un ritmo può avere «cicli_massimi»: oltre quel numero di cicli si ferma da solo, qualunque durata tu scelga.",
+  "avvertenza_respiro": "Respira senza forzare. Se ti gira la testa o senti fastidio, fermati e torna a respirare normalmente.",
+  "ritmi": [
+    {
+      "nome": "Coerente — sei respiri al minuto",
+      "fasi": [
+        [
+          "Inspira",
+          5
+        ],
+        [
+          "Espira",
+          5
+        ]
+      ],
+      "nota": "Il più semplice per rallentare: dentro e fuori alla stessa velocità, circa sei respiri al minuto."
+    },
+    {
+      "nome": "Espirazione lunga 4-6",
+      "fasi": [
+        [
+          "Inspira",
+          4
+        ],
+        [
+          "Espira",
+          6
+        ]
+      ],
+      "nota": "Fuori più a lungo che dentro. Buono prima di dormire o dopo una telefonata pesante."
+    },
+    {
+      "nome": "Quadrato 4-4-4-4",
+      "fasi": [
+        [
+          "Inspira",
+          4
+        ],
+        [
+          "Trattieni",
+          4
+        ],
+        [
+          "Espira",
+          4
+        ],
+        [
+          "Trattieni",
+          4
+        ]
+      ],
+      "nota": "Quattro tempi uguali. Aiuta a concentrarsi prima di un compito difficile."
+    },
+    {
+      "nome": "Sospiro doppio",
+      "fasi": [
+        [
+          "Inspira dal naso",
+          2
+        ],
+        [
+          "Ancora un po'",
+          1
+        ],
+        [
+          "Espira lentamente",
+          6
+        ]
+      ],
+      "nota": "Due inspirazioni dal naso, la seconda breve, poi fuori lentamente dalla bocca. Bastano pochi cicli.",
+      "cicli_massimi": 5
+    },
+    {
+      "nome": "4-7-8",
+      "fasi": [
+        [
+          "Inspira",
+          4
+        ],
+        [
+          "Trattieni",
+          7
+        ],
+        [
+          "Espira",
+          8
+        ]
+      ],
+      "nota": "Pochi cicli, all'inizio tre o quattro. È quello con la pausa più lunga: se ti gira la testa, fermati.",
+      "cicli_massimi": 4
+    }
+  ],
+  "guidate": [
+    {
+      "nome": "Un minuto per staccare",
+      "passi": [
+        [
+          "Fermati. Appoggia i piedi a terra e lascia andare le spalle.",
+          5
+        ],
+        [
+          "Fai un respiro un po' più lungo del solito, e lascialo uscire piano.",
+          8
+        ],
+        [
+          "Nota tre cose che senti in questo momento: un suono, il contatto della sedia, la temperatura dell'aria.",
+          15
+        ],
+        [
+          "Un altro respiro lungo.",
+          8
+        ],
+        [
+          "Scegli la prossima cosa da fare, una sola. E torna a lavorare.",
+          3
+        ]
+      ]
+    },
+    {
+      "nome": "Cinque, quattro, tre, due, uno",
+      "passi": [
+        [
+          "Guardati intorno e trova cinque cose che vedi. Nominale in silenzio.",
+          15
+        ],
+        [
+          "Ora quattro cose che puoi toccare. Senti la loro consistenza.",
+          15
+        ],
+        [
+          "Tre suoni che arrivano fino a te, vicini o lontani.",
+          15
+        ],
+        [
+          "Due odori. Se non ne senti, ricorda due odori che ti piacciono.",
+          12
+        ],
+        [
+          "Un sapore che hai in bocca, o uno che ti piace.",
+          10
+        ],
+        [
+          "Fai un respiro lungo. Sei qui.",
+          5
+        ]
+      ]
+    },
+    {
+      "nome": "Scansione del corpo, cinque minuti",
+      "passi": [
+        [
+          "Mettiti comodo, seduto o sdraiato. Chiudi gli occhi se ti va.",
+          10
+        ],
+        [
+          "Porta l'attenzione ai piedi. Senti il peso, il contatto, il caldo o il freddo. Non devi cambiare niente.",
+          30
+        ],
+        [
+          "Sali alle gambe: polpacci, ginocchia, cosce. Se trovi tensione, notala e basta.",
+          35
+        ],
+        [
+          "Il bacino e la pancia. Senti la pancia che si muove con il respiro.",
+          35
+        ],
+        [
+          "Il petto, la schiena, le spalle. Le spalle spesso sono più alte di quanto credi: lasciale scendere.",
+          40
+        ],
+        [
+          "Le braccia e le mani, fino alla punta delle dita.",
+          30
+        ],
+        [
+          "Il collo, la mascella, la fronte. Lascia che la mascella si apra un poco.",
+          35
+        ],
+        [
+          "Ora senti il corpo tutto insieme, mentre respira da solo.",
+          30
+        ],
+        [
+          "Quando vuoi, muovi le dita e apri gli occhi.",
+          5
+        ]
+      ]
+    },
+    {
+      "nome": "Prima di una cosa difficile",
+      "passi": [
+        [
+          "Fermati prima di cominciare. Un respiro lungo.",
+          6
+        ],
+        [
+          "Dì a te stesso, in una frase, cosa vuoi ottenere nei prossimi minuti.",
+          15
+        ],
+        [
+          "Qual è il primo passo, il più piccolo? Solo quello.",
+          15
+        ],
+        [
+          "Un altro respiro. Comincia.",
+          3
+        ]
+      ]
+    }
+  ],
+  "temi_aforismi": [
+    "tempo e priorità",
+    "calma e presenza",
+    "crescita personale",
+    "creatività e invenzione",
+    "scienza e curiosità",
+    "lavoro e disciplina",
+    "stoicismo",
+    "zen",
+    "coraggio",
+    "semplicità"
+  ],
+  "aforismi_di_scorta": [
+    {
+      "testo": "Non è che abbiamo poco tempo, è che ne perdiamo molto.",
+      "autore": "Seneca",
+      "fonte": "La brevità della vita"
+    },
+    {
+      "testo": "Non c'è vento favorevole per chi non sa dove andare.",
+      "autore": "Seneca",
+      "fonte": "Lettere a Lucilio"
+    },
+    {
+      "testo": "Non sono le cose a turbare gli uomini, ma i giudizi che essi danno delle cose.",
+      "autore": "Epitteto",
+      "fonte": "Manuale"
+    },
+    {
+      "testo": "Un viaggio di mille miglia comincia con un passo.",
+      "autore": "Lao Tzu",
+      "fonte": "Tao Te Ching"
+    },
+    {
+      "testo": "Nella mente del principiante ci sono molte possibilità, in quella dell'esperto poche.",
+      "autore": "Shunryu Suzuki",
+      "fonte": "Mente zen, mente di principiante"
+    },
+    {
+      "testo": "Quando mangi, mangia. Quando cammini, cammina.",
+      "autore": "detto zen",
+      "fonte": ""
+    },
+    {
+      "testo": "Prima dell'illuminazione taglia legna e porta acqua. Dopo l'illuminazione taglia legna e porta acqua.",
+      "autore": "detto zen",
+      "fonte": ""
+    },
+    {
+      "testo": "Fatti non foste a viver come bruti, ma per seguir virtute e canoscenza.",
+      "autore": "Dante Alighieri",
+      "fonte": "Inferno, canto XXVI"
+    },
+    {
+      "testo": "Chi ha un perché per vivere sopporta quasi ogni come.",
+      "autore": "Friedrich Nietzsche",
+      "fonte": "Crepuscolo degli idoli"
+    },
+    {
+      "testo": "Siamo ciò che facciamo ripetutamente. L'eccellenza non è un atto, ma un'abitudine.",
+      "autore": "Will Durant",
+      "fonte": "riassumendo Aristotele"
+    },
+    {
+      "testo": "Il modo migliore per prevedere il futuro è inventarlo.",
+      "autore": "Alan Kay",
+      "fonte": ""
+    },
+    {
+      "testo": "La perfezione si raggiunge non quando non c'è più niente da aggiungere, ma quando non c'è più niente da togliere.",
+      "autore": "Antoine de Saint-Exupéry",
+      "fonte": "Terra degli uomini"
+    },
+    {
+      "testo": "Il meglio è nemico del bene.",
+      "autore": "Voltaire",
+      "fonte": ""
+    },
+    {
+      "testo": "Affrettati lentamente.",
+      "autore": "Augusto",
+      "fonte": "riportato da Svetonio"
+    },
+    {
+      "testo": "Conosci te stesso.",
+      "autore": "iscrizione del tempio di Delfi",
+      "fonte": ""
+    },
+    {
+      "testo": "Cogli l'attimo, confidando il meno possibile nel domani.",
+      "autore": "Orazio",
+      "fonte": "Odi"
+    },
+    {
+      "testo": "Il tempo è la cosa più preziosa che un uomo possa spendere.",
+      "autore": "Teofrasto",
+      "fonte": "riportato da Diogene Laerzio"
+    },
+    {
+      "testo": "Il genio è uno per cento ispirazione e novantanove per cento traspirazione.",
+      "autore": "Thomas Edison",
+      "fonte": ""
+    },
+    {
+      "testo": "Siate affamati, siate folli.",
+      "autore": "Steve Jobs",
+      "fonte": "discorso a Stanford, 2005"
+    },
+    {
+      "testo": "Sbagliando s'impara.",
+      "autore": "proverbio",
+      "fonte": ""
+    }
+  ]
+}

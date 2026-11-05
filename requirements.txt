@@ -1,4 +1,4 @@
-streamlit[pdf]>=1.50   # [pdf] serve per l'anteprima dei documenti in Cancelleria
+streamlit[pdf]>=1.50
 pandas>=2.2
 numpy>=1.26
 plotly>=5.24
@@ -9,3 +9,7 @@ reportlab>=4.0
 svglib>=1.5
 requests>=2.31
 pillow>=10.0
+# per «Leggimelo»: il testo degli articoli dai link, i file Word, l'audio MP3
+trafilatura>=2.0
+python-docx>=1.1
+lameenc>=1.7
