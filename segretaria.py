@@ -10,6 +10,13 @@ segretaria.py — la scheda 👩‍💼 Segretaria.
                    tre cose di oggi, scadenze, clienti, obiettivi, sessioni,
                    aforismi che ami. Cosa vede esattamente lo puoi leggere.
     TI AVVISA      le notifiche su Telegram, agli orari e nei giorni che vuoi.
+    È SEMPRE LÌ    in un angolo di Quadro, su tutte le schede: si rimpicciolisce
+                   a un bottone col suo nome. Le scrivi o le parli senza che il
+                   resto di Quadro si ricarichi.
+    HA UNA VOCE    naturale, quella di Gemini, con la bocca che segue la voce.
+                   Quando le voci gratuite del giorno finiscono (sono poche),
+                   passa da sola alla voce del dispositivo.
+    GLI AFORISMI   preferenze e raccolta stanno qui, in «✨ Aforismi».
 
 =============================================================================
 I TRE CORPI DELLA SEGRETARIA E IL FILE CHE LI TIENE INSIEME
@@ -34,7 +41,9 @@ posta, il tuo calendario o i tuoi file. Su salute e farmaci non dà
 indicazioni: rimanda al medico, come la Taratura.
 """
 
+import base64
 import datetime as dt
+import html
 import json
 import os
 import re
@@ -52,6 +61,7 @@ PREDEFINITE = {
     "nome": "Sofia", "chiamami": "Claudio", "carattere": "cordiale e diretta",
     "carattere_extra": "", "risposte_brevi": True, "mostra_benessere": False,
     "velocita": 1.0, "tono": 1.05, "voce": "",
+    "voce_motore": "gemini", "voce_gemini": "Sulafat", "angolo": "automatico", "lato": "destra",
     "avatar": {"pelle": "#f1c7a5", "capelli": "#3b2a20", "giacca": "#0f5d47",
                "camicia": "#f7f7f2", "occhi": "#4a3426", "labbra": "#c45a5a",
                "acconciatura": "caschetto", "occhiali": False, "orecchini": True,
@@ -217,7 +227,9 @@ def prompt(ctx, imp, domanda, storia):
         "Proponi azioni solo quando te le chiede o sono chiaramente utili: le conferma lui.")
 
 
-def rispondi(ctx, imp, domanda):
+def rispondi(ctx, imp, domanda, canale="scheda"):
+    """Chiede la risposta all'AI e la aggiunge alla conversazione.
+    `canale` dice da dove è arrivata la domanda: scheda o angolo."""
     storia = st.session_state.setdefault("sg_chat", [])
     testo = ctx.AI.chiedi(prompt(ctx, imp, domanda, storia), ctx.chiave_ai, ctx.modello_ai)
     import lettura
@@ -229,7 +241,7 @@ def rispondi(ctx, imp, domanda):
         a["id"] = uuid.uuid4().hex[:8]
     storia.append({"ruolo": "io", "testo": domanda})
     storia.append({"ruolo": "lei", "testo": str(d["risposta"]), "umore": d.get("umore", "riposo"),
-                   "azioni": azioni, "id": uuid.uuid4().hex[:8]})
+                   "azioni": azioni, "id": uuid.uuid4().hex[:8], "canale": canale})
 
 
 def esegui(ctx, a):
@@ -386,6 +398,9 @@ IMPORTMAP = {"imports": {
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/",
     "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.5.5/lib/three-vrm.module.min.js"}}
 
+# Dove l'avatar guarda se lei «ci sta pensando» (c'è una rotellina che gira lì)
+_ATTESA = {"angolo": ".st-key-sg_pannello", "scheda": ".st-key-sg_chat_scheda"}
+
 
 def _motore():
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "avatar_motore.js"),
@@ -393,13 +408,26 @@ def _motore():
         return f.read()
 
 
-def html_avatar(imp, ultimo=None, altezza=420):
-    """L'avatar con il fumetto dell'ultima risposta. Prova a parlare da sola;
-    se il browser non lo permette, compare il pulsante per ascoltare."""
+def html_avatar(imp, canale=None, fumetto=True, mostra_nome=True):
+    """
+    La pagina dell'avatar. NON contiene i messaggi: così resta la stessa a ogni
+    ricaricamento e Streamlit non la ricrea (niente scatti, niente attese).
+
+    Le risposte le prende da sola: Quadro scrive l'ultima risposta in un
+    elemento nascosto della pagina (vedi `_segnale`), con l'audio di Gemini se
+    c'è, e questa pagina — che sta nello stesso sito — lo legge ogni 0,3
+    secondi. Quando trova una risposta nuova la dice: con l'audio di Gemini e
+    la bocca che segue la voce, oppure con la voce del dispositivo.
+
+    `canale` distingue le due segretarie («scheda» e «angolo»): ognuna dice
+    solo le risposte date a lei, così non parlano in due. Senza canale è
+    un'anteprima ferma (in «Come la vuoi»).
+    """
     op = dict(imp["avatar"], nome=imp["nome"], voce=imp.get("voce", ""),
               velocita=imp.get("velocita", 1), tono=imp.get("tono", 1.05))
     js = lambda v: json.dumps(v, ensure_ascii=False).replace("</", "<\\/")
     fondo = "transparent" if op["sfondo"] == "trasparente" else op["sfondo"]
+    nome = html.escape(op["nome"])
     return f"""<!doctype html><meta charset="utf-8">
 <style>
   body {{ margin:0; font-family:system-ui,sans-serif; background:{fondo}; overflow:hidden; }}
@@ -413,28 +441,144 @@ def html_avatar(imp, ultimo=None, altezza=420):
   button {{ border:1px solid #1baf7a; background:rgba(255,255,255,.9); color:#0f5d47; border-radius:20px;
            padding:4px 10px; cursor:pointer; font-size:13px; }}
 </style>
-<div id="scena"></div><div id="nome">{op['nome']}</div>
-<div class="bt"><button id="ascolta" title="Ascolta la risposta">🔊</button><button id="ciao" title="Saluta">👋</button></div>
+<div id="scena"></div>{'<div id="nome">' + nome + '</div>' if mostra_nome else ''}
+<div class="bt"><button id="ascolta" title="Ascolta di nuovo">🔊</button><button id="ferma" title="Basta così">⏹</button><button id="ciao" title="Saluta">👋</button></div>
 <div id="fumetto"></div>
 <script type="importmap">{json.dumps(IMPORTMAP)}</script>
 <script type="module">
 {_motore()}
-const OP = {js(op)}, ULTIMO = {js(ultimo or {})};
+const OP = {js(op)}, CANALE = {js(canale or "")}, FUMETTO = {js(bool(fumetto))}, ATTESA = {js(_ATTESA.get(canale or "", ""))};
 const av = await creaAvatar(document.getElementById('scena'), OP);
-const f = document.getElementById('fumetto');
-if (ULTIMO.testo) {{ f.textContent = ULTIMO.testo; f.style.display = 'block'; av.stato(ULTIMO.umore || 'riposo'); }}
-document.getElementById('ascolta').onclick = () => ULTIMO.testo && av.parla(ULTIMO.testo);
+const f = document.getElementById('fumetto'), bt = document.getElementById('ascolta');
+const chiave = 'sg_detto_' + CANALE;
+let ultimo = null, detto = '', pensava = false;
+try {{ detto = sessionStorage.getItem(chiave) || ''; }} catch (e) {{}}
+
+// la dice: prima con l'audio di Gemini, se non va con la voce del dispositivo
+async function parlaUltimo() {{
+  if (!ultimo || !ultimo.testo) return;
+  bt.textContent = '🔊';
+  av.stato(ultimo.umore || 'riposo');
+  if (ultimo.audio) {{
+    const esito = await av.parlaAudio(ultimo.audio);
+    if (esito !== 'errore') return;          // 'fatto', oppure 'muto': aspetta un tocco
+  }}
+  av.parla(ultimo.testo);
+}}
+
+function leggi() {{
+  if (!CANALE) return;
+  let el = null;
+  try {{
+    const tutti = parent.document.querySelectorAll('.sg-voce[data-canale="' + CANALE + '"]');
+    el = tutti[tutti.length - 1];
+    // la rotellina dell'attesa vicino alla chat: lei «pensa»
+    const pensa = ATTESA && parent.document.querySelector(ATTESA + ' [data-testid="stSpinner"]');
+    if (pensa && !av.parlando) {{ av.stato('pensa'); pensava = true; }}
+    else if (!pensa && pensava) {{ pensava = false; if (!av.parlando) av.stato('riposo'); }}
+  }} catch (e) {{ return; }}
+  if (!el || !el.dataset.id) return;
+  const d = el.dataset;
+  if (ultimo && ultimo.id === d.id) return;
+  ultimo = {{ id: d.id, testo: d.testo || '', umore: d.umore || 'riposo',
+             audio: d.audio ? 'data:' + (d.mime || 'audio/mpeg') + ';base64,' + d.audio : null }};
+  if (FUMETTO && ultimo.testo) {{ f.textContent = ultimo.testo; f.style.display = 'block'; }}
+  av.stato(ultimo.umore);
+  // parla da sola solo per una risposta nuova, non quando la pagina si ricarica
+  if (ultimo.id !== detto) {{
+    detto = ultimo.id;
+    try {{ sessionStorage.setItem(chiave, detto); }} catch (e) {{}}
+    setTimeout(parlaUltimo, 120);
+  }}
+}}
+
+bt.onclick = () => parlaUltimo();
+document.getElementById('ferma').onclick = () => av.zitta();
 document.getElementById('ciao').onclick = () => av.saluta();
 document.getElementById('scena').addEventListener('avatar-clic', () => av.saluta());
-// parla da sola solo per una risposta nuova, non a ogni ricaricamento
-let detto = '';
-try {{ detto = sessionStorage.getItem('sg_detto') || ''; }} catch (e) {{}}
-if (ULTIMO.id && ULTIMO.id !== detto) {{
-  try {{ sessionStorage.setItem('sg_detto', ULTIMO.id); }} catch (e) {{}}
-  setTimeout(() => av.parla(ULTIMO.testo), 400);
-}} else if (!ULTIMO.id) {{ setTimeout(() => av.saluta(), 600); }}
-document.addEventListener('avatar-muto', () => {{ document.getElementById('ascolta').textContent = '🔊 Tocca per sentirla'; }});
+document.addEventListener('avatar-muto', () => {{ bt.textContent = '🔊 Tocca per sentirla'; }});
+window.__sg = {{ av, ultimo: () => ultimo }};   // per le prove automatiche
+leggi();
+setInterval(leggi, 300);
+if (!ultimo) setTimeout(() => av.saluta(), 600);
 </script>"""
+
+
+def _segnale(canale, m, audio=None):
+    """
+    L'elemento nascosto da cui l'avatar del `canale` legge l'ultima risposta.
+    Il testo arriva dall'AI: va «escapato», così resta testo e non diventa HTML.
+    L'audio (bytes, tipo) c'è solo nel giro in cui è stato appena fatto: nei
+    giri dopo non serve, l'avatar l'ha già preso, e non si rimanda ogni volta.
+    """
+    a = lambda v: html.escape(str(v or ""), quote=True)
+    m = m or {}
+    b64, mime = ("", "")
+    if audio:
+        b64, mime = base64.b64encode(audio[0]).decode("ascii"), audio[1]
+    st.html(f'<div class="sg-voce" data-canale="{a(canale)}" data-id="{a(m.get("id"))}" '
+            f'data-umore="{a(m.get("umore"))}" data-testo="{a(m.get("testo"))}" '
+            f'data-mime="{a(mime)}" data-audio="{b64}" hidden></div>')
+
+
+# ========================================================= la voce di Gemini ===
+# Un'indicazione di stile davanti al testo: il modello della voce la usa per il
+# tono e non la legge. È in inglese perché così la segue meglio.
+STILE_VOCE = {
+    "cordiale e diretta": "Say in a warm, friendly and natural Italian voice: ",
+    "formale ed elegante": "Say in a composed, elegant Italian voice: ",
+    "ironica e brillante": "Say in a bright, playful Italian voice, with a smile: ",
+    "calma e rassicurante": "Say in a calm, soothing Italian voice, unhurried: ",
+    "energica e motivante": "Say in an energetic, encouraging Italian voice: ",
+}
+VOCE_PREDEFINITA = "Sulafat"
+MASSIMO_VOCE = 1200          # oltre, la risposta la legge la voce del dispositivo
+
+
+def _pulisci_per_voce(testo):
+    testo = re.sub(r"[*_#`>|]", "", str(testo or ""))
+    testo = re.sub(r"[\U0001F300-\U0001FAFF☀-➿️]", "", testo)   # via le emoji
+    return re.sub(r"\s+", " ", testo).strip()
+
+
+def voce_naturale(ctx, imp, testo, voce=None, forza=False):
+    """
+    L'audio di `testo` con la voce di Gemini: (bytes, tipo) oppure None.
+    None vuol dire «parla con la voce del dispositivo», e succede quando: hai
+    scelto la voce del dispositivo, manca la chiave, il testo è lungo, oppure
+    Gemini ha detto no. Se il no è perché le voci di oggi sono finite (errore
+    429) non si riprova fino a domani; per gli altri errori si aspettano 10 minuti.
+    Una prova sola, senza attese: meglio la voce del dispositivo subito che
+    quella di Gemini fra venti secondi.
+    """
+    if not ctx.chiave_ai or (not forza and imp.get("voce_motore", "gemini") != "gemini"):
+        return None
+    testo = _pulisci_per_voce(testo)
+    if not testo or len(testo) > MASSIMO_VOCE:
+        return None
+    adesso = ctx.DIARIO.adesso()
+    pausa = st.session_state.get("sg_voce_pausa")
+    if pausa and not forza:
+        giorno, motivo, quando, _ = pausa
+        if (motivo == "quota" and giorno == adesso.date().isoformat()) or \
+                (motivo != "quota" and (adesso - quando).total_seconds() < 600):
+            return None
+    import lettura as LT
+    try:
+        pcm = LT._tts(ctx.chiave_ai, STILE_VOCE.get(imp.get("carattere"), "") + testo,
+                      voce or imp.get("voce_gemini") or VOCE_PREDEFINITA, attese=(0,), timeout=40)
+    except Exception as e:
+        motivo = "quota" if "429" in str(e) else "errore"
+        st.session_state["sg_voce_pausa"] = (adesso.date().isoformat(), motivo, adesso, str(e)[:240])
+        return None
+    st.session_state.pop("sg_voce_pausa", None)
+    giorno, n = st.session_state.get("sg_voci_usate", ("", 0))
+    oggi = adesso.date().isoformat()
+    st.session_state["sg_voci_usate"] = (oggi, (n if giorno == oggi else 0) + 1)
+    try:
+        return LT._mp3(pcm), "audio/mpeg"
+    except Exception:                    # senza lameenc: WAV, più pesante ma va
+        return LT._wav(pcm), "audio/wav"
 
 
 # ============================================================ la scheda =====
@@ -452,8 +596,8 @@ def mostra(ctx):
         if id_file(ctx, FILE_SEGRETARIA):
             sincronizza(ctx)
 
-    T = st.tabs(["💬 Parla", "⚙️ Come la vuoi", "🧠 Cosa sa di te", "🔔 Notifiche e Telegram",
-                 "📲 Telefono e desktop"], key="sg_sezione")
+    T = st.tabs(["💬 Parla", "⚙️ Come la vuoi", "🧠 Cosa sa di te", "✨ Aforismi",
+                 "🔔 Notifiche e Telegram", "📲 Telefono e desktop"], key="sg_sezione")
     with T[0]:
         _parla(ctx, imp)
     with T[1]:
@@ -461,83 +605,225 @@ def mostra(ctx):
     with T[2]:
         _conoscenza(ctx, imp)
     with T[3]:
-        _notifiche(ctx)
+        _aforismi(ctx)
     with T[4]:
+        _notifiche(ctx)
+    with T[5]:
         _dispositivi(ctx, imp)
 
 
-def _parla(ctx, imp):
+# ===================================================== la conversazione =====
+# La stessa conversazione (st.session_state["sg_chat"]) si vede in due posti:
+# qui nella scheda, in grande, e nell'angolo, in piccolo. Ogni risposta ricorda
+# da dove è partita la domanda («canale»): la dice ad alta voce solo l'avatar
+# di quel posto.
+def _ultima(canale):
+    return next((m for m in reversed(st.session_state.get("sg_chat", []))
+                 if m["ruolo"] == "lei" and m.get("canale", "scheda") == canale), None)
+
+
+def _messaggio(m):
+    with st.chat_message("user" if m["ruolo"] == "io" else "assistant",
+                         avatar="🧑" if m["ruolo"] == "io" else "👩‍💼"):
+        st.markdown(m["testo"])
+
+
+def _domanda(ctx, valore, box):
+    """Il testo della domanda: quello scritto, o la registrazione trascritta."""
+    if isinstance(valore, str):
+        return valore.strip()
+    testo = (valore.get("text") or "").strip()
+    audio = valore.get("audio")
+    if audio is not None:
+        with box:
+            try:
+                with st.spinner("Ascolto…"):
+                    detto = ctx.VOCE.trascrivi_audio(audio.getvalue(), ctx.chiave_ai, ctx.modello_ai,
+                                                     getattr(audio, "type", None) or "audio/wav")
+                testo = (testo + " " + (detto or "")).strip()
+            except Exception as e:
+                st.error(f"Non ho capito l'audio: {e}")
+    return testo
+
+
+def _fai(ctx, a):
+    ctx.conferma(esegui(ctx, a))
+    st.session_state.setdefault("sg_azioni_fatte", {})[a["id"]] = True
+    st.session_state["sg_da_sincronizzare"] = True
+    st.rerun()                 # tutto Quadro: la priorità, la scadenza… si vedono subito
+
+
+def _no(a):
+    st.session_state.setdefault("sg_azioni_fatte", {})[a["id"]] = False
+
+
+def _azioni(ctx, canale, p):
+    """Le azioni proposte nell'ultima risposta di questo canale, da confermare."""
+    ultimo = _ultima(canale)
+    if not ultimo or not ultimo.get("azioni"):
+        return
+    fatte = st.session_state.setdefault("sg_azioni_fatte", {})
+    for a in ultimo["azioni"]:
+        if a["id"] in fatte:
+            st.caption(f"{'✅' if fatte[a['id']] else '✖️'} {AZIONI[a['tipo']]}: {a['testo']}")
+            continue
+        with st.container(border=True):
+            extra = " · ".join(x for x in (a.get("data") or "", a.get("ora") or "") if x)
+            # testo e data arrivano dall'AI: niente HTML, solo testo
+            st.markdown(f"**{AZIONI[a['tipo']]}**")
+            st.text(a["testo"])
+            if extra:
+                st.caption(extra)
+            b1, b2 = st.columns(2)
+            b1.button("✅ Fai", key=f"{p}_si_{a['id']}", type="primary", width='stretch',
+                      on_click=_fai, args=(ctx, a))
+            b2.button("✖️ No", key=f"{p}_no_{a['id']}", width='stretch', on_click=_no, args=(a,))
+
+
+def _chat(ctx, imp, canale, altezza):
+    """Messaggi, azioni da confermare, voce e casella per scrivere o parlare."""
+    p = "sg" if canale == "scheda" else "sga"
     storia = st.session_state.setdefault("sg_chat", [])
-    ultimo = next((m for m in reversed(storia) if m["ruolo"] == "lei"), None)
+    if not ctx.chiave_ai:
+        st.error("Per parlarle serve la chiave di Google AI Studio nei Secrets.")
+        with st.container(key=f"sg_dato_{canale}"):
+            _segnale(canale, None)
+        return
+    box = st.container(height=altezza, autoscroll=True, key=f"sg_chat_{canale}")
+    with box:
+        if not storia:
+            st.caption("Scrivile, o tocca 🎙️ e parlale. Per esempio: «Cosa ho di importante "
+                       "oggi?», «Ricordati che il GAL risponde a fine mese», «Aggiungi la "
+                       "scadenza dell'IVA il 16», «Preparami la giornata».")
+        for m in storia[-30:]:
+            _messaggio(m)
+    posto_azioni = st.container()
+    posto_voce = st.container(key=f"sg_dato_{canale}")
+    valore = st.chat_input(f"Scrivi o parla a {imp['nome']}…", key=f"{p}_scrivi",
+                           accept_audio=True, submit_mode="disable")
+    if valore:
+        domanda = _domanda(ctx, valore, box)
+        if domanda:
+            with box:
+                _messaggio({"ruolo": "io", "testo": domanda})
+                try:
+                    with st.spinner(f"{imp['nome']} ci pensa…"):
+                        rispondi(ctx, imp, domanda, canale)
+                    _messaggio(storia[-1])
+                except Exception as e:
+                    st.error(getattr(e, "messaggio", None) or str(e))
+    with posto_azioni:
+        _azioni(ctx, canale, p)
+    # la voce: si prepara una volta sola per risposta, appena arrivata
+    m = _ultima(canale)
+    audio = None
+    if m and not m.get("voce_fatta"):
+        m["voce_fatta"] = True
+        if imp.get("voce_motore", "gemini") == "gemini":
+            with box:
+                with st.spinner("🎙️ …"):
+                    audio = voce_naturale(ctx, imp, m["testo"])
+    with posto_voce:
+        _segnale(canale, m, audio)
+    return storia
+
+
+def _parla(ctx, imp):
     sinistra, destra = st.columns([2, 3])
     with sinistra:
-        ctx.pagina_html(html_avatar(imp, ultimo), 430)
+        ctx.pagina_html(html_avatar(imp, "scheda"), 430)
     with destra:
-        if not ctx.chiave_ai:
-            st.error("Per parlarle serve la chiave di Google AI Studio nei Secrets.")
-            return
         _, arrivate = posta(ctx) if ctx.SA else (None, [])
         if arrivate:
             st.info(f"📥 {len(arrivate)} cose arrivate da Telegram o dal desktop: le trovi in "
                     "«Notifiche e Telegram».")
-        box = st.container(height=330)
-        with box:
-            if not storia:
-                st.caption(f"Scrivile o parlale. Per esempio: «Cosa ho di importante oggi?», "
-                           f"«Ricordati che il GAL risponde a fine mese», «Aggiungi la scadenza "
-                           f"dell'IVA il 16», «Preparami la giornata».")
-            for m in storia[-30:]:
-                with st.chat_message("user" if m["ruolo"] == "io" else "assistant",
-                                     avatar="🧑" if m["ruolo"] == "io" else "👩‍💼"):
-                    st.markdown(m["testo"])
-        # le azioni proposte nell'ultima risposta
-        if ultimo and ultimo.get("azioni"):
-            fatte = st.session_state.setdefault("sg_azioni_fatte", {})
-            for a in ultimo["azioni"]:
-                if a["id"] in fatte:
-                    st.caption(f"{'✅' if fatte[a['id']] else '✖️'} {AZIONI[a['tipo']]}: {a['testo']}")
-                    continue
-                with st.container(border=True):
-                    extra = " · ".join(x for x in (a.get("data") or "", a.get("ora") or "") if x)
-                    # testo e data arrivano dall'AI: niente HTML, solo testo
-                    st.markdown(f"**{AZIONI[a['tipo']]}**")
-                    st.text(a["testo"])
-                    if extra:
-                        st.caption(extra)
-                    b1, b2 = st.columns(2)
-                    if b1.button("✅ Fai", key=f"sg_si_{a['id']}", type="primary", width='stretch'):
-                        ctx.conferma(esegui(ctx, a))
-                        fatte[a["id"]] = True
-                        st.session_state["sg_da_sincronizzare"] = True
-                        st.rerun()
-                    if b2.button("✖️ No", key=f"sg_no_{a['id']}", width='stretch'):
-                        fatte[a["id"]] = False
-                        st.rerun()
-
-        n_voce = st.session_state.get("sg_n_voce", 0)
-        voce = st.audio_input("🎙️ Parlale", key=f"sg_voce_{n_voce}")
-        domanda = st.chat_input(f"Scrivi a {imp['nome']}…", key="sg_scrivi")
-        if voce is not None:
-            # la registrazione si usa una volta sola, che vada bene o no:
-            # altrimenti a ogni ricaricamento verrebbe rimandata all'AI
-            st.session_state["sg_n_voce"] = n_voce + 1
-            try:
-                with st.spinner("Ascolto…"):
-                    domanda = ctx.VOCE.trascrivi_audio(voce.getvalue(), ctx.chiave_ai, ctx.modello_ai,
-                                                       getattr(voce, "type", None) or "audio/wav")
-            except Exception as e:
-                st.error(f"Non ho capito l'audio: {e}")
-                domanda = None
-        if domanda:
-            try:
-                with st.spinner(f"{imp['nome']} ci pensa…"):
-                    rispondi(ctx, imp, domanda)
-                st.rerun()
-            except Exception as e:
-                st.error(getattr(e, "messaggio", None) or str(e))
+        storia = _chat(ctx, imp, "scheda", 330)
         if storia and st.button("🧹 Nuova conversazione", key="sg_pulisci"):
             st.session_state["sg_chat"] = []
             st.rerun()
+
+
+# ================================================== la segretaria nell'angolo ===
+MODI_ANGOLO = {"automatico": "aperta sul computer, chiusa sul telefono",
+               "aperta": "sempre aperta quando apri Quadro",
+               "chiusa": "chiusa: un tocco sul suo nome la apre",
+               "nascosta": "non mostrarla nell'angolo"}
+
+
+def _da_telefono():
+    try:
+        ua = st.context.headers.get("User-Agent", "") or ""
+    except Exception:
+        return False
+    return bool(re.search(r"Android|iPhone|iPad|Mobile", ua))
+
+
+def _css(imp, angolo_visibile):
+    lato = "left" if imp.get("lato") == "sinistra" else "right"
+    nascondi = """
+[data-testid="stLayoutWrapper"]:has(> .st-key-sg_dato_angolo),
+[data-testid="stLayoutWrapper"]:has(> .st-key-sg_dato_scheda),
+.st-key-sg_dato_angolo, .st-key-sg_dato_scheda { display: none !important; }"""
+    if not angolo_visibile:
+        st.html(f"<style>{nascondi}</style>")
+        return
+    st.html(f"""<style>{nascondi}
+.st-key-sg_angolo {{ position: fixed; {lato}: 14px; bottom: 14px; z-index: 999000;
+  width: auto !important; max-width: calc(100vw - 28px); }}
+/* nella scheda «Parla» c'è già lei in grande: l'angolo si fa da parte. Le schede
+   non aperte restano nella pagina ma «inert»: conta solo se la si vede davvero */
+.stApp:has(.st-key-sg_dato_scheda):not(:has([inert] .st-key-sg_dato_scheda)) .st-key-sg_angolo {{
+  display: none !important; }}
+.st-key-sg_pannello {{ width: min(370px, calc(100vw - 28px)); max-height: calc(100vh - 90px);
+  overflow-y: auto; background: Canvas; border: 1px solid rgba(27,175,122,.45);
+  border-radius: 18px; box-shadow: 0 14px 36px rgba(0,0,0,.28); padding: 8px 10px 10px; }}
+.st-key-sg_pannello iframe {{ border-radius: 12px; }}
+/* la riga col nome e ➖ resta in alto anche quando il riquadro scorre */
+[data-testid="stLayoutWrapper"]:has(> .st-key-sga_testa) {{ position: sticky; top: -8px; z-index: 5;
+  background: Canvas; padding-top: 4px; }}
+.st-key-sga_apri button {{ border-radius: 999px; background: #0f5d47; color: #fff; border: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,.30); padding: 10px 18px; font-weight: 600; }}
+.st-key-sga_apri button:hover {{ background: #1baf7a; color: #fff; }}
+</style>""")
+
+
+def angolo(ctx):
+    """
+    La segretaria in un angolo dello schermo, su tutte le schede di Quadro.
+    app.py la chiama dentro un contenitore che sta fuori dalle schede; il CSS
+    qui sopra la tiene ferma in basso. Si rimpicciolisce a un bottone con il
+    suo nome, e il pezzo che si ricarica è solo il suo (un «fragment»): quando
+    le scrivi, il resto di Quadro non si ricarica.
+    """
+    imp = impostazioni(ctx)
+    modo = imp.get("angolo", "automatico")
+    _css(imp, modo != "nascosta")
+    if modo == "nascosta":
+        return
+    if "sg_angolo_aperta" not in st.session_state:
+        st.session_state["sg_angolo_aperta"] = (modo == "aperta" or
+                                                (modo == "automatico" and not _da_telefono()))
+    _angolo(ctx)
+
+
+def _apri_angolo(aperta):
+    st.session_state["sg_angolo_aperta"] = aperta
+
+
+@st.fragment
+def _angolo(ctx):
+    imp = impostazioni(ctx)
+    if not st.session_state.get("sg_angolo_aperta"):
+        st.button(f"👩‍💼 {imp['nome']}", key="sga_apri", on_click=_apri_angolo, args=(True,),
+                  help=f"Apri {imp['nome']}")
+        return
+    with st.container(key="sg_pannello"):
+        with st.container(horizontal=True, vertical_alignment="center", gap="small", key="sga_testa"):
+            st.markdown(f"**👩‍💼 {imp['nome']}**", width="stretch")
+            st.button("➖", key="sga_chiudi", on_click=_apri_angolo, args=(False,),
+                      help="Rimpicciolisci", width="content", type="tertiary")
+        ctx.pagina_html(html_avatar(imp, "angolo", fumetto=False, mostra_nome=False), 170)
+        _chat(ctx, imp, "angolo", 220)
 
 
 def _aspetto(ctx, imp):
@@ -553,13 +839,34 @@ def _aspetto(ctx, imp):
         extra = st.text_input("Qualcosa in più sul suo modo di fare", imp.get("carattere_extra", ""),
                               placeholder="es. ogni tanto una battuta da ingegnere, mai frasi fatte")
         brevi = st.checkbox("Risposte brevi (meglio da ascoltare)", imp.get("risposte_brevi", True))
-        st.markdown("**La voce** (quella del dispositivo)")
+        st.markdown("**La voce**")
+        motori = {"gemini": "🎙️ Naturale, di Gemini: la bocca segue la voce",
+                  "dispositivo": "📱 Del dispositivo: sempre gratis, senza limiti"}
+        motore = st.radio("Quale voce", list(motori), format_func=motori.get, horizontal=True,
+                          index=0 if imp.get("voce_motore", "gemini") == "gemini" else 1,
+                          label_visibility="collapsed")
+        import lettura as LT
+        voci = list(LT.VOCI_GEMINI)
+        attuale = imp.get("voce_gemini") or VOCE_PREDEFINITA
+        voce_g = st.selectbox("Voce di Gemini", voci, index=voci.index(attuale) if attuale in voci else 0,
+                              format_func=lambda v: f"{v} — {LT.VOCI_GEMINI[v]}",
+                              help="Le provi qui sotto, fuori dal riquadro, prima di scegliere.")
+        st.caption("La voce del dispositivo fa da riserva quando quelle di Gemini del giorno "
+                   "sono finite. Per lei valgono questi tre:")
         v1, v2, v3 = st.columns(3)
-        voce = v1.text_input("Nome della voce, se vuoi sceglierla", imp.get("voce", ""),
+        voce = v1.text_input("Nome della voce del dispositivo", imp.get("voce", ""),
                              help="Vuoto = la prima voce italiana femminile del dispositivo. I nomi "
-                                  "li vedi nel lettore di «Leggimelo».")
+                                  "li vedi nel lettore di 📚 Studio → «Leggimelo».")
         vel = v2.slider("Velocità", 0.6, 1.6, float(imp.get("velocita", 1.0)), 0.05)
         tono = v3.slider("Tono", 0.6, 1.6, float(imp.get("tono", 1.05)), 0.05)
+        st.markdown("**Nell'angolo di Quadro**")
+        a1, a2 = st.columns([3, 1])
+        modi = list(MODI_ANGOLO)
+        modo = a1.selectbox("Come la trovi quando apri Quadro", modi, format_func=MODI_ANGOLO.get,
+                            index=modi.index(imp.get("angolo", "automatico"))
+                            if imp.get("angolo", "automatico") in modi else 0)
+        lato = a2.radio("Lato", ["destra", "sinistra"], horizontal=True,
+                        index=1 if imp.get("lato") == "sinistra" else 0)
         st.markdown("**L'aspetto**")
         c = st.columns(6)
         pelle = c[0].color_picker("Pelle", a["pelle"])
@@ -583,21 +890,73 @@ def _aspetto(ctx, imp):
                                  "repository GitHub PUBBLICO: incolla qui il link «raw». Se è vuoto o "
                                  "non si carica, resta la segretaria stilizzata.")
         if st.form_submit_button("💾 Salva", type="primary"):
-            nuove = {"nome": nome.strip() or "Sofia", "chiamami": chiamami.strip() or "Claudio",
+            # si parte dalle impostazioni di prima, così non si perde niente
+            # che in questo riquadro non c'è
+            nuove = dict(imp)
+            nuove.update({"nome": nome.strip() or "Sofia", "chiamami": chiamami.strip() or "Claudio",
                      "carattere": car, "carattere_extra": extra, "risposte_brevi": brevi,
-                     "mostra_benessere": imp.get("mostra_benessere", False),
                      "voce": voce.strip(), "velocita": vel, "tono": tono,
+                     "voce_motore": motore, "voce_gemini": voce_g, "angolo": modo, "lato": lato,
                      "avatar": {"pelle": pelle, "capelli": capelli, "occhi": occhi, "giacca": giacca,
                                 "camicia": camicia, "labbra": labbra, "acconciatura": acconciatura,
                                 "inquadratura": inquadratura, "occhiali": occhiali, "orecchini": orecchini,
                                 "sfondo": "trasparente" if sf == "trasparente" else colore_sf,
-                                "vrm": vrm.strip()}}
+                                "vrm": vrm.strip()}})
             _salva_impostazione(ctx, "segretaria", nuove)
             st.session_state["sg_da_sincronizzare"] = True
+            st.session_state.pop("sg_angolo_aperta", None)     # vale subito il modo nuovo
             ctx.conferma("Segretaria aggiornata")
             st.rerun()
+    _prova_voci(ctx, imp)
     st.markdown("**Com'è adesso**")
     ctx.pagina_html(html_avatar(imp, None), 380)
+
+
+def _prova_voci(ctx, imp):
+    import lettura as LT
+    with st.expander("🎧 Prova le voci di Gemini"):
+        giorno, n = st.session_state.get("sg_voci_usate", ("", 0))
+        oggi = ctx.DIARIO.oggi().isoformat()
+        st.caption("Ogni prova, come ogni risposta detta con la voce di Gemini, usa una delle "
+                   "chiamate di voce del giorno. Nel piano gratuito sono poche (una decina, a "
+                   "fine 2026) e le usa anche «Leggimelo» per i file audio: il numero esatto "
+                   "per la tua chiave lo vedi su aistudio.google.com/rate-limit. Finite quelle, "
+                   f"{imp['nome']} parla con la voce del dispositivo fino a domani.")
+        if giorno == oggi and n:
+            st.caption(f"Da questo dispositivo, oggi: {n} risposte con la voce di Gemini.")
+        pausa = st.session_state.get("sg_voce_pausa")
+        if pausa:
+            st.warning(("Per oggi le voci di Gemini sono finite: torna domani."
+                        if pausa[1] == "quota" else "L'ultima prova con Gemini non è andata: ")
+                       + ("" if pausa[1] == "quota" else pausa[3]))
+        voci = list(LT.VOCI_GEMINI)
+        c1, c2 = st.columns([3, 1])
+        attuale = imp.get("voce_gemini") or VOCE_PREDEFINITA
+        scelta = c1.selectbox("Voce da provare", voci, index=voci.index(attuale) if attuale in voci else 0,
+                              format_func=lambda v: f"{v} — {LT.VOCI_GEMINI[v]}", key="sg_prova_voce")
+        if c2.button("▶️ Prova", key="sg_prova_bt", width="stretch"):
+            with st.spinner("Preparo la voce…"):
+                st.session_state["sg_prova_audio"] = voce_naturale(
+                    ctx, imp, f"Ciao {imp['chiamami']}, sono {imp['nome']}. Quando vuoi, "
+                              "ti preparo la giornata.", voce=scelta, forza=True)
+            if not st.session_state["sg_prova_audio"]:
+                st.error("Gemini non ha dato la voce. " + (st.session_state.get("sg_voce_pausa") or ("", "", "", ""))[3])
+        if st.session_state.get("sg_prova_audio"):
+            dati, tipo = st.session_state["sg_prova_audio"]
+            st.audio(dati, format=tipo)
+            st.caption("Se ti piace, sceglila nel riquadro sopra e premi «Salva».")
+
+
+def _aforismi(ctx):
+    import aforismi as AF
+    st.caption("Quello del momento sta in cima alla 🧭 Scrivania e cambia da solo. Qui scegli "
+               "come li vuoi e tieni la tua raccolta, con voti e note: la segretaria conosce "
+               "quelli che ami e ne tiene conto quando ti parla.")
+    AF.riquadro(ctx, "sg_af")
+    with st.expander("🎛️ Come li vuoi: argomenti, autori, tono, ogni quanto"):
+        AF.preferenze(ctx)
+    st.divider()
+    AF.mostra_raccolta(ctx)
 
 
 def _conoscenza(ctx, imp):
@@ -797,7 +1156,8 @@ al minuto, ben dentro i limiti gratuiti.
 GUIDA_TELEFONO = """
 - **Quadro e la segretaria come icona.** Apri Quadro in Chrome sul telefono, poi ⋮ →
   **Aggiungi a schermata Home**. Fallo due volte: una con l'indirizzo normale e una con
-  `?pagina=segretaria` in fondo all'indirizzo, che apre direttamente lei. Si apre a tutto
+  `?pagina=segretaria` in fondo all'indirizzo, che apre direttamente lei (con
+  `?pagina=leggimelo` apri invece il lettore, per farti leggere una pagina al volo). Si apre a tutto
   schermo, e lei è animata in 3D come qui.
 - **Il widget vero sulla schermata Home** è quello di **Telegram**: tieni premuto sulla
   Home → *Widget* → *Telegram* → scegli la chat con il tuo bot. Vedi i suoi ultimi

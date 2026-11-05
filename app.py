@@ -1568,11 +1568,24 @@ ETICHETTE_TAB = ["🧭 Scrivania", "👩‍💼 Segretaria", "🎓 Ripetizioni",
 PAGINE_DIRETTE = {"segretaria": "👩‍💼 Segretaria", "equilibrio": "🌿 Equilibrio",
                   "laboratorio": "🛠️ Laboratorio", "lavoro": "💼 Lavoro",
                   "radar": "🛰️ Radar", "studio": "📚 Studio", "scrivania": "🧭 Scrivania"}
+# alcune pagine stanno dentro una scheda: (scheda, chiave delle sotto-schede, sotto-scheda)
+SOTTOPAGINE = {"leggimelo": ("📚 Studio", "studio_sezione", "📖 Leggimelo"),
+               "aforismi": ("👩‍💼 Segretaria", "sg_sezione", "✨ Aforismi")}
 _pagina = str(st.query_params.get("pagina", "")).lower()
-if _pagina in PAGINE_DIRETTE and not st.session_state.get("_pagina_aperta"):
-    st.session_state["tab_aperto"] = PAGINE_DIRETTE[_pagina]
-    st.session_state["_pagina_aperta"] = True
+if not st.session_state.get("_pagina_aperta"):
+    if _pagina in PAGINE_DIRETTE:
+        st.session_state["tab_aperto"] = PAGINE_DIRETTE[_pagina]
+        st.session_state["_pagina_aperta"] = True
+    elif _pagina in SOTTOPAGINE:
+        _s, _chiave, _sotto = SOTTOPAGINE[_pagina]
+        st.session_state["tab_aperto"] = _s
+        st.session_state[_chiave] = _sotto
+        st.session_state["_pagina_aperta"] = True
 
+# Il posto della segretaria nell'angolo: sta fuori dalle schede, così si vede
+# su tutte. È «fisso» sullo schermo (CSS in segretaria.py), quindi non occupa
+# spazio qui. Si riempie più giù, quando i dati della Scrivania sono pronti.
+POSTO_SEGRETARIA = st.container(key="sg_angolo")
 TAB = st.tabs(ETICHETTE_TAB, key="tab_aperto", default=ETICHETTE_TAB[0])
 
 
@@ -1753,9 +1766,22 @@ with TAB[0]:
         pratiche=getattr(TAR, "PRATICHE",
                          ["Respirazione", "Meditazione", "Yoga", "Camminata", "Altro"]))
 
-    # l'aforisma del momento, se nelle preferenze hai chiesto di vederlo qui
+    # la segretaria nell'angolo: si disegna nel contenitore preparato prima
+    # delle schede, così resta lì qualunque scheda apri
+    try:
+        import segretaria as SEG
+        with POSTO_SEGRETARIA:
+            SEG.angolo(CTX)
+    except Exception as _e_seg:
+        st.caption(f"La segretaria nell'angolo non è partita: {_e_seg}")
+
+    # l'aforisma del momento, se nelle preferenze hai chiesto di vederlo qui.
+    # Questo pezzo si rilegge ogni minuto e cambia quando scatta l'intervallo.
     if EQ.impostazione(DIA, "aforismi", EQ.PREDEFINITE_AFORISMI).get("in_scrivania"):
-        EQ.riquadro_aforisma(CTX, chiave="scr")
+        @st.fragment(run_every=60)
+        def _aforisma_scrivania():
+            EQ.riquadro_aforisma(CTX, chiave="scr")
+        _aforisma_scrivania()
 
     # --------------------------------------------------------- i tre numeri --
     minuti_7 = DIARIO.andamento(DIA, 7).sum()
@@ -4185,8 +4211,18 @@ with TAB[7]:
                    "JSON sia valido (una virgola di troppo basta a invalidarlo).")
         st.stop()
 
-    SEZ = st.tabs(["🧪 Officina", "🎯 Percorsi", "🧰 Strumenti", "📋 Prontuari",
-                   "🤖 Assistente", "💬 Prompt pronti"])
+    # «Leggimelo» sta subito dopo l'Officina; SEZ tiene i numeri di prima,
+    # così le sezioni qui sotto restano SEZ[0]…SEZ[5] come sempre
+    _SEZ = st.tabs(["🧪 Officina", "📖 Leggimelo", "🎯 Percorsi", "🧰 Strumenti",
+                    "📋 Prontuari", "🤖 Assistente", "💬 Prompt pronti"], key="studio_sezione")
+    SEZ = [_SEZ[0]] + list(_SEZ[2:])
+
+    # ================= LEGGIMELO =========================================
+    # Foto, PDF, link o testo incollato → lettura ad alta voce, audio da
+    # scaricare, mappe, infografiche, flashcard. Tutto in lettura.py.
+    with _SEZ[1]:
+        import lettura as LETTURA
+        LETTURA.mostra(CTX)
 
     # ================= OFFICINA ==========================================
     # I tuoi strumenti, quelli che hai costruito tu. Vivono su un indirizzo

@@ -15,6 +15,7 @@
  *   import { creaAvatar } from './avatar_motore.js';   // o incollato
  *   const av = await creaAvatar(document.getElementById('scena'), { capelli: '#3b2a20' });
  *   av.parla('Buongiorno!');           // voce del browser + bocca
+ *   av.parlaAudio('data:audio/mpeg;base64,…');  // voce di Gemini, bocca sincronizzata
  *   av.stato('pensa');                 // riposo | ascolta | pensa | felice
  *   av.saluta();
  *
@@ -196,7 +197,7 @@ export async function creaAvatar(contenitore, opzioni = {}) {
   });
   renderer.domElement.addEventListener('click', () => { contenitore.dispatchEvent(new CustomEvent('avatar-clic', { bubbles: true })); });
 
-  let analizzatore = null, datiAudio = null;
+  let analizzatore = null, datiAudio = null, contestoAudio = null, audioCorrente = null;
   const orologio = new THREE.Clock();
   function ciclo() {
     const dt = Math.min(orologio.getDelta(), 0.05), t = orologio.elapsedTime;
@@ -279,16 +280,53 @@ export async function creaAvatar(contenitore, opzioni = {}) {
         avanti();
       });
     },
-    zitta() { try { speechSynthesis.cancel(); } catch (e) {} parlando = false; },
-    /** Parla con un file audio vero (es. voce di Gemini): la bocca segue il volume. */
+    zitta() {
+      try { speechSynthesis.cancel(); } catch (e) {}
+      try { if (audioCorrente) audioCorrente.pause(); } catch (e) {}
+      analizzatore = null; parlando = false;
+    },
+    /**
+     * Parla con un file audio vero (la voce di Gemini): la bocca segue il
+     * volume della voce, sillaba per sillaba. `sorgente` è un indirizzo o un
+     * «data:audio/...;base64,...». Restituisce una Promise con:
+     *   'fatto'   ha parlato fino in fondo
+     *   'muto'    il browser non lascia partire l'audio senza un tocco
+     *             (manda anche l'evento 'avatar-muto', per mostrare il pulsante)
+     *   'errore'  l'audio non si apre: chi chiama può usare la voce del browser
+     * Il contesto audio è uno solo e si riusa: i browser ne concedono pochi.
+     */
     parlaAudio(sorgente) {
-      return new Promise(fine => {
-        const audio = new Audio(sorgente); audio.crossOrigin = 'anonymous';
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const nodo = ctx.createMediaElementSource(audio); analizzatore = ctx.createAnalyser(); analizzatore.fftSize = 512;
-        datiAudio = new Uint8Array(analizzatore.fftSize); nodo.connect(analizzatore); analizzatore.connect(ctx.destination);
-        audio.onended = () => { analizzatore = null; fine(true); };
-        audio.play().catch(() => { analizzatore = null; contenitore.dispatchEvent(new CustomEvent('avatar-muto', { bubbles: true })); fine(false); });
+      return new Promise(async fine => {
+        try { speechSynthesis.cancel(); } catch (e) {}
+        try { if (audioCorrente) audioCorrente.pause(); } catch (e) {}
+        const audio = new Audio(); audioCorrente = audio;
+        const chiudi = esito => {
+          if (audioCorrente === audio) { analizzatore = null; parlando = false; stato = 'riposo'; }
+          fine(esito);
+        };
+        try {
+          if (!contestoAudio) contestoAudio = new (window.AudioContext || window.webkitAudioContext)();
+          // senza un tocco recente il contesto resta «sospeso»: si aspetta poco
+          if (contestoAudio.state !== 'running') {
+            await Promise.race([contestoAudio.resume().catch(() => {}), new Promise(r => setTimeout(r, 400))]);
+          }
+          if (contestoAudio.state !== 'running') {
+            contenitore.dispatchEvent(new CustomEvent('avatar-muto', { bubbles: true }));
+            chiudi('muto'); return;
+          }
+          const nodo = contestoAudio.createMediaElementSource(audio);
+          const an = contestoAudio.createAnalyser(); an.fftSize = 512;
+          nodo.connect(an); an.connect(contestoAudio.destination);
+          audio.onended = () => chiudi('fatto');
+          audio.onerror = () => chiudi('errore');
+          audio.src = sorgente;
+          await audio.play();
+          analizzatore = an; datiAudio = new Uint8Array(an.fftSize); parlando = true;
+        } catch (e) {
+          const muto = e && e.name === 'NotAllowedError';
+          if (muto) contenitore.dispatchEvent(new CustomEvent('avatar-muto', { bubbles: true }));
+          chiudi(muto ? 'muto' : 'errore');
+        }
       });
     },
     get parlando() { return parlando; },

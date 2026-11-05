@@ -1,13 +1,16 @@
 """
 equilibrio.py — la scheda 🌿 Equilibrio di Quadro.
 
-Sei parti:
+Quattro parti:
     🌬️ Respira       respirazione guidata e conteggio dei respiri al minuto
     🧘 Presenza      timer di meditazione con campana e pratiche guidate a voce
-    📖 Leggimelo     fotografi una pagina e Quadro te la legge ad alta voce
-    💬 Aforismi      uno sempre diverso, sui temi che scegli tu
     🌙 Stile di vita check-in serale, dati dello smartwatch da una foto, lettura AI
     🌱 Crescita      obiettivi del trimestre e revisione settimanale
+
+Prima c'erano anche «Leggimelo» e gli aforismi: Leggimelo ora sta in
+📚 Studio (lettura.py), gli aforismi nella 👩‍💼 Segretaria (aforismi.py) e
+quello del momento in cima alla Scrivania. Le funzioni sugli aforismi qui
+sotto restano solo come scorciatoie, perché app.py le usa ancora.
 
 =============================================================================
 COME È FATTO, per chi vuole metterci le mani
@@ -38,7 +41,6 @@ può provare da solo.
 
 import datetime as dt
 import json
-import random
 import re
 
 import pandas as pd
@@ -84,7 +86,7 @@ def impostazione(df, nome, predefinita):
 
 # ============================================== la voce, in comune =========
 # Il pezzo di JavaScript che sceglie la voce, la velocità e il tono. Lo usano
-# sia le pratiche guidate sia «Leggimelo». Le scelte restano nel browser
+# sia le pratiche guidate sia il lettore di «Leggimelo». Le scelte restano nel browser
 # (localStorage), quindi ogni dispositivo ricorda le sue: le voci cambiano da
 # un dispositivo all'altro, ha senso così.
 _STILE = """
@@ -474,8 +476,7 @@ def lavoro_per_giorno(dia, dal):
 
 
 # ============================================================ la scheda ====
-SEZIONI = ["🌬️ Respira", "🧘 Presenza", "📖 Leggimelo", "💬 Aforismi",
-           "🌙 Stile di vita", "🌱 Crescita"]
+SEZIONI = ["🌬️ Respira", "🧘 Presenza", "🌙 Stile di vita", "🌱 Crescita"]
 
 
 def mostra(ctx):
@@ -484,27 +485,14 @@ def mostra(ctx):
                "aperte; i tuoi dati personali stanno sotto la password della "
                "Taratura.")
 
-    imp_afo = impostazione(ctx.DIA, "aforismi", PREDEFINITE_AFORISMI)
-
-    # L'aforisma si aggiorna da solo: questo pezzo viene riletto ogni minuto
-    # e cambia quando scatta l'intervallo scelto.
-    @st.fragment(run_every=60)
-    def _afo():
-        riquadro_aforisma(ctx, chiave="eq_alto")
-    _afo()
-
     T = st.tabs(SEZIONI, key="eq_sezione")
     with T[0]:
         _respira(ctx)
     with T[1]:
         _presenza(ctx)
     with T[2]:
-        _leggimelo(ctx)
-    with T[3]:
-        _aforismi(ctx, imp_afo)
-    with T[4]:
         _stile_di_vita(ctx)
-    with T[5]:
+    with T[3]:
         _crescita(ctx)
 
 
@@ -583,21 +571,6 @@ def _presenza(ctx):
         st.caption("La voce e la velocità si scelgono nel riquadro, e il "
                    "dispositivo se le ricorda.")
     _registra_pratica(ctx, "eq_med", "Meditazione", int(minuti))
-
-
-# ------------------------------------------------------------ leggimelo ---
-def _leggimelo(ctx):
-    # Tutta la lettura — foto, link, lettore, audio, mappe, flashcard — sta in
-    # lettura.py, perché è diventata grande quanto una scheda.
-    import lettura
-    lettura.mostra(ctx)
-
-
-# ------------------------------------------------------------- aforismi ---
-def _aforismi(ctx, imp):
-    AF.preferenze(ctx)
-    st.divider()
-    AF.mostra_raccolta(ctx)
 
 
 # -------------------------------------------------------- stile di vita ---

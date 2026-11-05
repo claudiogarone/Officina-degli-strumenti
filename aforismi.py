@@ -12,6 +12,9 @@ I voti non restano lì: quando chiedi un aforisma nuovo, l'AI riceve gli
 autori e i temi che hai votato meglio, e quelli che non ti sono piaciuti, e
 ne tiene conto. La segretaria legge la stessa raccolta.
 
+DOVE SI VEDE: quello del momento in cima alla 🧭 Scrivania; preferenze e
+raccolta nella scheda 👩‍💼 Segretaria → ✨ Aforismi.
+
 DOVE STA: nel diario, Tipo=aforisma. Nota contiene un piccolo JSON con il
 testo e le tue annotazioni; Valore è il voto. Modificare vuol dire scrivere
 una riga nuova con lo stesso testo: vince l'ultima, come nel resto di Quadro.
@@ -278,8 +281,8 @@ def riquadro(ctx, chiave="eq", compatto=False):
 def preferenze(ctx):
     imp = ctx.impostazione(ctx.DIA, "aforismi", PREDEFINITE)
     st.caption("Scegli su cosa, da chi, con che tono e ogni quanto. L'aforisma in cima "
-               "a Equilibrio cambia da solo; lo stesso arriva su Telegram se lo attivi "
-               "nelle notifiche della segretaria.")
+               "alla Scrivania cambia da solo; lo stesso arriva su Telegram se lo attivi "
+               "nelle notifiche, e la segretaria tiene conto di quelli che ami.")
     temi_tutti = list(dict.fromkeys(ctx.cfg.get("temi_aforismi", []) + list(imp.get("temi", []))))
     with st.form("af_preferenze"):
         temi = st.multiselect("Argomenti", temi_tutti,
@@ -315,7 +318,7 @@ def preferenze(ctx):
                             index=voci.index(imp.get("voce_audio", "Sulafat"))
                             if imp.get("voce_audio") in voci else 0,
                             format_func=lambda v: f"{v} · {lettura.VOCI_GEMINI[v]}")
-        in_scr = st.checkbox("Mostralo anche in cima alla Scrivania", bool(imp.get("in_scrivania", True)))
+        in_scr = st.checkbox("Mostralo in cima alla Scrivania", bool(imp.get("in_scrivania", True)))
         if st.form_submit_button("💾 Salva le preferenze", type="primary"):
             nuove = {"temi": temi, "altri": altri, "tradizioni": trad, "epoca": epoca,
                      "tono": tono, "lunghezza": lunghezza, "lingua": lingua,

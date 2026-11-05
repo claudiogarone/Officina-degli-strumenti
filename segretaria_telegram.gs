@@ -358,7 +358,7 @@ function componi(tipo, dettagli, cfg) {
       return t + '\n\nSe ti va, fai il check-in in Quadro → Equilibrio, o scrivimi una /nota sulla giornata.';
     }
     case 'ripasso': return c.flashcard_da_ripassare ? '🃏 Hai ' + c.flashcard_da_ripassare +
-      ' flashcard da ripassare oggi: bastano cinque minuti, in Quadro → Equilibrio → Leggimelo.' : '';
+      ' flashcard da ripassare oggi: bastano cinque minuti, in Quadro → Studio → Leggimelo.' : '';
     case 'promemoria': return dettagli ? '⏰ Promemoria: ' + dettagli : '';
   }
   return '';

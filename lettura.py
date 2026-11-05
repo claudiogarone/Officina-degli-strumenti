@@ -23,6 +23,9 @@ Il FILE AUDIO lo fa Gemini (modelli «tts»): voce più naturale, scaricabile,
 ascoltabile in macchina. Costa una chiamata all'AI ogni circa 2500 caratteri
 e richiede qualche secondo per pezzo. Se il tuo piano di Google AI Studio non
 la include, Quadro te lo dice e il lettore resta disponibile.
+Attenzione: nel piano gratuito le chiamate di voce al giorno sono poche
+(una decina, a fine 2026) e sono le stesse che usa la voce naturale della
+segretaria. Il numero vero lo vedi su aistudio.google.com/rate-limit.
 
 I LINK: Quadro scarica la pagina e con la libreria `trafilatura` tiene solo
 il testo dell'articolo, togliendo menù, pubblicità e commenti. Non funziona
@@ -263,16 +266,21 @@ def _pezzi(testo, massimo=2500):
     return pezzi
 
 
-def _tts(chiave, testo, voce, modelli=None):
-    """PCM 16 bit, 24 kHz, mono, per un pezzo di testo."""
+def _tts(chiave, testo, voce, modelli=None, attese=(0, 3, 8), timeout=180):
+    """
+    PCM 16 bit, 24 kHz, mono, per un pezzo di testo.
+    `attese`: quanto aspettare prima di ogni tentativo se il servizio è
+    occupato. La segretaria passa (0,): una prova sola e, se va male, parla
+    con la voce del dispositivo invece di farti aspettare.
+    """
     import requests
     ultimo = None
     for modello in modelli or MODELLI_TTS:
-        for attesa in (0, 3, 8):
+        for attesa in attese:
             time.sleep(attesa)
             r = requests.post(
                 f"https://generativelanguage.googleapis.com/v1beta/models/{modello}:generateContent",
-                params={"key": chiave}, timeout=180,
+                params={"key": chiave}, timeout=timeout,
                 json={"contents": [{"parts": [{"text": testo}]}],
                       "generationConfig": {
                           "responseModalities": ["AUDIO"],
@@ -793,7 +801,7 @@ def _imposta(titolo, fonte, testo):
 
 
 def mostra(ctx):
-    """Tutta la parte «Leggimelo». Usa ctx come in equilibrio.py."""
+    """Tutta la parte «Leggimelo», in 📚 Studio. ctx è quello preparato in app.py."""
     S = st.tabs(["📥 Prendi il testo", "🎧 Ascolta e lavora", "🧠 Mappe e infografiche",
                  "🃏 Flashcard", "📚 Biblioteca"], key="lt_sezione")
     with S[0]:
