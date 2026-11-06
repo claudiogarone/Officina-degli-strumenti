@@ -6,7 +6,7 @@
    "in_breve": "La sala di comando: da qui parte la giornata.",
    "cosa_trovi": [
     "**📌 I numeri** in alto (in ogni scheda): lezioni, progetti e studio in un colpo d'occhio",
-    "**L'aforisma del momento**, che cambia da solo ogni tanto (come, lo scegli in Segretaria → ✨ Aforismi)",
+    "**L'aforisma del momento**, che cambia da solo ogni tanto (come, lo scegli in Segreteria → 🤖 Segretaria virtuale → ✨ Aforismi)",
     "**Le tre cose di oggi**: le priorità, da segnare ✓ Fatta o ↷ Rinvia",
     "**🎯 La sessione di oggi**: scegli cosa fai e per quanto, ▶️ Comincia, cronometro con pausa e contatore delle distrazioni",
     "**Tempo ed energia**: mappa dell'energia, piano di domani (anche in calendario), urgente/importante, la settimana",
@@ -35,17 +35,14 @@
    "pagina": "scrivania"
   },
   {
-   "scheda": "👩‍💼 Segretaria",
-   "in_breve": "Sofia: ti parla, ti ricorda, propone azioni che confermi tu. È anche nell'angolo di ogni scheda.",
+   "scheda": "👩‍💼 Segreteria",
+   "in_breve": "Due segretarie: 🤖 quella virtuale (Sofia), che ti parla e agisce ed è nell'angolo di ogni scheda, e 🤝 Claudio Assistant, la segretaria reale, di cui vedi il lavoro.",
    "cosa_trovi": [
-    "**Nell'angolo in basso a destra**, su tutte le schede: chat scritta o a voce (🎙️ nella casella), si rimpicciolisce con ➖",
-    "**💬 Parla**: la stessa conversazione in grande, con l'avatar 3D e il fumetto",
-    "**📈 Come lavora**: il registro di tutte le conversazioni (Quadro, Telegram, desktop), gradimento, azioni accettate, tempi, revisione fatta dall'AI",
-    "**⚙️ Come la vuoi**: nome, carattere, voce (Gemini o del dispositivo), aspetto, dove sta nell'angolo",
-    "**🧠 Cosa sa di te**: il tuo profilo, i ricordi, cosa vede esattamente di Quadro",
-    "**✨ Aforismi**: preferenze (temi, autori, tono, ogni quanto) e la tua raccolta con voti e note",
-    "**🔔 Notifiche e Telegram**: cosa ti manda e quando, le istruzioni del bot, le cose arrivate da fuori",
-    "**📲 Telefono e desktop**: icona sul telefono e app per Windows"
+    "**🤖 Segretaria virtuale**: 💬 Parla · 📈 Come lavora (registro, voti, revisione) · ⚙️ Come la vuoi · 🧠 Cosa sa di te · ✨ Aforismi · 🔔 Notifiche e Telegram · 📲 Telefono e desktop",
+    "**Nell'angolo in basso a destra**, su tutte le schede: la stessa Sofia in piccolo, si rimpicciolisce con ➖",
+    "**Cosa sa fare**: priorità, scadenze, idee, ricordi, obiettivi, promemoria su Telegram, note, portarti in una scheda, mettere una cosa nel rito della memoria, prepararti un articolo in Leggimelo, aggiornare un cliente. Propone, e fa quando premi ✅ Fai",
+    "**🤝 Claudio Assistant**: ore, invii, risposte, risultati, qualità e costo per risultato della segretaria reale, letti dal suo Foglio Google; cosa tocca a te; il resoconto scritto dall'AI",
+    "**🩺 Se non risponde** (sotto la chat in 💬 Parla): quale modello ha provato, quanto ci ha messo, l'errore"
    ],
    "come_si_fa": [
     {
@@ -67,58 +64,120 @@
     {
      "domanda": "Configurare il bot di Telegram",
      "passi": [
-      "Segretaria → **🔔 Notifiche e Telegram** → in fondo, «🛠️ Come si attiva il bot Telegram»",
+      "Segreteria → 🤖 Segretaria virtuale → **🔔 Notifiche e Telegram** → in fondo, «🛠️ Come si attiva il bot Telegram»",
       "Crea il bot con @BotFather, incolla lo script su script.google.com, metti le due chiavi",
       "Esegui `configura` e scrivi `/start` al bot: da lì ti scrive lui agli orari scelti"
      ],
      "apri": {
-      "scheda": "👩‍💼 Segretaria",
-      "chiave": "sg_sezione",
-      "valore": "🔔 Notifiche e Telegram"
+      "scheda": "👩‍💼 Segreteria",
+      "percorso": [
+       "🤖 Segretaria virtuale",
+       "🔔 Notifiche e Telegram"
+      ]
      }
     },
     {
      "domanda": "Cambiarle voce o farla tacere",
      "passi": [
-      "Segretaria → **⚙️ Come la vuoi** → «La voce»",
+      "Segreteria → 🤖 Segretaria virtuale → **⚙️ Come la vuoi** → «La voce»",
       "Scegli la voce naturale di Gemini (poche al giorno nel piano gratuito) o quella del dispositivo",
       "Nell'avatar ⏹ la ferma, 🔊 ripete l'ultima risposta"
      ],
      "apri": {
-      "scheda": "👩‍💼 Segretaria",
-      "chiave": "sg_sezione",
-      "valore": "⚙️ Come la vuoi"
+      "scheda": "👩‍💼 Segreteria",
+      "percorso": [
+       "🤖 Segretaria virtuale",
+       "⚙️ Come la vuoi"
+      ]
+     }
+    },
+    {
+     "domanda": "Vedere il lavoro della segretaria reale (Claudio Assistant)",
+     "passi": [
+      "Apri il Foglio Google della promozione → **Condividi** → aggiungi l'indirizzo del service account di Quadro come **Visualizzatore** (lo trovi nella pagina)",
+      "Segreteria → **🤝 Claudio Assistant** → incolla il link del foglio e premi **Collega**",
+      "Da lì vedi ore, invii, risposte, risultati, controlli OK e cosa tocca a te; **🧐** scrive il resoconto"
+     ],
+     "apri": {
+      "scheda": "👩‍💼 Segreteria",
+      "percorso": [
+       "🤝 Claudio Assistant"
+      ]
+     }
+    },
+    {
+     "domanda": "Sofia non risponde",
+     "passi": [
+      "Segreteria → 🤖 Segretaria virtuale → 💬 Parla → apri **🩺 Se non risponde**",
+      "Premi **🧪 Prova la risposta**: vedi quale modello risponde e in quanti secondi, o l'errore",
+      "In ⚙️ Come la vuoi puoi scegliere un modello più veloce (Flash Lite)"
+     ],
+     "apri": {
+      "scheda": "👩‍💼 Segreteria",
+      "percorso": [
+       "🤖 Segretaria virtuale",
+       "💬 Parla"
+      ]
      }
     }
    ],
    "sottopagine": [
     {
+     "nome": "Segretaria virtuale",
+     "percorso": [
+      "🤖 Segretaria virtuale"
+     ]
+    },
+    {
+     "nome": "Claudio Assistant",
+     "percorso": [
+      "🤝 Claudio Assistant"
+     ]
+    },
+    {
+     "nome": "Parla",
+     "percorso": [
+      "🤖 Segretaria virtuale",
+      "💬 Parla"
+     ]
+    },
+    {
      "nome": "Come lavora",
-     "chiave": "sg_sezione",
-     "valore": "📈 Come lavora"
+     "percorso": [
+      "🤖 Segretaria virtuale",
+      "📈 Come lavora"
+     ]
     },
     {
      "nome": "Aforismi",
-     "chiave": "sg_sezione",
-     "valore": "✨ Aforismi"
+     "percorso": [
+      "🤖 Segretaria virtuale",
+      "✨ Aforismi"
+     ]
     },
     {
      "nome": "Notifiche e Telegram",
-     "chiave": "sg_sezione",
-     "valore": "🔔 Notifiche e Telegram"
+     "percorso": [
+      "🤖 Segretaria virtuale",
+      "🔔 Notifiche e Telegram"
+     ]
     },
     {
      "nome": "Come la vuoi",
-     "chiave": "sg_sezione",
-     "valore": "⚙️ Come la vuoi"
+     "percorso": [
+      "🤖 Segretaria virtuale",
+      "⚙️ Come la vuoi"
+     ]
     },
     {
      "nome": "Cosa sa di te",
-     "chiave": "sg_sezione",
-     "valore": "🧠 Cosa sa di te"
+     "percorso": [
+      "🤖 Segretaria virtuale",
+      "🧠 Cosa sa di te"
+     ]
     }
    ],
-   "pagina": "segretaria"
+   "pagina": "segreteria"
   },
   {
    "scheda": "🎓 Ripetizioni",
@@ -246,14 +305,30 @@
   },
   {
    "scheda": "📚 Studio",
-   "in_breve": "Studiare e farsi leggere le cose: Officina, Leggimelo, percorsi, prontuari, assistente.",
+   "in_breve": "Studiare, farsi leggere le cose e allenare la memoria.",
    "cosa_trovi": [
     "**🧪 Officina**: i tuoi strumenti, a portata di clic",
     "**📖 Leggimelo**: foto, PDF, link o testo → lettura ad alta voce con tutti i comandi, audio MP3, riassunto, traduzione, mappe concettuali, infografiche, flashcard, biblioteca",
+    "**🧠 Memoria**: il rito dei cinque passi (credere, volere, visualizzare, comandare, rivedere) con tag, etichetta, immagine buffa e immagini dei concetti; il ripasso a intervalli crescenti; l'allenamento lampo con il richiamo della sera; i progressi",
     "**🎯 Percorsi** con le tappe da spuntare, **🧰 Strumenti**, **📋 Prontuari**",
     "**🤖 Assistente** e **💬 Prompt pronti**"
    ],
    "come_si_fa": [
+    {
+     "domanda": "Fare il rito della memoria di oggi",
+     "passi": [
+      "Studio → **🧠 Memoria** → «🌅 Il rito di oggi»",
+      "1 Credere: dì la frase ad alta voce · 2 Volere: scrivi cosa ricordare e perché",
+      "3 Visualizzare: tag, etichetta, immagine buffa, immagini dei concetti (✨ se vuoi un aiuto)",
+      "4 Comandare: dai il comando, a voce · 5 Rivedere: **💾 Salva**, e Quadro te lo ripropone domani, fra 3, 7, 14, 30 giorni in «🔁 Ripasso»"
+     ],
+     "apri": {
+      "scheda": "📚 Studio",
+      "percorso": [
+       "🧠 Memoria"
+      ]
+     }
+    },
     {
      "domanda": "Farmi leggere la pagina di un libro",
      "passi": [
@@ -291,8 +366,15 @@
    "sottopagine": [
     {
      "nome": "Leggimelo",
-     "chiave": "studio_sezione",
-     "valore": "📖 Leggimelo"
+     "percorso": [
+      "📖 Leggimelo"
+     ]
+    },
+    {
+     "nome": "Memoria",
+     "percorso": [
+      "🧠 Memoria"
+     ]
     }
    ],
    "pagina": "studio"
@@ -406,13 +488,42 @@
  ],
  "novita": [
   {
+   "quando": "6 novembre 2026",
+   "titolo": "🧠 Il rito della memoria",
+   "testo": "In Studio: i cinque passi ogni giorno, con tag, etichetta e immagini buffe; il ripasso a intervalli crescenti; l'allenamento lampo e il richiamo della sera. Sulla Scrivania compare una riga quando c'è qualcosa da fare.",
+   "apri": {
+    "scheda": "📚 Studio",
+    "percorso": [
+     "🧠 Memoria"
+    ]
+   }
+  },
+  {
+   "quando": "6 novembre 2026",
+   "titolo": "👩‍💼 Segreteria: virtuale e reale",
+   "testo": "La scheda si chiama Segreteria e ha due parti: la Segretaria virtuale (Sofia) e Claudio Assistant, il lavoro della segretaria reale letto dal suo Foglio Google.",
+   "apri": {
+    "scheda": "👩‍💼 Segreteria",
+    "percorso": [
+     "🤝 Claudio Assistant"
+    ]
+   }
+  },
+  {
+   "quando": "6 novembre 2026",
+   "titolo": "⚡ Sofia più veloce, e fa più cose",
+   "testo": "Risponde con un modello veloce e, se non ce la fa, dice perché (🩺 Se non risponde). Nuovi compiti: mettere una cosa nel rito della memoria, prepararti un articolo in Leggimelo, aggiornare un cliente."
+  },
+  {
    "quando": "5 novembre 2026",
    "titolo": "📈 Come lavora la segretaria",
    "testo": "Registro di tutte le conversazioni (anche Telegram e desktop), 👍/👎 con il perché, azioni accettate, tempi, revisione fatta dall'AI. I 👎 diventano lezioni che Sofia rilegge.",
    "apri": {
-    "scheda": "👩‍💼 Segretaria",
-    "chiave": "sg_sezione",
-    "valore": "📈 Come lavora"
+    "scheda": "👩‍💼 Segreteria",
+    "percorso": [
+     "🤖 Segretaria virtuale",
+     "📈 Come lavora"
+    ]
    }
   },
   {
@@ -430,7 +541,7 @@
   },
   {
    "quando": "5 novembre 2026",
-   "titolo": "📖 Leggimelo in Studio, ✨ aforismi in Segretaria",
+   "titolo": "📖 Leggimelo in Studio, ✨ aforismi in Segreteria",
    "testo": "Equilibrio ora ha solo Respira, Presenza, Stile di vita e Crescita. L'aforisma del momento resta in cima alla Scrivania e cambia da solo.",
    "apri": {
     "scheda": "📚 Studio",
@@ -562,8 +673,8 @@
    "titolo": "La segretaria",
    "voci": [
     {
-     "domanda": "Sofia nell'angolo non risponde o il ➖ non va",
-     "risposta": "Su Streamlit Cloud, in basso a destra, c'è il pulsante **Manage app** (lo vedi solo tu): se ci clicchi si apre il pannello dei log e sembra che Quadro si blocchi. Sofia ora sta un po' più in alto apposta. Per scriverle usa il tasto **Invio** o la freccia nella casella; se il pannello dei log è aperto, chiudilo con la ✕. Se compare un riquadro rosso con un errore, mandamelo."
+     "domanda": "Sofia non risponde, o il ➖ non va",
+     "risposta": "Sotto la chat, in Segreteria → 🤖 Segretaria virtuale → 💬 Parla, apri **🩺 Se non risponde**: vedi quale modello ha provato, in quanti secondi, e l'errore; **🧪 Prova la risposta** fa una prova al volo. In ⚙️ Come la vuoi puoi scegliere un modello più veloce. Su Streamlit Cloud, in basso a destra, c'è anche il pulsante **Manage app**: se ci clicchi si apre il pannello dei log, chiudilo con la ✕."
     },
     {
      "domanda": "Perché a volte la voce è diversa",
@@ -585,7 +696,7 @@
    "voci": [
     {
      "domanda": "Aprire direttamente una scheda",
-     "risposta": "Aggiungi in fondo all'indirizzo di Quadro `?pagina=` e il nome: `segretaria`, `equilibrio`, `laboratorio`, `lavoro`, `radar`, `studio`, `scrivania`, oppure `leggimelo` e `aforismi`. Da Chrome sul telefono, ⋮ → **Aggiungi a schermata Home**: diventa un'icona che apre proprio lì."
+     "risposta": "Aggiungi in fondo all'indirizzo di Quadro `?pagina=` e il nome: `segreteria`, `equilibrio`, `laboratorio`, `lavoro`, `radar`, `studio`, `scrivania`, oppure `leggimelo`, `memoria`, `aforismi` e `assistant` (Claudio Assistant). Da Chrome sul telefono, ⋮ → **Aggiungi a schermata Home**: diventa un'icona che apre proprio lì."
     }
    ]
   },

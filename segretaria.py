@@ -64,7 +64,7 @@ PREDEFINITE = {
     "carattere_extra": "", "risposte_brevi": True, "mostra_benessere": False,
     "velocita": 1.0, "tono": 1.05, "voce": "",
     "voce_motore": "gemini", "voce_gemini": "Sulafat", "angolo": "automatico", "lato": "destra",
-    "registro": True, "registro_testi": True,
+    "registro": True, "registro_testi": True, "modello_ai": "gemini-flash-latest",
     "avatar": {"pelle": "#f1c7a5", "capelli": "#3b2a20", "giacca": "#0f5d47",
                "camicia": "#f7f7f2", "occhi": "#4a3426", "labbra": "#c45a5a",
                "acconciatura": "caschetto", "occhiali": False, "orecchini": True,
@@ -80,6 +80,7 @@ TIPI_NOTIFICA = {
     "respiro": "un invito a una pausa di respiro di un minuto",
     "sera": "il riepilogo della giornata e il promemoria del check-in",
     "ripasso": "le flashcard da ripassare oggi (solo se ce ne sono)",
+    "memoria": "il rito della memoria: i 5 passi e le cose da rivedere oggi",
     "promemoria": "un testo tuo (scrivilo nei dettagli)",
 }
 GIORNI = ["tutti", "feriali", "weekend", "lun", "mar", "mer", "gio", "ven", "sab", "dom"]
@@ -94,7 +95,8 @@ REGOLE_INIZIALI = [
 AZIONI = {"priorita": "🎯 Aggiungi alle tre cose di oggi", "scadenza": "⏰ Aggiungi la scadenza",
           "idea": "💡 Salva l'idea", "ricordo": "🧠 Ricordatelo", "obiettivo": "🌱 Nuovo obiettivo del trimestre",
           "promemoria": "📲 Promemoria su Telegram", "nota": "📝 Salva la nota",
-          "apri": "➜ Portami lì"}
+          "apri": "➜ Portami lì", "memoria": "🧠 Mettilo nel rito della memoria",
+          "leggi": "📖 Preparamelo in Leggimelo", "cliente": "💼 Aggiorna il cliente"}
 
 # Quando la domanda è su come si usa Quadro, lei riceve anche la guida
 # (guida.json) e può proporre l'azione «apri» per portarti nella scheda giusta.
@@ -247,11 +249,45 @@ def _registra_scambio(ctx, imp, canale, domanda, m, secondi, voce, errore=""):
         nota["d"], nota["r"] = domanda[:400], str(m.get("testo", ""))[:800]
     if errore:
         nota["errore"] = str(errore)[:300]
+    registra(ctx, ctx.DIARIO.riga("sg_scambio", canale, "errore" if errore else "ok", 0,
+                                  round(float(secondi), 1), json.dumps(nota, ensure_ascii=False)))
+
+
+# Le righe del registro non si scrivono una per una: ogni scrittura nel diario
+# su Drive costa qualche secondo, e fa ricaricare tutto il diario al giro dopo.
+# Si tengono da parte e si scrivono insieme: ogni 5 righe, dopo 15 minuti, o
+# insieme alla prossima cosa che si scrive comunque (un'azione confermata).
+def registra(ctx, righe, subito=False):
+    coda = st.session_state.setdefault("sg_registro_coda", [])
+    coda.extend(righe if isinstance(righe, list) else [righe])
+    dal = st.session_state.setdefault("sg_registro_dal", time.time())
+    if subito or len(coda) >= 5 or time.time() - dal > 900:
+        svuota_registro(ctx)
+
+
+def svuota_registro(ctx, altre=None):
+    """Scrive le righe in attesa (più `altre`, se ci sono) in una volta sola."""
+    coda = st.session_state.get("sg_registro_coda", [])
+    righe = list(coda) + list(altre or [])
+    if not righe:
+        return
     try:
-        ctx.diario_scrivi(ctx.DIARIO.riga("sg_scambio", canale, "errore" if errore else "ok", 0,
-                                          round(float(secondi), 1), json.dumps(nota, ensure_ascii=False)))
+        ctx.diario_scrivi(righe)
+        coda.clear()
+        st.session_state.pop("sg_registro_dal", None)
     except Exception:
         pass                       # il registro non deve mai fermare la conversazione
+
+
+def dia_con_coda(ctx):
+    """Il diario più le righe del registro non ancora scritte: per numeri e lezioni aggiornati."""
+    coda = st.session_state.get("sg_registro_coda") or []
+    if not coda:
+        return ctx.DIA
+    try:
+        return ctx.DIARIO._sistema(pd.concat([ctx.DIA, pd.DataFrame(coda)], ignore_index=True))
+    except Exception:
+        return ctx.DIA
 
 
 def _vota(ctx, chiave, mid, canale):
@@ -260,12 +296,9 @@ def _vota(ctx, chiave, mid, canale):
     if val is None:
         return
     commento = st.session_state.get(chiave + "_nota", "")
-    try:
-        ctx.diario_scrivi(ctx.DIARIO.riga("sg_voto", mid, canale, 0, 1 if val == 1 else -1,
-                                          json.dumps({"c": commento}, ensure_ascii=False)))
-        st.session_state.setdefault("sg_voti_sessione", {})[mid] = (1 if val == 1 else -1, commento)
-    except Exception:
-        pass
+    registra(ctx, ctx.DIARIO.riga("sg_voto", mid, canale, 0, 1 if val == 1 else -1,
+                                  json.dumps({"c": commento}, ensure_ascii=False)))
+    st.session_state.setdefault("sg_voti_sessione", {})[mid] = (1 if val == 1 else -1, commento)
 
 
 def _salva_impostazione(ctx, nome, valore):
@@ -327,6 +360,14 @@ def contesto(ctx, includi_benessere=False):
         preferiti = racc[(racc["segretaria"]) | (racc["voto"].fillna(0) >= 4)].head(15)
         c["aforismi_preferiti"] = [f"«{r['testo']}» — {r['autore']}" for _, r in preferiti.iterrows()]
     c["gusti_aforismi"] = AF.gusti(dia)
+    try:
+        import memoria as MEM
+        c["memoria"] = MEM.per_segretaria(dia, oggi)
+    except Exception:
+        pass
+    if st.session_state.get("col_riassunto"):
+        # il lavoro della segretaria reale, letto quando hai aperto la sua pagina
+        c["segretaria_reale"] = st.session_state["col_riassunto"]
     if includi_benessere and ctx.aperto():
         ci = EQ.checkin_tabella(ctx.privato_leggi())
         if not ci.empty:
@@ -338,7 +379,7 @@ def contesto(ctx, includi_benessere=False):
 
 
 def _lezioni_prompt(ctx):
-    lez = lezioni(ctx.DIA)
+    lez = lezioni(dia_con_coda(ctx))
     if not lez:
         return ""
     return ("Risposte tue che non gli sono piaciute: tienine conto e non ripeterle così.\n"
@@ -369,16 +410,130 @@ def prompt(ctx, imp, domanda, storia):
         + f"\nLui: {domanda}\n\n"
         "Rispondi SOLO con JSON valido:\n"
         '{"risposta": "quello che dici", "umore": "felice | pensa | riposo", '
-        '"azioni": [{"tipo": "priorita | scadenza | idea | ricordo | obiettivo | promemoria | nota | apri", '
+        '"azioni": [{"tipo": "priorita | scadenza | idea | ricordo | obiettivo | promemoria | nota | apri | memoria | leggi | cliente", '
         '"testo": "...", "data": "AAAA-MM-GG o vuoto", "ora": "HH:MM o vuoto", "importo": null}]}\n'
-        "Proponi azioni solo quando te le chiede o sono chiaramente utili: le conferma lui.")
+        "Proponi azioni solo quando te le chiede o sono chiaramente utili: le conferma lui.\n"
+        "Le azioni nuove: «memoria» (testo = la cosa da ricordare con le tecniche del rito; se puoi, in "
+        "«dettagli» proponi un'immagine buffa per ricordarla), «leggi» (testo = il link di un articolo o un "
+        "testo da fargli ascoltare in Leggimelo), «cliente» (testo = nome del cliente, «dettagli» = il prossimo "
+        "passo, «data» = quando richiamarlo). Puoi aggiungere \"dettagli\" a ogni azione.")
+
+
+# ======================================================= la risposta veloce ===
+# La segretaria non usa l'assistente generale di Quadro, che per le domande
+# lunghe aspetta e riprova anche per un minuto: qui conta rispondere subito.
+#   - modelli veloci («flash»), prima quello scelto in «Come la vuoi»
+#   - al massimo 30 secondi per tentativo, un solo nuovo tentativo se è pieno
+#   - la risposta chiesta direttamente in JSON, così non va «ripulita»
+# Com'è andata (modelli provati, tempi, errori) resta in «🩺 Se non risponde».
+MODELLI_SEGRETARIA = ["gemini-flash-latest", "gemini-flash-lite-latest", "gemini-2.5-flash"]
+CHIAMA = None        # per le prove automatiche: una funzione (prompt, chiave, modello) → testo
+
+
+def _modelli(ctx, imp):
+    scelto = imp.get("modello_ai") or MODELLI_SEGRETARIA[0]
+    if scelto == "studio":
+        scelto = ctx.modello_ai
+    return list(dict.fromkeys([scelto] + MODELLI_SEGRETARIA))
+
+
+def chiedi_veloce(ctx, imp, testo_prompt, json_mode=True):
+    import requests
+    diag = {"quando": ctx.DIARIO.adesso().strftime("%d/%m %H:%M:%S"), "tentativi": [], "errore": ""}
+    st.session_state["sg_diagnosi"] = diag
+    modelli = _modelli(ctx, imp)
+    if CHIAMA:
+        inizio = time.time()
+        risposta = CHIAMA(testo_prompt, ctx.chiave_ai, modelli[0])
+        diag["tentativi"].append((modelli[0], "ok", round(time.time() - inizio, 1)))
+        return risposta
+    corpo = {"contents": [{"parts": [{"text": testo_prompt}]}], "generationConfig": {"temperature": 0.7}}
+    if json_mode:
+        corpo["generationConfig"]["responseMimeType"] = "application/json"
+    ultimo = ""
+    for m in modelli[:3]:
+        for prova in range(2):
+            inizio = time.time()
+            try:
+                r = requests.post(f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent",
+                                  params={"key": ctx.chiave_ai}, json=corpo, timeout=30)
+            except requests.RequestException as e:
+                ultimo = f"{m}: nessuna risposta in 30 secondi ({e.__class__.__name__})"
+                diag["tentativi"].append((m, "tempo scaduto", round(time.time() - inizio, 1)))
+                break
+            sec = round(time.time() - inizio, 1)
+            if r.status_code == 200:
+                try:
+                    parti = r.json()["candidates"][0]["content"]["parts"]
+                    testo = "".join(p.get("text", "") for p in parti if not p.get("thought"))
+                except (KeyError, IndexError, ValueError):
+                    testo = ""
+                if testo.strip():
+                    diag["tentativi"].append((m, "ok", sec))
+                    diag["modello"] = m
+                    return testo
+                ultimo = f"{m}: risposta vuota"
+                diag["tentativi"].append((m, "vuota", sec))
+                break
+            diag["tentativi"].append((m, r.status_code, sec))
+            ultimo = f"{m}: errore {r.status_code} — {r.text[:200]}"
+            if r.status_code in (401, 403):
+                diag["errore"] = ultimo
+                raise RuntimeError("La chiave di Google AI Studio non è valida o non è abilitata. " + ultimo)
+            if r.status_code == 400 and json_mode and "responseMimeType" in r.text:
+                corpo["generationConfig"].pop("responseMimeType", None)      # modello senza JSON nativo
+                continue
+            if r.status_code in (429, 500, 503) and prova == 0:
+                time.sleep(1.5)
+                continue
+            break
+    diag["errore"] = ultimo
+    raise RuntimeError("Non riesco a farla rispondere adesso. " + ultimo)
+
+
+def _diagnosi(ctx, imp):
+    """Cosa è successo all'ultima domanda, e una prova a comando."""
+    with st.expander("🩺 Se non risponde"):
+        d = st.session_state.get("sg_diagnosi")
+        if d:
+            st.markdown(f"**Ultima domanda** ({d['quando']}): " + " → ".join(
+                f"`{m}` {esito} in {sec} s" for m, esito, sec in d["tentativi"]) or "nessun tentativo")
+            if d.get("errore"):
+                st.error(d["errore"])
+        else:
+            st.caption("Ancora nessuna domanda in questa sessione.")
+        c1, c2 = st.columns(2)
+        if c1.button("🧪 Prova la risposta", key="sg_diag_ai", disabled=not ctx.chiave_ai, width="stretch"):
+            inizio = time.time()
+            try:
+                t = chiedi_veloce(ctx, imp, 'Rispondi solo con questo JSON: {"risposta": "ci sono"}')
+                st.success(f"Risponde in {time.time() - inizio:.1f} s: {t[:80]}")
+            except Exception as e:
+                st.error(str(e))
+        if c2.button("🎙️ Prova la voce di Gemini", key="sg_diag_voce", disabled=not ctx.chiave_ai, width="stretch"):
+            inizio = time.time()
+            a = voce_naturale(ctx, imp, "Prova.", forza=True)
+            pausa = st.session_state.get("sg_voce_pausa")
+            if a:
+                st.success(f"Voce pronta in {time.time() - inizio:.1f} s")
+            else:
+                st.error("Nessuna voce: " + (pausa[3] if pausa else "motivo sconosciuto") +
+                         " — intanto parla con la voce del dispositivo.")
+        pausa = st.session_state.get("sg_voce_pausa")
+        coda = st.session_state.get("sg_registro_coda") or []
+        st.caption(f"Streamlit {st.__version__} · modelli in ordine: {', '.join(_modelli(ctx, imp))} · "
+                   f"voce di Gemini: {'in pausa (' + pausa[1] + ')' if pausa else 'disponibile'} · "
+                   f"righe del registro in attesa: {len(coda)}")
+        if coda and st.button("💾 Scrivi adesso il registro", key="sg_diag_reg"):
+            svuota_registro(ctx)
+            st.rerun()
 
 
 def rispondi(ctx, imp, domanda, canale="scheda"):
     """Chiede la risposta all'AI e la aggiunge alla conversazione.
     `canale` dice da dove è arrivata la domanda: scheda o angolo."""
     storia = st.session_state.setdefault("sg_chat", [])
-    testo = ctx.AI.chiedi(prompt(ctx, imp, domanda, storia), ctx.chiave_ai, ctx.modello_ai)
+    testo = chiedi_veloce(ctx, imp, prompt(ctx, imp, domanda, storia))
     import lettura
     d = lettura._json(testo)
     if not isinstance(d, dict) or not d.get("risposta"):
@@ -401,6 +556,34 @@ def esegui(ctx, a):
     except ValueError:
         pass
     t = a["tipo"]
+    dettagli = str(a.get("dettagli") or "").strip()
+    if t == "memoria":
+        import memoria as MEM
+        ctx.diario_scrivi(MEM.riga_nuova(ctx, testo, buffa=dettagli))
+        return "Nel rito della memoria: primo ripasso domani (completa tag e immagini in Studio → Memoria)"
+    if t == "leggi":
+        import lettura as LT
+        import guida as GUIDA
+        if re.match(r"(https?://|www\.)\S+$", testo):
+            try:
+                titolo, autore, quando, sito, corpo = LT.da_link(testo)
+            except Exception as e:
+                return f"Non riesco ad aprire il link: {e}. Copia il testo e usa «Incolla» in Leggimelo"
+            LT._imposta(titolo, testo, corpo)
+        else:
+            LT._imposta("Dalla segretaria", "", testo)
+        GUIDA.vai({"scheda": "📚 Studio", "percorso": ["📖 Leggimelo", "🎧 Ascolta e lavora"]})
+        return "Pronto in Leggimelo: premi ▶️ per ascoltarlo"
+    if t == "cliente":
+        import lavoro as LAV
+        cli = LAV.clienti(ctx.DIA)
+        prima = cli[cli["Cliente"].str.lower() == testo.lower()] if not cli.empty else cli
+        stato = prima.iloc[0]["Stato"] if len(prima) else "contattato"
+        importo = float(prima.iloc[0]["Importo"]) if len(prima) else None
+        nome = prima.iloc[0]["Cliente"] if len(prima) else testo[:80]
+        ctx.diario_scrivi(D.riga("cliente", nome, stato, 0, importo,
+                                 f"{dettagli} :: {data.isoformat() if data else ''}".strip()))
+        return f"Cliente {nome}: " + (f"richiamo il {data:%d/%m}" if data else "aggiornato")
     if t == "apri":
         # solo navigazione: niente da scrivere nel diario
         import guida as GUIDA
@@ -739,7 +922,7 @@ def voce_naturale(ctx, imp, testo, voce=None, forza=False):
     import lettura as LT
     try:
         pcm = LT._tts(ctx.chiave_ai, STILE_VOCE.get(imp.get("carattere"), "") + testo,
-                      voce or imp.get("voce_gemini") or VOCE_PREDEFINITA, attese=(0,), timeout=40)
+                      voce or imp.get("voce_gemini") or VOCE_PREDEFINITA, attese=(0,), timeout=20)
     except Exception as e:
         motivo = "quota" if "429" in str(e) else "errore"
         st.session_state["sg_voce_pausa"] = (adesso.date().isoformat(), motivo, adesso, str(e)[:240])
@@ -757,7 +940,7 @@ def voce_naturale(ctx, imp, testo, voce=None, forza=False):
 # ============================================================ la scheda =====
 def mostra(ctx):
     imp = impostazioni(ctx)
-    st.markdown(f"#### 👩‍💼 {imp['nome']}, la tua segretaria")
+    st.markdown("#### 👩‍💼 Segreteria")
 
     # una volta per sessione, e quando serve, Quadro aggiorna il file per
     # Telegram e l'app desktop
@@ -769,6 +952,38 @@ def mostra(ctx):
         if id_file(ctx, FILE_SEGRETARIA):
             sincronizza(ctx)
 
+    import collaboratrice as COL
+    nome_reale = COL._impostazioni(ctx).get("nome") or COL.NOME
+    # i nomi delle due aree sono fissi: la guida e i collegamenti diretti li cercano così
+    AREE = st.tabs(["🤖 Segretaria virtuale", "🤝 Claudio Assistant"], key="sgr_area")
+    with AREE[1]:
+        try:
+            COL.mostra(ctx, sofia=_riassunto_sofia(ctx))
+        except Exception as e:                     # un problema qui non deve fermare il resto
+            st.error(f"La pagina di {nome_reale} ha avuto un problema: {e}")
+    with AREE[0]:
+        st.caption(f"{imp['nome']}, la segretaria virtuale: è anche nell'angolo di ogni scheda.")
+        _sezioni_virtuale(ctx, imp)
+
+
+def _riassunto_sofia(ctx):
+    reg = registro(dia_con_coda(ctx))
+    if reg.empty:
+        return {"Conversazioni": 0}
+    dal = pd.Timestamp(ctx.DIARIO.oggi()) - pd.Timedelta(days=29)
+    r = reg[reg["quando"] >= dal]
+    az = azioni_decise(ctx.DIA)
+    az = az[az["quando"] >= dal] if not az.empty else az
+    fatte = int((az["decisione"] == "fatta").sum()) if not az.empty else 0
+    rif = int((az["decisione"] == "rifiutata").sum()) if not az.empty else 0
+    votate = r["voto"].notna().sum()
+    return {"Conversazioni": len(r),
+            "Gradimento": f"{(r['voto'] > 0).sum() / votate:.0%}" if votate else "—",
+            "Azioni accettate": f"{fatte / (fatte + rif):.0%}" if fatte + rif else "—",
+            "Errori": int((r["esito"] == "errore").sum())}
+
+
+def _sezioni_virtuale(ctx, imp):
     T = st.tabs(["💬 Parla", "📈 Come lavora", "⚙️ Come la vuoi", "🧠 Cosa sa di te", "✨ Aforismi",
                  "🔔 Notifiche e Telegram", "📲 Telefono e desktop"], key="sg_sezione")
     with T[0]:
@@ -848,7 +1063,7 @@ def _fai(ctx, a, canale):
     if a["tipo"] != "apri":            # portarti in una scheda non è un'azione da registrare
         righe.append(_decisione(ctx, a, canale, "fatta"))
     if righe:
-        ctx.diario_scrivi(righe)
+        svuota_registro(ctx, righe)    # con le righe del registro in attesa, tutto insieme
     ctx.conferma(messaggio)
     st.session_state.setdefault("sg_azioni_fatte", {})[a["id"]] = True
     st.session_state["sg_da_sincronizzare"] = True
@@ -857,10 +1072,7 @@ def _fai(ctx, a, canale):
 
 def _no(ctx, a, canale):
     st.session_state.setdefault("sg_azioni_fatte", {})[a["id"]] = False
-    try:
-        ctx.diario_scrivi(_decisione(ctx, a, canale, "rifiutata"))
-    except Exception:
-        pass
+    registra(ctx, _decisione(ctx, a, canale, "rifiutata"))
 
 
 def _azioni(ctx, canale, p):
@@ -958,6 +1170,7 @@ def _parla(ctx, imp):
         if storia and st.button("🧹 Nuova conversazione", key="sg_pulisci"):
             st.session_state["sg_chat"] = []
             st.rerun()
+        _diagnosi(ctx, imp)
 
 
 # ================================================== la segretaria nell'angolo ===
@@ -1068,6 +1281,14 @@ def _aspetto(ctx, imp):
         extra = st.text_input("Qualcosa in più sul suo modo di fare", imp.get("carattere_extra", ""),
                               placeholder="es. ogni tanto una battuta da ingegnere, mai frasi fatte")
         brevi = st.checkbox("Risposte brevi (meglio da ascoltare)", imp.get("risposte_brevi", True))
+        modelli = {"gemini-flash-latest": "Flash: veloce e brava (consigliato)",
+                   "gemini-flash-lite-latest": "Flash Lite: la più veloce, un po' meno precisa",
+                   "gemini-2.5-flash": "Gemini 2.5 Flash", "studio": "Lo stesso dell'assistente di Studio"}
+        mod_att = imp.get("modello_ai", "gemini-flash-latest")
+        modello = st.selectbox("Il modello che la fa pensare", list(modelli), format_func=modelli.get,
+                               index=list(modelli).index(mod_att) if mod_att in modelli else 0,
+                               help="Se uno non risponde passa da sola al successivo. In «💬 Parla» → «🩺 Se non "
+                                    "risponde» vedi quale ha usato e quanto ci ha messo.")
         st.markdown("**La voce**")
         motori = {"gemini": "🎙️ Naturale, di Gemini: la bocca segue la voce",
                   "dispositivo": "📱 Del dispositivo: sempre gratis, senza limiti"}
@@ -1126,6 +1347,7 @@ def _aspetto(ctx, imp):
                      "carattere": car, "carattere_extra": extra, "risposte_brevi": brevi,
                      "voce": voce.strip(), "velocita": vel, "tono": tono,
                      "voce_motore": motore, "voce_gemini": voce_g, "angolo": modo, "lato": lato,
+                     "modello_ai": modello,
                      "avatar": {"pelle": pelle, "capelli": capelli, "occhi": occhi, "giacca": giacca,
                                 "camicia": camicia, "labbra": labbra, "acconciatura": acconciatura,
                                 "inquadratura": inquadratura, "occhiali": occhiali, "orecchini": orecchini,
@@ -1137,8 +1359,9 @@ def _aspetto(ctx, imp):
             ctx.conferma("Segretaria aggiornata")
             st.rerun()
     _prova_voci(ctx, imp)
-    st.markdown("**Com'è adesso**")
-    ctx.pagina_html(html_avatar(imp, None), 380)
+    # l'anteprima 3D si accende solo a richiesta: tre avatar insieme pesano sul computer
+    if st.toggle("👀 Mostra com'è adesso", key="sg_anteprima"):
+        ctx.pagina_html(html_avatar(imp, None), 380)
 
 
 def _prova_voci(ctx, imp):
@@ -1219,7 +1442,7 @@ def _come_lavora(ctx, imp):
     # Telegram e desktop: le chiacchierate arrivano nella posta; finché non le
     # archivi stanno lì (la posta tiene le ultime 500 voci), ma si contano lo stesso
     _, da_posta = posta(ctx, scambi=True) if ctx.SA else (None, [])
-    reg = registro(ctx.DIA, da_posta)
+    reg = registro(dia_con_coda(ctx), da_posta)
     az = azioni_decise(ctx.DIA)
 
     c1, c2 = st.columns([3, 2])
@@ -1339,7 +1562,7 @@ def _come_lavora(ctx, imp):
             with st.container(border=True):
                 st.markdown(st.session_state["sg_mon_testo"])
 
-    lez = lezioni(ctx.DIA)
+    lez = lezioni(dia_con_coda(ctx))
     if lez:
         with st.expander(f"🧠 Le sue lezioni ({len(lez)}): le rilegge prima di risponderti"):
             for x in lez:

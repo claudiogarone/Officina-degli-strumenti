@@ -376,6 +376,15 @@ function componi(tipo, dettagli, cfg) {
     case 'ripasso': return c.flashcard_da_ripassare ? '🃏 Hai ' + c.flashcard_da_ripassare +
       ' flashcard da ripassare oggi: bastano cinque minuti, in Quadro → Studio → Leggimelo.' : '';
     case 'promemoria': return dettagli ? '⏰ Promemoria: ' + dettagli : '';
+    case 'memoria': {
+      const m = c.memoria || {};
+      if (m.rito_oggi && !m.da_rivedere) return '';           // già fatto tutto
+      let t = '🧠 Il rito della memoria: credere, volere, visualizzare, comandare, rivedere. ' +
+        'Cinque minuti, su una cosa che vuoi ricordare.';
+      if (m.da_rivedere) t += '\n🔁 Da rivedere oggi: ' + m.da_rivedere + '.';
+      if (m.giorni_di_fila) t += '\n🔥 ' + m.giorni_di_fila + ' giorni di fila: non spezzare la catena.';
+      return t + '\nIn Quadro → Studio → 🧠 Memoria.' + vecchiezza(cfg);
+    }
   }
   return '';
 }

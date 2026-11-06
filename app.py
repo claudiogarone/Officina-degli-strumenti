@@ -1557,7 +1557,7 @@ else:
 # La `key` serve a poter cambiare scheda dal codice: scrivendo in
 # st.session_state["tab_aperto"] il nome di una scheda e ricaricando, Quadro
 # si sposta lì. È quello che fa «Comincia» nella sessione di oggi.
-ETICHETTE_TAB = ["🧭 Scrivania", "👩‍💼 Segretaria", "🎓 Ripetizioni", "🗂️ Progetti",
+ETICHETTE_TAB = ["🧭 Scrivania", "👩‍💼 Segreteria", "🎓 Ripetizioni", "🗂️ Progetti",
                  "🛠️ Laboratorio", "💼 Lavoro", "🖋️ Cancelleria", "📚 Studio",
                  "🎙️ Parla chiaro", "📡 SENTINEL", "🛰️ Radar", "🌿 Equilibrio",
                  "⚙️ Taratura", "❓ Guida"]
@@ -1565,21 +1565,26 @@ ETICHETTE_TAB = ["🧭 Scrivania", "👩‍💼 Segretaria", "🎓 Ripetizioni",
 # Aprire Quadro direttamente su una scheda con un link, per esempio
 # https://…streamlit.app/?pagina=segretaria — è quello che si mette come
 # icona sulla schermata Home del telefono. Vale solo alla prima apertura.
-PAGINE_DIRETTE = {"segretaria": "👩‍💼 Segretaria", "equilibrio": "🌿 Equilibrio",
+PAGINE_DIRETTE = {"segretaria": "👩‍💼 Segreteria", "segreteria": "👩‍💼 Segreteria",
+                  "equilibrio": "🌿 Equilibrio",
                   "laboratorio": "🛠️ Laboratorio", "lavoro": "💼 Lavoro",
                   "radar": "🛰️ Radar", "studio": "📚 Studio", "scrivania": "🧭 Scrivania"}
-# alcune pagine stanno dentro una scheda: (scheda, chiave delle sotto-schede, sotto-scheda)
-SOTTOPAGINE = {"leggimelo": ("📚 Studio", "studio_sezione", "📖 Leggimelo"),
-               "aforismi": ("👩‍💼 Segretaria", "sg_sezione", "✨ Aforismi")}
+# alcune pagine stanno dentro una scheda: (scheda, [(chiave delle sotto-schede, sotto-scheda), …])
+SOTTOPAGINE = {"leggimelo": ("📚 Studio", [("studio_sezione", "📖 Leggimelo")]),
+               "memoria": ("📚 Studio", [("studio_sezione", "🧠 Memoria")]),
+               "aforismi": ("👩‍💼 Segreteria", [("sgr_area", "🤖 Segretaria virtuale"),
+                                               ("sg_sezione", "✨ Aforismi")]),
+               "assistant": ("👩‍💼 Segreteria", [("sgr_area", "🤝 Claudio Assistant")])}
 _pagina = str(st.query_params.get("pagina", "")).lower()
 if not st.session_state.get("_pagina_aperta"):
     if _pagina in PAGINE_DIRETTE:
         st.session_state["tab_aperto"] = PAGINE_DIRETTE[_pagina]
         st.session_state["_pagina_aperta"] = True
     elif _pagina in SOTTOPAGINE:
-        _s, _chiave, _sotto = SOTTOPAGINE[_pagina]
+        _s, _livelli = SOTTOPAGINE[_pagina]
         st.session_state["tab_aperto"] = _s
-        st.session_state[_chiave] = _sotto
+        for _chiave, _sotto in _livelli:
+            st.session_state[_chiave] = _sotto
         st.session_state["_pagina_aperta"] = True
 
 # Il posto della segretaria nell'angolo: sta fuori dalle schede, così si vede
@@ -1789,8 +1794,20 @@ with TAB[0]:
     if EQ.impostazione(DIA, "aforismi", EQ.PREDEFINITE_AFORISMI).get("in_scrivania"):
         @st.fragment(run_every=60)
         def _aforisma_scrivania():
-            EQ.riquadro_aforisma(CTX, chiave="scr")
+            # un problema dell'aforisma (l'audio, l'AI) non deve fermare il resto di Quadro
+            try:
+                EQ.riquadro_aforisma(CTX, chiave="scr")
+            except Exception as _e_af:
+                st.caption(f"L'aforisma ha avuto un problema: {_e_af}")
+                st.session_state.pop("scr_audio", None)
         _aforisma_scrivania()
+
+    # il rito della memoria: una riga solo se oggi c'è qualcosa da fare
+    try:
+        import memoria as MEMORIA
+        MEMORIA.promemoria_scrivania(CTX, GUIDA.vai)
+    except Exception:
+        pass
 
     # --------------------------------------------------------- i tre numeri --
     minuti_7 = DIARIO.andamento(DIA, 7).sum()
@@ -4222,16 +4239,28 @@ with TAB[7]:
 
     # «Leggimelo» sta subito dopo l'Officina; SEZ tiene i numeri di prima,
     # così le sezioni qui sotto restano SEZ[0]…SEZ[5] come sempre
-    _SEZ = st.tabs(["🧪 Officina", "📖 Leggimelo", "🎯 Percorsi", "🧰 Strumenti",
+    _SEZ = st.tabs(["🧪 Officina", "📖 Leggimelo", "🧠 Memoria", "🎯 Percorsi", "🧰 Strumenti",
                     "📋 Prontuari", "🤖 Assistente", "💬 Prompt pronti"], key="studio_sezione")
-    SEZ = [_SEZ[0]] + list(_SEZ[2:])
+    SEZ = [_SEZ[0]] + list(_SEZ[3:])
+
+    # ================= MEMORIA ===========================================
+    # Il rito quotidiano dei cinque passi, il ripasso, l'allenamento lampo.
+    with _SEZ[2]:
+        try:
+            import memoria as MEMORIA
+            MEMORIA.mostra(CTX)
+        except Exception as _e_mem:
+            st.error(f"La parte Memoria ha avuto un problema: {_e_mem}")
 
     # ================= LEGGIMELO =========================================
     # Foto, PDF, link o testo incollato → lettura ad alta voce, audio da
     # scaricare, mappe, infografiche, flashcard. Tutto in lettura.py.
     with _SEZ[1]:
-        import lettura as LETTURA
-        LETTURA.mostra(CTX)
+        try:
+            import lettura as LETTURA
+            LETTURA.mostra(CTX)
+        except Exception as _e_lt:
+            st.error(f"Leggimelo ha avuto un problema: {_e_lt}")
 
     # ================= OFFICINA ==========================================
     # I tuoi strumenti, quelli che hai costruito tu. Vivono su un indirizzo
@@ -6981,7 +7010,11 @@ with TAB[5]:
 with TAB[1]:
     import segretaria as SEG
     mostra_conferma()
-    SEG.mostra(CTX)
+    try:
+        SEG.mostra(CTX)
+    except Exception as _e_sg:
+        st.error(f"La Segreteria ha avuto un problema: {_e_sg}")
+        st.caption("Il resto di Quadro funziona. Se si ripete, mandami questo messaggio.")
 
 # ============================================================================
 # TAB 4 - LABORATORIO  (magazzino, progetti e prezzi, calcolatori: laboratorio.py)

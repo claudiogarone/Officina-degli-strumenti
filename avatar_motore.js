@@ -199,7 +199,14 @@ export async function creaAvatar(contenitore, opzioni = {}) {
 
   let analizzatore = null, datiAudio = null, contestoAudio = null, audioCorrente = null;
   const orologio = new THREE.Clock();
-  function ciclo() {
+  // Leggera sul computer: 30 fotogrammi al secondo bastano, e quando non si vede
+  // (scheda chiusa, finestra nascosta, riquadro rimpicciolito) non disegna affatto.
+  let ultimoFotogramma = 0;
+  function ciclo(adesso = 0) {
+    requestAnimationFrame(ciclo);
+    if (document.hidden || !contenitore.clientWidth || !contenitore.clientHeight) return;
+    if (adesso - ultimoFotogramma < 32) return;
+    ultimoFotogramma = adesso;
     const dt = Math.min(orologio.getDelta(), 0.05), t = orologio.elapsedTime;
     sguardo.lerp(sguardoObiettivo, 0.06);
     // la bocca: segue l'audio vero se c'è, altrimenti un movimento «parlato»
@@ -245,7 +252,6 @@ export async function creaAvatar(contenitore, opzioni = {}) {
         b.rotation.z = 0.14 + k * 2.55 + Math.sin(t * 11) * 0.18 * k; if (saluto > 2.2) saluto = -1; }
     }
     renderer.render(scena, camera);
-    requestAnimationFrame(ciclo);
   }
   requestAnimationFrame(ciclo);
 

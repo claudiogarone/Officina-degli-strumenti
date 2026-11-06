@@ -319,7 +319,8 @@ def _mp3(pcm):
     enc.set_in_sample_rate(24000)
     enc.set_channels(1)
     enc.set_quality(2)
-    return enc.encode(pcm) + enc.flush()
+    # lameenc restituisce un «bytearray», che st.audio rifiuta: si converte in bytes
+    return bytes(enc.encode(pcm) + enc.flush())
 
 
 def audio_da_testo(chiave, testo, voce="Kore", stile="naturale", formato="mp3",

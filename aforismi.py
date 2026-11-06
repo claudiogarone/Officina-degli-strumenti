@@ -13,7 +13,7 @@ autori e i temi che hai votato meglio, e quelli che non ti sono piaciuti, e
 ne tiene conto. La segretaria legge la stessa raccolta.
 
 DOVE SI VEDE: quello del momento in cima alla 🧭 Scrivania; preferenze e
-raccolta nella scheda 👩‍💼 Segretaria → ✨ Aforismi.
+raccolta nella scheda 👩‍💼 Segreteria → 🤖 Segretaria virtuale → ✨ Aforismi.
 
 DOVE STA: nel diario, Tipo=aforisma. Nota contiene un piccolo JSON con il
 testo e le tue annotazioni; Valore è il voto. Modificare vuol dire scrivere
@@ -274,7 +274,7 @@ def riquadro(ctx, chiave="eq", compatto=False):
         if st.session_state.get(f"{chiave}_audio_errore"):
             st.error(st.session_state[f"{chiave}_audio_errore"])
         if st.session_state.get(f"{chiave}_audio"):
-            st.audio(st.session_state[f"{chiave}_audio"], format="audio/mpeg")
+            st.audio(bytes(st.session_state[f"{chiave}_audio"]), format="audio/mpeg")
 
 
 # ============================================================ le preferenze ===

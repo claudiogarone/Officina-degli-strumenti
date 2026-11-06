@@ -48,7 +48,7 @@ def destinazioni(G):
     for s in G.get("schede", []):
         d[s["scheda"]] = {"scheda": s["scheda"]}
         for sp in s.get("sottopagine", []):
-            d[sp["nome"]] = {"scheda": s["scheda"], "chiave": sp["chiave"], "valore": sp["valore"]}
+            d[sp["nome"]] = {"scheda": s["scheda"], **{k: sp[k] for k in ("chiave", "valore", "percorso") if k in sp}}
     return d
 
 
@@ -65,26 +65,37 @@ def vai(dove):
         st.session_state["__gd_vai__"] = dove
 
 
+def _percorso(dove):
+    """Le schede da cliccare, in ordine: la principale, poi le sotto-schede."""
+    passi = [dove.get("scheda", "")]
+    if dove.get("percorso"):
+        passi += list(dove["percorso"])
+    elif dove.get("valore"):
+        passi.append(dove["valore"])
+    return [p for p in passi if p]
+
+
 def naviga_se_serve():
     """Da chiamare a ogni giro, fuori dalle schede (app.py lo fa): apre la scheda chiesta."""
     dove = st.session_state.pop("__gd_vai__", None)
     if not dove:
         return
     # i nomi vengono da guida.json, non dall'AI; json.dumps li rende testo sicuro
-    d = json.dumps({"scheda": dove.get("scheda", ""), "sotto": dove.get("valore") or ""},
-                   ensure_ascii=False).replace("</", "<\\/")
+    d = json.dumps(_percorso(dove), ensure_ascii=False).replace("</", "<\\/")
     script = f"""<script>
 (function () {{
-  const D = {d};
+  const PASSI = {d};
   const nome = el => (el.innerText || el.textContent || '').trim();
   // una scheda visibile (non dentro una scheda chiusa, che Streamlit marca «inert»)
   const trova = t => [...document.querySelectorAll('[role=tab]')].find(x => nome(x) === t && !x.closest('[inert]'));
-  function prova(t, poi, n) {{
-    const x = trova(t);
-    if (x) {{ x.click(); if (poi) setTimeout(poi, 250); return; }}
-    if (n < 40) setTimeout(() => prova(t, poi, n + 1), 150);
+  // clicca la scheda i-esima; quando c'è, passa alla successiva (che compare dopo il clic)
+  function prova(i, n) {{
+    if (i >= PASSI.length) return;
+    const x = trova(PASSI[i]);
+    if (x) {{ x.click(); setTimeout(() => prova(i + 1, 0), 250); return; }}
+    if (n < 40) setTimeout(() => prova(i, n + 1), 150);
   }}
-  prova(D.scheda, D.sotto ? () => prova(D.sotto, null, 0) : null, 0);
+  prova(0, 0);
 }})();
 </script>"""
     try:
